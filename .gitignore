@@ -1,0 +1,12 @@
+node_modules
+package-lock.json
+
+# Build output
+dist/
+
+# Test coverage reports
+coverage/
+*.lcov
+
+# Vitest cache
+.vitest-cache/
