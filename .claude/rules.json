@@ -1,0 +1,264 @@
+{
+  "meta": {
+    "adr_corpus": "docs/decisions/adr-0000.md through adr-0047.md",
+    "adr_as_source_of_truth": true,
+    "reject_adr_violations": true,
+    "explain_adr_reference_on_conflict": true,
+    "last_updated": "2026-02-12"
+  },
+
+  "architecture": {
+    "pattern": "modular_monolith_ddd",
+    "layer_order": ["domain", "application", "infrastructure", "presentation"],
+    "domain_isolation": "strict",
+    "bounded_context_module_mapping": "strict_1_to_1",
+    "inter_module_imports": "via_public_index_only",
+    "aggregate_per_transaction": true,
+    "cross_aggregate_reference": "by_id_only",
+    "adr_references": ["ADR-0001", "ADR-0002", "ADR-0003", "ADR-0047"]
+  },
+
+  "domain_invariants": {
+    "execution_immutability": {
+      "rule": "Execution records are never updated or deleted after creation",
+      "correction_mechanism": "ExecutionCorrectionRecorded compensating event",
+      "adr": "ADR-0005"
+    },
+    "access_grant_required": {
+      "rule": "Every Execution creation requires a valid AccessGrant passing all 5 validity checks",
+      "validity_checks": [
+        "status === ACTIVE",
+        "clientId === requestingUserId",
+        "professionalProfileId === requestingTenantId",
+        "validUntil === null OR currentUtc <= validUntil",
+        "sessionAllotment === null OR sessionsConsumed < sessionAllotment"
+      ],
+      "adr": "ADR-0046"
+    },
+    "subscription_first": {
+      "rule": "Payment confirmation always precedes AccessGrant creation and service delivery",
+      "adr": "ADR-0017"
+    },
+    "logical_day_immutability": {
+      "rule": "logicalDay is computed once at record creation using the user's IANA timezone and never recomputed",
+      "formula": "logicalDay = toLocalDate(occurredAtUtc, timezoneUsed)",
+      "adr": "ADR-0010"
+    },
+    "snapshot_at_prescription": {
+      "rule": "Deliverable content is embedded as an immutable snapshot at prescription time; never references live catalog",
+      "adr": "ADR-0011"
+    },
+    "tenant_isolation": {
+      "rule": "All tenant-scoped repository queries must include professionalProfileId as a non-optional parameter sourced from the authenticated JWT token",
+      "cross_tenant_response": "404 Not Found (not 403)",
+      "adr": "ADR-0025"
+    }
+  },
+
+  "persistence": {
+    "orm": "prisma",
+    "repository_pattern": "interface_in_domain_implementation_in_infra",
+    "repository_naming": "I{AggregateName}Repository",
+    "concurrency_control": "optimistic_locking_version_field",
+    "domain_events_mechanism": "outbox_pattern",
+    "financial_amounts": "integer_cents_only",
+    "adr_references": ["ADR-0004", "ADR-0006", "ADR-0009", "ADR-0021"]
+  },
+
+  "temporal": {
+    "persistence_format": "ISO_8601_UTC_strings",
+    "fields": {
+      "utc_moment": "{event}AtUtc",
+      "calendar_date": "logicalDay",
+      "timezone_context": "timezoneUsed"
+    },
+    "timezone_identifiers": "IANA_only",
+    "no_utc_offset_storage": true,
+    "adr": "ADR-0010"
+  },
+
+  "security": {
+    "authentication": {
+      "token_type": "JWT_RS256",
+      "access_token_expiry": "15_minutes",
+      "refresh_token_expiry": "30_days",
+      "refresh_rotation": "on_every_use",
+      "adr": "ADR-0023"
+    },
+    "authorization": {
+      "model": "policy_based",
+      "enforcement_layer": "application_only",
+      "tenant_scope_source": "jwt_token_claim_only",
+      "cross_tenant_failure": "404_not_403",
+      "admin_operations_require_audit_log": true,
+      "adr": "ADR-0024"
+    },
+    "rate_limiting": {
+      "storage": "redis_distributed",
+      "tiers": ["public_by_ip", "authenticated_by_user_id", "webhook_by_source_ip"],
+      "http_429_only": true,
+      "adr": "ADR-0026"
+    },
+    "secrets": {
+      "never_in_source_control": true,
+      "never_in_logs": true,
+      "never_in_error_responses": true,
+      "storage": "secrets_manager",
+      "adr": "ADR-0032"
+    },
+    "defense_in_depth": {
+      "rule": "No single security control substitutes for another; all layers active simultaneously",
+      "adr": "ADR-0033"
+    }
+  },
+
+  "audit": {
+    "audit_log": {
+      "append_only": true,
+      "immutable_after_creation": true,
+      "write_mode": "fire_and_forget",
+      "no_pii": true,
+      "no_financial_amounts": true,
+      "automated_actor_id": "SYSTEM",
+      "adr": "ADR-0027"
+    },
+    "audited_actions": [
+      "RISK_STATUS_CHANGED",
+      "ACCESS_GRANT_REVOKED",
+      "ACCESS_GRANT_SUSPENDED",
+      "ACCESS_GRANT_REINSTATED",
+      "CHARGEBACK_REGISTERED",
+      "PAYMENT_REFUNDED",
+      "PLATFORM_ENTITLEMENT_CHANGED",
+      "SERVICE_PLAN_DELETED",
+      "EXECUTION_CORRECTION_RECORDED",
+      "DATA_ANONYMIZATION_REQUEST",
+      "ADMIN_CROSS_TENANT_ACCESS",
+      "ADMIN_WRITE_OPERATION",
+      "ACCOUNT_LOCKED",
+      "REFRESH_TOKEN_THEFT_DETECTED",
+      "WEBHOOK_VALIDATION_FAILED",
+      "AUTHORIZATION_FAILURE"
+    ]
+  },
+
+  "lgpd_compliance": {
+    "platform_role": "primary_data_controller",
+    "professional_role": "authorized_operator",
+    "erasure_mechanism": "field_level_anonymization_not_deletion",
+    "tier1_entities_retained_despite_erasure": true,
+    "pii_prohibited_in": ["logs", "audit_log", "cache", "error_responses"],
+    "health_data_prohibited_in": ["logs", "audit_log", "cache"],
+    "financial_amounts_prohibited_in": ["logs", "audit_log"],
+    "adr_references": ["ADR-0028", "ADR-0037"]
+  },
+
+  "cache": {
+    "distributed_backend": "redis",
+    "never_cache": [
+      "Execution",
+      "Transaction",
+      "AccessGrant",
+      "RiskStatus",
+      "BillingState",
+      "logicalDay_computations",
+      "health_metrics",
+      "UserProfile_PII"
+    ],
+    "all_redis_entries_require_ttl": true,
+    "tenant_scoped_keys_must_include_professionalProfileId": true,
+    "invalidation_mode": "fire_and_forget",
+    "adr": "ADR-0030"
+  },
+
+  "api": {
+    "versioning_strategy": "url_path_prefix",
+    "version_format": "/v{n}/",
+    "breaking_change_requires_new_version": true,
+    "internal_api_may_change_without_deprecation": true,
+    "webhook_payloads_are_public_contracts": true,
+    "deprecation_headers": ["Deprecation", "Sunset"],
+    "adr_references": ["ADR-0029", "ADR-0039"]
+  },
+
+  "feature_flags": {
+    "storage": "database_cached_in_redis",
+    "max_cache_staleness": "5_minutes",
+    "prohibited_for": [
+      "billing_rules",
+      "execution_immutability",
+      "logicalDay_computation",
+      "access_grant_validation",
+      "financial_safety_invariants"
+    ],
+    "lifecycle": ["CREATED", "ACTIVATED", "GRADUATED", "REMOVED"],
+    "planned_removal_date_required": true,
+    "adr": "ADR-0031"
+  },
+
+  "idempotency": {
+    "required_for": [
+      "payment_operations",
+      "access_grant_creation",
+      "webhook_processing",
+      "booking_creation"
+    ],
+    "key_storage": "database_shared",
+    "ttl": {
+      "financial": "30_days",
+      "booking": "24_hours",
+      "webhook": "7_days"
+    },
+    "adr": "ADR-0007"
+  },
+
+  "risk_governance": {
+    "states": ["NORMAL", "WATCHLIST", "BANNED"],
+    "banned_is_terminal": false,
+    "banned_blocks_all_mutations": true,
+    "banned_invalidates_all_sessions": true,
+    "watchlist_triggers": {
+      "chargeback_rate_threshold": "2_percent_in_30_days"
+    },
+    "risk_changes_never_alter_historical_records": true,
+    "adr": "ADR-0022"
+  },
+
+  "webhooks": {
+    "processing_model": "two_phase",
+    "phase1": "validate_and_queue",
+    "phase2": "idempotent_domain_processing",
+    "validation": ["HMAC_SHA256_signature", "timestamp_freshness_5min", "payload_schema"],
+    "retry_policy": [
+      "30_seconds",
+      "5_minutes",
+      "30_minutes",
+      "DLQ"
+    ],
+    "dlq_requires_manual_intervention": true,
+    "external_failure_must_not_corrupt_domain": true,
+    "adr": "ADR-0038"
+  },
+
+  "naming": {
+    "aggregate_repository_interface": "I{AggregateName}Repository",
+    "utc_timestamps": "{event}AtUtc",
+    "logical_date": "logicalDay",
+    "boolean_prefixes": ["is", "has", "can", "should", "was", "will"],
+    "collection_naming": "plural_only",
+    "adr": "ADR-0000"
+  },
+
+  "testing": {
+    "domain_coverage_target": 95,
+    "domain_tests_are_pure": true,
+    "tenant_isolation_tests_required": true,
+    "security_tests_required": [
+      "cross_tenant_access_returns_404",
+      "expired_token_rejection",
+      "revoked_session_rejection",
+      "banned_professional_rejection"
+    ],
+    "adr": "ADR-0040"
+  }
+}
