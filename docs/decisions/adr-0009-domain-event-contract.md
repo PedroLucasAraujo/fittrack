@@ -1,16 +1,31 @@
-# ADR-0009 — Domain Event Contract
+# ADR-0009 — Official Domain Events Policy
 
 ## Status
 
-ACCEPTED
+ACCEPTED (Revised — supersedes original Domain Event Contract)
 
 ## Context
 
-Domain events are the primary mechanism for cross-bounded-context communication in FitTrack. Without a formal contract specifying event structure, versioning, and publication semantics, events become inconsistent across contexts, breaking downstream consumers silently and making event schema evolution unsafe.
+Domain events are the primary mechanism for cross-bounded-context communication in FitTrack. The original version of this ADR implied that every aggregate state transition must emit a domain event and that aggregates collect events internally. In practice, this led to:
+
+1. **Generic noise events** (`UserCreated`, `ProfessionalProfileCreated`) that carried no business significance and had no legitimate subscribers.
+2. **Aggregate impurity** — aggregates imported event classes and called `addDomainEvent()`, coupling pure domain state machines to infrastructure-level event dispatch.
+3. **Ambiguity about who publishes** — the protocol described aggregates collecting events, but did not clarify that the Application layer (UseCase) is the **sole authority** for deciding which events are dispatched.
+
+This revision formalizes the definitive policy: **aggregates are pure state machines; domain events are dispatched explicitly and selectively by the Application layer**.
 
 ## Decision
 
-### 1. Domain Event Structure
+### §1. Core Principles
+
+1. **Domain Events are NOT automatic.** Not every state transition produces an event. Events exist only for **significant business facts** that downstream contexts, integrations, or analytics need to react to.
+2. **Aggregates are pure state machines.** Aggregates execute state transitions and enforce invariants. They do NOT import, create, or collect domain events. The `addDomainEvent()` method inherited from `AggregateRoot` is reserved for future use if event sourcing is adopted; it MUST NOT be called in application-layer DDD aggregates.
+3. **The Application layer (UseCase) is the sole dispatcher.** After a successful aggregate operation and persistence, the UseCase decides which events (if any) to construct and publish.
+4. **Repositories do NOT dispatch events.** Repositories are pure persistence gateways. They save and load aggregates. They never create, collect, or publish domain events.
+5. **Billing and financial consistency NEVER depend on event subscribers.** Financial rules (ledger entries, chargeback resolution, refund processing) are enforced synchronously within the UseCase transaction. Events for financial facts (e.g., `ChargebackRegistered`) are published for notification, analytics, and integration — never as the mechanism that ensures correctness.
+6. **Events serve exclusively for:** decoupled reactions, cross-context integrations, notifications, analytics, audit trails, and webhooks.
+
+### §2. Domain Event Structure
 
 Every domain event must conform to the following structure:
 
@@ -20,45 +35,90 @@ interface DomainEvent {
   readonly eventType: string;         // PascalCase, past-tense noun (e.g., "ExecutionRecorded")
   readonly eventVersion: number;      // Integer starting at 1, incremented on schema changes
   readonly occurredAtUtc: string;     // ISO 8601 UTC timestamp
-  readonly aggregateId: string;       // ID of the emitting aggregate root
-  readonly aggregateType: string;     // Type name of the emitting aggregate root
+  readonly aggregateId: string;       // ID of the originating aggregate root
+  readonly aggregateType: string;     // Type name of the originating aggregate root
   readonly tenantId: string;          // professionalProfileId (for tenant-scoped events)
   readonly payload: Record<string, unknown>; // Event-specific data
 }
 ```
 
-### 2. Domain Event Naming Convention
+### §3. Domain Event Naming Convention
 
 | Convention | Rule |
 |-----------|------|
 | Format | PascalCase, past-tense verb+noun |
 | Scope | Names describe what happened, not what to do |
-| Examples (valid) | `ExecutionRecorded`, `BookingConfirmed`, `PurchaseCompleted`, `RiskStatusChanged` |
+| Examples (valid) | `ExecutionRecorded`, `BookingConfirmed`, `PurchaseCompleted`, `ProfessionalProfileBanned` |
 | Examples (invalid) | `RecordExecution`, `SendBookingEmail`, `UpdateRiskStatus` |
 
-### 3. Event Registration and Publication Protocol
+### §4. Event Dispatch Protocol
 
-The application layer is responsible for the following sequence:
+The Application layer (UseCase) is responsible for the following sequence:
 
 ```
-1. Application layer opens transaction.
-2. Aggregate root executes domain operation.
-3. Aggregate root registers domain event in its internal events collection.
-4. Repository persists aggregate within transaction.
-5. Transaction commits.
-6. Application layer reads registered events from aggregate.
-7. Application layer publishes events to event bus.
-8. Aggregate internal events collection is cleared.
+1. UseCase validates input and loads aggregate(s) from repository.
+2. UseCase calls aggregate domain method (state transition).
+3. Repository persists aggregate within transaction.
+4. Transaction commits.
+5. UseCase constructs domain event(s) for significant business facts.
+6. UseCase publishes event(s) to event bus (or in-process dispatcher).
 ```
 
-Steps 1–5 are atomic. Steps 6–8 are post-commit. If step 7 fails, an at-least-once delivery mechanism (outbox pattern, dead-letter queue) must ensure eventual delivery. This is governed by ADR-0016.
+Steps 1–4 are atomic. Steps 5–6 are post-commit. If step 6 fails, an at-least-once delivery mechanism (outbox pattern, dead-letter queue) must ensure eventual delivery. Delivery guarantees are governed by ADR-0016.
 
-### 4. Official Domain Events Catalog
+**Key change from original:** Aggregates no longer participate in event construction or collection. The UseCase has full authority over which events are published and their payload content.
 
-The following events are formally recognized. All events conform to the structure in Section 1.
+### §5. When to Emit Domain Events
+
+Emit a domain event when the fact is a **significant business milestone** that:
+
+- Another bounded context needs to react to (e.g., `PurchaseCompleted` → Execution context creates AccessGrant).
+- An integration, webhook, or notification channel needs to be informed.
+- An audit trail or analytics pipeline must record the occurrence.
+- The event represents a **non-reversible or consequential state change** in the business domain.
+
+**Valid event examples:**
+
+| Event | Why it matters |
+|-------|---------------|
+| `PurchaseCompleted` | Triggers AccessGrant creation, notifications |
+| `ChargebackRegistered` | Triggers risk escalation, AccessGrant suspension |
+| `BookingConfirmed` | Informs scheduling, sends confirmation |
+| `ProfessionalProfileBanned` | Cascading effects across Billing, Scheduling, Execution |
+| `ProfessionalProfileApproved` | Unlocks platform capabilities |
+| `RiskStatusChanged` | Downstream contexts adjust operational permissions |
+| `ExecutionRecorded` | Metrics, progress tracking, analytics |
+
+### §6. When NOT to Emit Domain Events
+
+Do NOT emit events for:
+
+- **Generic entity lifecycle operations**: creation, update, or deletion of any entity. These are persistence operations, not business facts.
+- **Redundant state echoes**: events that merely repeat the aggregate's current state without adding business context.
+- **Internal bookkeeping**: changes that are only relevant within the same bounded context and have no downstream consumers.
+
+**Invalid event examples (DELETED or PROHIBITED):**
+
+| Prohibited Pattern | Reason |
+|-------------------|--------|
+| `UserCreated` | Generic EntityCreated — no subscriber needs to react to raw user creation |
+| `ProfessionalProfileCreated` | Generic EntityCreated — profile creation is an internal Identity concern |
+| `EntityUpdated` (generic) | Provides no business semantics; consumers can't derive intent |
+| `StatusChanged` (generic) | Too vague; use specific events like `ProfessionalProfileBanned` |
+
+### §7. Official Domain Events Catalog
+
+The following events are formally recognized. All events conform to the structure in §2.
 
 | Event | Aggregate | Producer Context | Payload Keys |
 |-------|-----------|-----------------|-------------|
+| `ProfessionalProfileApproved` | ProfessionalProfile | Identity | profileId, userId |
+| `ProfessionalProfileSuspended` | ProfessionalProfile | Identity | profileId, userId |
+| `ProfessionalProfileReactivated` | ProfessionalProfile | Identity | profileId, userId |
+| `ProfessionalProfileBanned` | ProfessionalProfile | Identity | profileId, userId, reason |
+| `ProfessionalProfileDeactivated` | ProfessionalProfile | Identity | profileId, userId, previousRiskStatus |
+| `ProfessionalProfileClosed` | ProfessionalProfile | Identity | profileId, userId, previousStatus, previousRiskStatus, reason |
+| `RiskStatusChanged` | ProfessionalProfile | Identity | profileId, previousStatus, newStatus |
 | `PurchaseCompleted` | Transaction | Billing | transactionId, servicePlanId, clientId, professionalProfileId, amount |
 | `PaymentFailed` | Transaction | Billing | transactionId, reason |
 | `ChargebackRegistered` | Transaction | Billing | transactionId, chargebackId, amount |
@@ -75,7 +135,6 @@ The following events are formally recognized. All events conform to the structur
 | `BookingNoShow` | Booking | Scheduling | bookingId |
 | `ExecutionRecorded` | Execution | Execution | executionId, clientId, professionalProfileId, deliverableId, logicalDay, status |
 | `ExecutionCorrectionRecorded` | Execution | Execution | correctionId, originalExecutionId, reason |
-| `RiskStatusChanged` | ProfessionalProfile | Risk | professionalProfileId, previousStatus, newStatus, reason |
 | `ServicePlanPublished` | ServicePlan | ServicePlan | servicePlanId, professionalProfileId |
 | `ServicePlanArchived` | ServicePlan | ServicePlan | servicePlanId |
 | `PersonalModeActivated` | PersonalModeProfile | PersonalMode | userId |
@@ -83,35 +142,40 @@ The following events are formally recognized. All events conform to the structur
 | `EntitlementRestored` | PlatformEntitlement | Billing | entitlementId |
 | `GracePeriodExpired` | PlatformEntitlement | Billing | entitlementId |
 
-### 5. Event Versioning Policy
+### §8. Event Versioning Policy
 
 - Every event schema change (adding, removing, or renaming payload fields) requires incrementing `eventVersion`.
 - Consumers must handle events by version. Unknown versions are logged and forwarded to a dead-letter topic.
 - Field additions with null-safe defaults may be introduced in a minor version increment.
 - Field removals and renames constitute breaking changes and require a new major version with consumer migration.
 
-### 6. Event Immutability
+### §9. Event Immutability
 
 - Domain events are immutable after publication.
 - No event is retracted or modified after delivery.
 - Corrections are handled by publishing a new compensating event (e.g., `ExecutionCorrectionRecorded`), not by modifying the original event.
 
-### 7. Prohibited Patterns
+### §10. Prohibited Patterns
 
 | Prohibited | Reason |
 |-----------|--------|
+| Aggregates calling `addDomainEvent()` | Aggregates are pure state machines; events are UseCase responsibility |
+| Repositories dispatching events | Repositories are persistence gateways only |
 | Publishing events before transaction commit | Produces events for rolled-back state |
 | Imperative event names | Events describe facts, not commands |
 | Events without `eventId` | Prevents idempotency key derivation |
 | Synchronous coupling between event and handler | Violates bounded context isolation |
+| Financial consistency via event subscribers | Financial rules must be synchronous within the UseCase transaction |
+| Generic `EntityCreated` / `EntityUpdated` events | No business semantics; noise for downstream consumers |
 
 ## Invariants
 
-1. Every valid aggregate state transition emits exactly one domain event.
-2. Domain events are published only after the producing transaction commits.
-3. Events are immutable and versioned.
-4. All events include `eventId`, `occurredAtUtc`, `aggregateId`, and `eventVersion`.
-5. No domain event triggers a synchronous side effect that could fail the originating use case.
+1. Domain events are published only after the producing transaction commits.
+2. Events are immutable and versioned.
+3. All events include `eventId`, `occurredAtUtc`, `aggregateId`, and `eventVersion`.
+4. No domain event triggers a synchronous side effect that could fail the originating use case.
+5. The Application layer (UseCase) is the sole authority for event dispatch — aggregates and repositories never publish events.
+6. Financial consistency is never delegated to event subscribers.
 
 ## Constraints
 
@@ -125,10 +189,14 @@ The following events are formally recognized. All events conform to the structur
 - Consistent cross-context integration.
 - Safe schema evolution via versioning.
 - Testable event contracts.
+- Pure aggregate state machines — simpler to test, no event coupling.
+- Explicit UseCase control over which events are dispatched — no accidental noise events.
+- Financial consistency guaranteed synchronously, with events as a bonus for analytics and integration.
 
 **Negative:**
 - Event catalog requires maintenance as domain evolves.
 - Versioning introduces consumer migration coordination.
+- UseCases must explicitly construct events, adding a small amount of boilerplate per use case.
 
 ## Dependencies
 
@@ -136,5 +204,8 @@ The following events are formally recognized. All events conform to the structur
 - ADR-0001: Bounded Contexts (producer/consumer context mapping)
 - ADR-0003: Transaction Boundaries (publication protocol)
 - ADR-0007: Idempotency Policy (handler idempotency via eventId)
+- ADR-0008: Entity Lifecycle States (state machine transitions that produce events)
 - ADR-0016: Formal Eventual Consistency Policy (delivery guarantees)
+- ADR-0022: Financial Risk Governance (risk events, financial consistency)
 - ADR-0037: Sensitive Data Handling (PII in event payloads)
+- ADR-0047: Canonical Aggregate Root Definition (aggregate purity)

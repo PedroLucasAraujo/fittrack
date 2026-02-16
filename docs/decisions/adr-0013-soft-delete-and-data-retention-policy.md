@@ -122,10 +122,107 @@ Anonymization event is logged in AuditLog with `actorId = userId`, `action = 'DA
 - Storage volume grows indefinitely for Tier 1 entities.
 - LGPD erasure requires anonymization implementation rather than simple deletion.
 
+## Extension — Soft Delete with AccessGrant Preservation
+
+### Scope
+
+This extension formalizes the data-preservation policy when a ProfessionalProfile reaches a terminal closure state (`DEACTIVATED`, `CLOSED`, or `BANNED`), including closure triggered by trial expiry (PlatformEntitlement `TRIAL → EXPIRED` per ADR-0018).
+
+### Policy Statement
+
+Closure of a ProfessionalProfile — whether voluntary (`DEACTIVATED`), administrative or trial-expiry (`CLOSED`), or punitive (`BANNED`) — **does NOT revoke, suspend, or modify any existing AccessGrant**. The client retains full access to previously granted Deliverables and may continue executing them as personal use, without an active professional relationship.
+
+### What Closure Preserves
+
+| Entity | Preservation Rule |
+|--------|-------------------|
+| AccessGrant | Remains in its current status (`ACTIVE`, `EXPIRED`, `SUSPENDED`). No automatic revocation on profile closure. |
+| Execution | Immutable and permanent (ADR-0005). Profile closure does not alter any existing Execution record. |
+| SelfLog | Retained. Client-authored entries remain accessible. |
+| Derived Metrics | Retained. Analytics derived from Execution and SelfLog data remain available. |
+| Transaction | Retained (Tier 1). Financial records are unaffected by profile lifecycle. |
+
+### What Closure Blocks
+
+| Operation | Blocked After Closure |
+|-----------|----------------------|
+| New Deliverable creation | Yes — closed profile cannot author new content. |
+| New Assignment creation | Yes — no new professional-client assignments. |
+| New AccessGrant issuance | Yes — no new grants referencing the closed profile. |
+| New Booking creation | Yes — no new sessions can be scheduled. |
+| New ServicePlan creation | Yes — no new plans may be published. |
+
+### Personal Use Mode
+
+When a ProfessionalProfile is closed but the client's AccessGrant remains `ACTIVE`:
+
+1. The client continues to access all previously assigned Deliverables.
+2. Execution records are attributed to the client only; the professional relationship is inactive.
+3. SelfLog entries (client-authored) continue normally.
+4. No new professional-guided sessions are possible.
+5. The AccessGrant follows its own lifecycle (ADR-0046) — it may expire naturally via `validUntil`, but it is never revoked as a consequence of profile closure.
+
+### Trial Expiry
+
+Trial expiry (PlatformEntitlement `TRIAL → EXPIRED` per ADR-0018 §4) may trigger ProfessionalProfile transition to `CLOSED`. The same preservation rules apply without exception:
+
+- Existing AccessGrants issued during the trial period are NOT revoked.
+- Execution records created during the trial are permanent (ADR-0005).
+- Clients who received access during the trial retain their Deliverables.
+
+### `CLOSED` Status — ADR-0008 Amendment
+
+A new terminal status `CLOSED` is added to the ProfessionalProfile lifecycle (ADR-0008 §5):
+
+| Attribute | Value |
+|-----------|-------|
+| Status value | `CLOSED` |
+| Semantics | Formal account closure (administrative, trial expiry, or system-initiated) |
+| Terminal | Yes — no outgoing transitions |
+| Distinct from | `DEACTIVATED` (voluntary by professional), `BANNED` (punitive) |
+
+Valid transitions to `CLOSED`:
+```
+ACTIVE → CLOSED (event: ProfessionalProfileClosed)
+SUSPENDED → CLOSED (event: ProfessionalProfileClosed)
+```
+
+AccessGrant preservation guarantees for `CLOSED` are identical to `DEACTIVATED`.
+
+### Execution Validation Rule
+
+Downstream contexts that validate whether an Execution may proceed **must check only the AccessGrant status**, never the ProfessionalProfile status. Specifically:
+
+- **Valid guard:** `AccessGrant.status === ACTIVE` — Execution is permitted.
+- **Invalid guard:** `ProfessionalProfile.status === ACTIVE` — This check must NOT be used as a prerequisite for Execution. A closed profile with an active AccessGrant still permits client Execution.
+
+### Coherence with Existing Decisions
+
+| ADR | Coherence |
+|-----|-----------|
+| ADR-0005 (Execution Invariant) | Execution records are permanent regardless of profile closure — already guaranteed. |
+| ADR-0008 (Lifecycle States) | `CLOSED` added as new terminal state; existing states untouched. |
+| ADR-0013 (this ADR) | ProfessionalProfile is Tier 2 (retained on closure); AccessGrant is Tier 1 (permanent). No conflict. |
+| ADR-0018 (Billing/Trials) | Trial expiry triggers `CLOSED`, not deletion. AccessGrants survive. |
+| ADR-0020 (Chargeback) | Chargeback does not delete history — orthogonal to closure. |
+| ADR-0028 (LGPD) | Platform as primary data controller retains data for historical integrity and professional accountability. |
+| ADR-0046 (AccessGrant Lifecycle) | AccessGrant lifecycle is independent of ProfessionalProfile lifecycle — revocation requires explicit action, not profile status change. |
+
+### Extension Invariants
+
+1. Profile closure (any terminal state) never triggers automatic AccessGrant revocation or suspension.
+2. Execution validation depends exclusively on AccessGrant status, never on ProfessionalProfile status.
+3. Delivered content remains accessible to the client regardless of the professional's operational status.
+4. Trial expiry follows the same preservation rules as voluntary or administrative closure.
+5. Platform retains all data per LGPD controller obligations (ADR-0028) and historical integrity requirements.
+
 ## Dependencies
 
 - ADR-0000: Project Foundation (soft delete scope, history permanence)
 - ADR-0005: Execution Core Invariant Policy (Execution deletion prohibition)
 - ADR-0007: Idempotency Policy (IdempotencyKey TTL and cleanup)
+- ADR-0008: Entity Lifecycle States and Transition Policy (ProfessionalProfile lifecycle; `CLOSED` amendment)
+- ADR-0018: Billing, Credits, Trials, and Grace Period (trial expiry trigger for `CLOSED`)
 - ADR-0020: Chargeback, Revocation, and History Preservation (chargeback non-destructive rule)
 - ADR-0028: Platform Nature, LGPD, and Liability Boundaries (LGPD controller obligations)
+- ADR-0046: AccessGrant Lifecycle Policy (AccessGrant independence from profile lifecycle)

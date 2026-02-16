@@ -17,7 +17,7 @@ This ADR defines the formal lifecycle state machine for each major status-bearin
 For every entity carrying a `status` field:
 1. All valid status values must be enumerated explicitly.
 2. All valid state transitions must be enumerated explicitly.
-3. Every valid transition emits a named domain event.
+3. Every valid transition has a corresponding named domain event that the Application layer (UseCase) MAY dispatch. Aggregates do not emit events — see ADR-0009 §1.
 4. Every invalid transition raises a named domain exception.
 5. No external component may set an entity's status directly. All transitions are performed via domain methods on the aggregate root.
 
@@ -102,6 +102,7 @@ Terminal states: `EXPIRED`, `REVOKED`.
 | `SUSPENDED` | Temporarily suspended; cannot accept new bookings |
 | `BANNED` | Permanently banned; full operational suspension |
 | `DEACTIVATED` | Voluntarily deactivated; historical data retained |
+| `CLOSED` | Formally closed (administrative, trial expiry, or system-initiated); historical data retained. Added by ADR-0013 Extension. |
 
 **Valid Transitions:**
 ```
@@ -110,11 +111,15 @@ PENDING_APPROVAL → BANNED (event: ProfessionalProfileBanned)
 ACTIVE → SUSPENDED (event: ProfessionalProfileSuspended)
 ACTIVE → BANNED (event: ProfessionalProfileBanned)
 ACTIVE → DEACTIVATED (event: ProfessionalProfileDeactivated)
+ACTIVE → CLOSED (event: ProfessionalProfileClosed)
 SUSPENDED → ACTIVE (event: ProfessionalProfileReactivated)
 SUSPENDED → BANNED (event: ProfessionalProfileBanned)
+SUSPENDED → CLOSED (event: ProfessionalProfileClosed)
 ```
 
-Terminal states: `BANNED`, `DEACTIVATED`.
+Terminal states: `BANNED`, `DEACTIVATED`, `CLOSED`.
+
+Note: Closure of a ProfessionalProfile (any terminal state) does NOT revoke existing AccessGrants. See ADR-0013 Extension for the complete preservation policy.
 
 ### 6. PlatformEntitlement Lifecycle
 
@@ -168,7 +173,7 @@ Note: `CHARGEBACK` is a terminal state. A chargeback on a refunded transaction i
 
 ## Invariants
 
-1. Every valid status transition emits the corresponding named domain event.
+1. Every valid status transition has a corresponding named domain event that the Application layer MAY dispatch (ADR-0009 §1). Aggregates do not emit events directly.
 2. Every invalid status transition raises a named domain exception (never silently succeeds or produces an error from the persistence layer).
 3. No entity status is set directly by assignment outside its aggregate root's domain methods.
 4. All terminal states have no valid outgoing transitions.
@@ -195,4 +200,5 @@ Note: `CHARGEBACK` is a terminal state. A chargeback on a refunded transaction i
 - ADR-0000: Project Foundation (event emission on transition rule)
 - ADR-0009: Domain Event Contract (event structure)
 - ADR-0012: Enum and Shared Type Governance (status enum management)
+- ADR-0013: Soft Delete and Data Retention Policy (CLOSED status and AccessGrant preservation extension)
 - ADR-0046: AccessGrant Lifecycle Policy (detailed AccessGrant states)

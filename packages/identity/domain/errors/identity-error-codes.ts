@@ -1,0 +1,20 @@
+/**
+ * Error code registry for the Identity bounded context.
+ *
+ * Namespaced with `IDENTITY.` prefix to avoid collisions with core ErrorCodes
+ * and codes from other bounded contexts.
+ */
+export const IdentityErrorCodes = {
+  INVALID_EMAIL: 'IDENTITY.INVALID_EMAIL',
+  INVALID_PERSON_NAME: 'IDENTITY.INVALID_PERSON_NAME',
+  INVALID_PROFILE_TRANSITION: 'IDENTITY.INVALID_PROFILE_TRANSITION',
+  INVALID_RISK_STATUS_TRANSITION: 'IDENTITY.INVALID_RISK_STATUS_TRANSITION',
+  PROFESSIONAL_PROFILE_NOT_FOUND: 'IDENTITY.PROFESSIONAL_PROFILE_NOT_FOUND',
+  USER_NOT_FOUND: 'IDENTITY.USER_NOT_FOUND',
+  INVALID_ROLE: 'IDENTITY.INVALID_ROLE',
+  EMAIL_ALREADY_IN_USE: 'IDENTITY.EMAIL_ALREADY_IN_USE',
+  USER_ALREADY_HAS_PROFILE: 'IDENTITY.USER_ALREADY_HAS_PROFILE',
+} as const;
+
+export type IdentityErrorCode =
+  (typeof IdentityErrorCodes)[keyof typeof IdentityErrorCodes];
