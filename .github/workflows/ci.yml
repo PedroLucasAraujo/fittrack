@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-core:
+    name: "Test @fittrack/core"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: packages/core
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/core
+
+  test-identity:
+    name: "Test @fittrack/identity"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm ci --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install identity dependencies
+        run: npm ci --ignore-scripts
+        working-directory: packages/identity
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/identity
+
+  typecheck-core:
+    name: "Typecheck @fittrack/core"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: packages/core
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/core
+
+  typecheck-identity:
+    name: "Typecheck @fittrack/identity"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm ci --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install identity dependencies
+        run: npm ci --ignore-scripts
+        working-directory: packages/identity
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/identity
