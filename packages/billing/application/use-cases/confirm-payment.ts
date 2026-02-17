@@ -17,6 +17,10 @@ import type { ConfirmPaymentOutputDTO } from '../dtos/confirm-payment-output-dto
  * 2. AccessGrant created with ACTIVE status
  *
  * Per ADR-0017: AccessGrant is created only after Transaction is CONFIRMED.
+ *
+ * TODO: ADR-0047 — This use case modifies Transaction and creates AccessGrant
+ * in the same operation (two aggregate roots). Split into two domain transactions
+ * via PurchaseCompleted event when outbox infrastructure is available.
  */
 export class ConfirmPayment {
   constructor(

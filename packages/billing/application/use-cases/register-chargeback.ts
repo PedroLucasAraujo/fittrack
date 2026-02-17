@@ -15,6 +15,10 @@ import type { RegisterChargebackOutputDTO } from '../dtos/register-chargeback-ou
  *
  * Per ADR-0005 and ADR-0020: chargeback NEVER deletes or modifies any
  * Execution record. It only revokes future access.
+ *
+ * TODO: ADR-0047 — This use case modifies Transaction and AccessGrant
+ * in the same operation (two aggregate roots). Split into two domain transactions
+ * via ChargebackRegistered event when outbox infrastructure is available.
  */
 export class RegisterChargeback {
   constructor(
