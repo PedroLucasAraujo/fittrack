@@ -29,9 +29,7 @@ export class ConfirmPayment {
     private readonly accessGrantRepository: IAccessGrantRepository,
   ) {}
 
-  async execute(
-    dto: ConfirmPaymentInputDTO,
-  ): Promise<DomainResult<ConfirmPaymentOutputDTO>> {
+  async execute(dto: ConfirmPaymentInputDTO): Promise<DomainResult<ConfirmPaymentOutputDTO>> {
     const txIdResult = UniqueEntityId.create(dto.transactionId);
     if (txIdResult.isLeft()) return left(txIdResult.value);
 

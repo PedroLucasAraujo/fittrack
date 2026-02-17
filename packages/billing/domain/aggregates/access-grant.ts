@@ -39,11 +39,7 @@ export interface AccessGrantProps {
  * All foreign keys are bare strings (UUIDv4) per ADR-0047 §5.
  */
 export class AccessGrant extends AggregateRoot<AccessGrantProps> {
-  private constructor(
-    id: string,
-    props: AccessGrantProps,
-    version: number = 0,
-  ) {
+  private constructor(id: string, props: AccessGrantProps, version: number = 0) {
     super(id, props, version);
   }
 
@@ -85,11 +81,7 @@ export class AccessGrant extends AggregateRoot<AccessGrantProps> {
     return right(grant);
   }
 
-  static reconstitute(
-    id: string,
-    props: AccessGrantProps,
-    version: number,
-  ): AccessGrant {
+  static reconstitute(id: string, props: AccessGrantProps, version: number): AccessGrant {
     return new AccessGrant(id, props, version);
   }
 
@@ -99,10 +91,7 @@ export class AccessGrant extends AggregateRoot<AccessGrantProps> {
   suspend(): DomainResult<void> {
     if (this.props.status !== AccessGrantStatus.ACTIVE) {
       return left(
-        new InvalidAccessGrantTransitionError(
-          this.props.status,
-          AccessGrantStatus.SUSPENDED,
-        ),
+        new InvalidAccessGrantTransitionError(this.props.status, AccessGrantStatus.SUSPENDED),
       );
     }
 
@@ -115,10 +104,7 @@ export class AccessGrant extends AggregateRoot<AccessGrantProps> {
   reinstate(): DomainResult<void> {
     if (this.props.status !== AccessGrantStatus.SUSPENDED) {
       return left(
-        new InvalidAccessGrantTransitionError(
-          this.props.status,
-          AccessGrantStatus.ACTIVE,
-        ),
+        new InvalidAccessGrantTransitionError(this.props.status, AccessGrantStatus.ACTIVE),
       );
     }
 
@@ -139,10 +125,7 @@ export class AccessGrant extends AggregateRoot<AccessGrantProps> {
 
     if (!allowed.includes(this.props.status)) {
       return left(
-        new InvalidAccessGrantTransitionError(
-          this.props.status,
-          AccessGrantStatus.REVOKED,
-        ),
+        new InvalidAccessGrantTransitionError(this.props.status, AccessGrantStatus.REVOKED),
       );
     }
 
@@ -156,10 +139,7 @@ export class AccessGrant extends AggregateRoot<AccessGrantProps> {
   expire(): DomainResult<void> {
     if (this.props.status !== AccessGrantStatus.ACTIVE) {
       return left(
-        new InvalidAccessGrantTransitionError(
-          this.props.status,
-          AccessGrantStatus.EXPIRED,
-        ),
+        new InvalidAccessGrantTransitionError(this.props.status, AccessGrantStatus.EXPIRED),
       );
     }
 

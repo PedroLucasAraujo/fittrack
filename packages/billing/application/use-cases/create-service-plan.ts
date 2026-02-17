@@ -8,13 +8,9 @@ import type { CreateServicePlanInputDTO } from '../dtos/create-service-plan-inpu
 import type { CreateServicePlanOutputDTO } from '../dtos/create-service-plan-output-dto.js';
 
 export class CreateServicePlan {
-  constructor(
-    private readonly planRepository: IServicePlanRepository,
-  ) {}
+  constructor(private readonly planRepository: IServicePlanRepository) {}
 
-  async execute(
-    dto: CreateServicePlanInputDTO,
-  ): Promise<DomainResult<CreateServicePlanOutputDTO>> {
+  async execute(dto: CreateServicePlanInputDTO): Promise<DomainResult<CreateServicePlanOutputDTO>> {
     const idResult = UniqueEntityId.create(dto.professionalProfileId);
     if (idResult.isLeft()) return left(idResult.value);
 
@@ -35,7 +31,7 @@ export class CreateServicePlan {
       description: dto.description,
       price: priceResult.value,
       durationDays: dto.durationDays,
-      sessionAllotment: dto.sessionAllotment,
+      sessionAllotment: dto.sessionAllotment ?? null,
       type: dto.type as PlanType,
     });
 

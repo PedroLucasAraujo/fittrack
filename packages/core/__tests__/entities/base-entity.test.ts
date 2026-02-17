@@ -32,12 +32,16 @@ describe('BaseEntity', () => {
 
     it('throws for a UUID with wrong version (v1)', () => {
       // version nibble is not 4
-      expect(() => TestEntity.create('12345678-1234-1234-a234-123456789012', 'Alice')).toThrow(DomainInvariantError);
+      expect(() => TestEntity.create('12345678-1234-1234-a234-123456789012', 'Alice')).toThrow(
+        DomainInvariantError,
+      );
     });
 
     it('throws for a UUID with wrong variant bits', () => {
       // variant nibble must be 8-b; 0 is invalid
-      expect(() => TestEntity.create('12345678-1234-4234-0234-123456789012', 'Alice')).toThrow(DomainInvariantError);
+      expect(() => TestEntity.create('12345678-1234-4234-0234-123456789012', 'Alice')).toThrow(
+        DomainInvariantError,
+      );
     });
   });
 

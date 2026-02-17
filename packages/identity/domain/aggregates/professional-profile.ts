@@ -42,11 +42,7 @@ export interface ProfessionalProfileProps {
  * ADR-0047 §5, aggregates reference each other by ID only.
  */
 export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps> {
-  private constructor(
-    id: string,
-    props: ProfessionalProfileProps,
-    version: number = 0,
-  ) {
+  private constructor(id: string, props: ProfessionalProfileProps, version: number = 0) {
     super(id, props, version);
   }
 
@@ -96,10 +92,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
   approve(): DomainResult<void> {
     if (this.props.status !== ProfessionalProfileStatus.PENDING_APPROVAL) {
       return left(
-        new InvalidProfileTransitionError(
-          this.props.status,
-          ProfessionalProfileStatus.ACTIVE,
-        ),
+        new InvalidProfileTransitionError(this.props.status, ProfessionalProfileStatus.ACTIVE),
       );
     }
 
@@ -111,10 +104,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
   suspend(): DomainResult<void> {
     if (this.props.status !== ProfessionalProfileStatus.ACTIVE) {
       return left(
-        new InvalidProfileTransitionError(
-          this.props.status,
-          ProfessionalProfileStatus.SUSPENDED,
-        ),
+        new InvalidProfileTransitionError(this.props.status, ProfessionalProfileStatus.SUSPENDED),
       );
     }
 
@@ -127,10 +117,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
   reactivate(): DomainResult<void> {
     if (this.props.status !== ProfessionalProfileStatus.SUSPENDED) {
       return left(
-        new InvalidProfileTransitionError(
-          this.props.status,
-          ProfessionalProfileStatus.ACTIVE,
-        ),
+        new InvalidProfileTransitionError(this.props.status, ProfessionalProfileStatus.ACTIVE),
       );
     }
 
@@ -156,10 +143,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
 
     if (!allowed.includes(this.props.status)) {
       return left(
-        new InvalidProfileTransitionError(
-          this.props.status,
-          ProfessionalProfileStatus.BANNED,
-        ),
+        new InvalidProfileTransitionError(this.props.status, ProfessionalProfileStatus.BANNED),
       );
     }
 
@@ -184,10 +168,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
   deactivate(): DomainResult<void> {
     if (this.props.status !== ProfessionalProfileStatus.ACTIVE) {
       return left(
-        new InvalidProfileTransitionError(
-          this.props.status,
-          ProfessionalProfileStatus.DEACTIVATED,
-        ),
+        new InvalidProfileTransitionError(this.props.status, ProfessionalProfileStatus.DEACTIVATED),
       );
     }
 
@@ -207,17 +188,11 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
    * `ban()` (punitive).
    */
   close(reason: string): DomainResult<void> {
-    const allowed = [
-      ProfessionalProfileStatus.ACTIVE,
-      ProfessionalProfileStatus.SUSPENDED,
-    ];
+    const allowed = [ProfessionalProfileStatus.ACTIVE, ProfessionalProfileStatus.SUSPENDED];
 
     if (!allowed.includes(this.props.status)) {
       return left(
-        new InvalidProfileTransitionError(
-          this.props.status,
-          ProfessionalProfileStatus.CLOSED,
-        ),
+        new InvalidProfileTransitionError(this.props.status, ProfessionalProfileStatus.CLOSED),
       );
     }
 
@@ -233,10 +208,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
   escalateToWatchlist(): DomainResult<void> {
     if (this.props.riskStatus !== RiskStatus.NORMAL) {
       return left(
-        new InvalidRiskStatusTransitionError(
-          this.props.riskStatus,
-          RiskStatus.WATCHLIST,
-        ),
+        new InvalidRiskStatusTransitionError(this.props.riskStatus, RiskStatus.WATCHLIST),
       );
     }
 
@@ -247,12 +219,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
   /** NORMAL | WATCHLIST → BANNED. Also bans the profile status. */
   escalateToBanned(reason: string): DomainResult<void> {
     if (this.props.riskStatus === RiskStatus.BANNED) {
-      return left(
-        new InvalidRiskStatusTransitionError(
-          this.props.riskStatus,
-          RiskStatus.BANNED,
-        ),
-      );
+      return left(new InvalidRiskStatusTransitionError(this.props.riskStatus, RiskStatus.BANNED));
     }
 
     // ban() will set riskStatus to BANNED and emit both events
@@ -266,12 +233,7 @@ export class ProfessionalProfile extends AggregateRoot<ProfessionalProfileProps>
    */
   resolveRisk(): DomainResult<void> {
     if (this.props.riskStatus !== RiskStatus.WATCHLIST) {
-      return left(
-        new InvalidRiskStatusTransitionError(
-          this.props.riskStatus,
-          RiskStatus.NORMAL,
-        ),
-      );
+      return left(new InvalidRiskStatusTransitionError(this.props.riskStatus, RiskStatus.NORMAL));
     }
 
     this.props.riskStatus = RiskStatus.NORMAL;

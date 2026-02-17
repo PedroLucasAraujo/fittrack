@@ -1,6 +1,5 @@
 import { generateId, UTCDateTime } from '@fittrack/core';
 import { ProfessionalProfile } from '../../domain/aggregates/professional-profile.js';
-import type { ProfessionalProfileProps } from '../../domain/aggregates/professional-profile.js';
 import { PersonName } from '../../domain/value-objects/person-name.js';
 import { ProfessionalProfileStatus } from '../../domain/enums/professional-profile-status.js';
 import { RiskStatus } from '../../domain/enums/risk-status.js';
@@ -27,16 +26,14 @@ type ProfileOverrides = Partial<{
  * ready for most test scenarios. Uses `reconstitute` to allow setting
  * arbitrary status without going through the state machine.
  */
-export function makeProfessionalProfile(
-  overrides: ProfileOverrides = {},
-): ProfessionalProfile {
+export function makeProfessionalProfile(overrides: ProfileOverrides = {}): ProfessionalProfile {
   const nameResult = PersonName.create('Dr. Smith');
 
   return ProfessionalProfile.reconstitute(
     overrides.id ?? generateId(),
     {
       userId: overrides.userId ?? generateId(),
-      displayName: overrides.displayName ?? nameResult.value as PersonName,
+      displayName: overrides.displayName ?? (nameResult.value as PersonName),
       status: overrides.status ?? ProfessionalProfileStatus.ACTIVE,
       riskStatus: overrides.riskStatus ?? RiskStatus.NORMAL,
       createdAtUtc: UTCDateTime.now(),
@@ -63,7 +60,7 @@ export function makeNewProfessionalProfile(
   const result = ProfessionalProfile.create({
     id: overrides.id ?? generateId(),
     userId: overrides.userId ?? generateId(),
-    displayName: overrides.displayName ?? nameResult.value as PersonName,
+    displayName: overrides.displayName ?? (nameResult.value as PersonName),
   });
 
   if (result.isLeft()) {

@@ -3,10 +3,7 @@ import { generateId, Money } from '@fittrack/core';
 import { ServicePlanStatus } from '../../../domain/enums/service-plan-status.js';
 import { PlanType } from '../../../domain/enums/plan-type.js';
 import { BillingErrorCodes } from '../../../domain/errors/billing-error-codes.js';
-import {
-  makeServicePlan,
-  makeNewServicePlan,
-} from '../../factories/make-service-plan.js';
+import { makeServicePlan, makeNewServicePlan } from '../../factories/make-service-plan.js';
 
 describe('ServicePlan', () => {
   // ── Creation ──────────────────────────────────────────────────────────────
@@ -119,9 +116,7 @@ describe('ServicePlan', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          BillingErrorCodes.INVALID_SERVICE_PLAN_TRANSITION,
-        );
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_SERVICE_PLAN_TRANSITION);
       }
     });
 
@@ -244,9 +239,7 @@ describe('ServicePlan', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          BillingErrorCodes.INVALID_SERVICE_PLAN_TRANSITION,
-        );
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_SERVICE_PLAN_TRANSITION);
       }
     });
 

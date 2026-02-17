@@ -24,15 +24,11 @@ export class PersonName extends ValueObject<PersonNameProps> {
     const trimmed = value.trim();
 
     if (trimmed.length < MIN_LENGTH) {
-      return left(
-        new InvalidPersonNameError(value, `must be at least ${MIN_LENGTH} characters`),
-      );
+      return left(new InvalidPersonNameError(value, `must be at least ${MIN_LENGTH} characters`));
     }
 
     if (trimmed.length > MAX_LENGTH) {
-      return left(
-        new InvalidPersonNameError(value, `must be at most ${MAX_LENGTH} characters`),
-      );
+      return left(new InvalidPersonNameError(value, `must be at most ${MAX_LENGTH} characters`));
     }
 
     return right(new PersonName({ value: trimmed }));

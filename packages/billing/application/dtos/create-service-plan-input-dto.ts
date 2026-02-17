@@ -5,6 +5,6 @@ export interface CreateServicePlanInputDTO {
   priceAmount: number;
   priceCurrency: string;
   durationDays: number;
-  sessionAllotment?: number | null;
+  sessionAllotment?: number | null | undefined;
   type: string;
 }

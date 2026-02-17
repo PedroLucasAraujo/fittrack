@@ -1,0 +1,81 @@
+version: 2
+
+updates:
+  # Root (ESLint, Prettier, Husky, lint-staged)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      root-dev-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+
+  # @fittrack/core
+  - package-ecosystem: "npm"
+    directory: "/packages/core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      core-dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+
+  # @fittrack/identity
+  - package-ecosystem: "npm"
+    directory: "/packages/identity"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      identity-dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+
+  # @fittrack/billing
+  - package-ecosystem: "npm"
+    directory: "/packages/billing"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      billing-dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(ci):"
+    labels:
+      - "ci"

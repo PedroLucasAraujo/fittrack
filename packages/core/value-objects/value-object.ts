@@ -60,12 +60,7 @@ export abstract class ValueObject<T> {
       return a.getTime() === b.getTime();
     }
 
-    if (
-      a === null ||
-      b === null ||
-      typeof a !== 'object' ||
-      typeof b !== 'object'
-    ) {
+    if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') {
       return false;
     }
 

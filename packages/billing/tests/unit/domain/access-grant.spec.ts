@@ -2,10 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { AccessGrantStatus } from '../../../domain/enums/access-grant-status.js';
 import { BillingErrorCodes } from '../../../domain/errors/billing-error-codes.js';
-import {
-  makeAccessGrant,
-  makeNewAccessGrant,
-} from '../../factories/make-access-grant.js';
+import { makeAccessGrant, makeNewAccessGrant } from '../../factories/make-access-grant.js';
 
 describe('AccessGrant', () => {
   // ── Creation ──────────────────────────────────────────────────────────────
@@ -92,9 +89,7 @@ describe('AccessGrant', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          BillingErrorCodes.INVALID_ACCESS_GRANT_TRANSITION,
-        );
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_ACCESS_GRANT_TRANSITION);
       }
     });
 
@@ -176,9 +171,7 @@ describe('AccessGrant', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          BillingErrorCodes.INVALID_ACCESS_GRANT_TRANSITION,
-        );
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_ACCESS_GRANT_TRANSITION);
       }
     });
 

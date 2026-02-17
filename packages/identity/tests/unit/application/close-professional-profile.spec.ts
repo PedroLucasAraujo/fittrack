@@ -40,9 +40,7 @@ describe('CloseProfessionalProfile', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
-      expect(result.value.code).toBe(
-        IdentityErrorCodes.PROFESSIONAL_PROFILE_NOT_FOUND,
-      );
+      expect(result.value.code).toBe(IdentityErrorCodes.PROFESSIONAL_PROFILE_NOT_FOUND);
     }
   });
 
@@ -66,9 +64,7 @@ describe('CloseProfessionalProfile', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
-      expect(result.value.code).toBe(
-        IdentityErrorCodes.INVALID_PROFILE_TRANSITION,
-      );
+      expect(result.value.code).toBe(IdentityErrorCodes.INVALID_PROFILE_TRANSITION);
     }
   });
 

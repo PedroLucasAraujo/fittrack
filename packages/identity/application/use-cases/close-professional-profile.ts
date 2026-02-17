@@ -15,9 +15,7 @@ import type { CloseProfessionalProfileOutputDTO } from '../dtos/close-profession
  * Returns an Output DTO — never exposes the aggregate.
  */
 export class CloseProfessionalProfile {
-  constructor(
-    private readonly profileRepository: IProfessionalProfileRepository,
-  ) {}
+  constructor(private readonly profileRepository: IProfessionalProfileRepository) {}
 
   async execute(
     dto: CloseProfessionalProfileInputDTO,
@@ -27,9 +25,7 @@ export class CloseProfessionalProfile {
 
     const profile = await this.profileRepository.findById(idResult.value);
     if (!profile) {
-      return left(
-        new ProfessionalProfileNotFoundError(dto.professionalProfileId),
-      );
+      return left(new ProfessionalProfileNotFoundError(dto.professionalProfileId));
     }
 
     const result = profile.deactivate();
@@ -37,10 +33,15 @@ export class CloseProfessionalProfile {
 
     await this.profileRepository.save(profile);
 
+    const deactivatedAtUtc = profile.deactivatedAtUtc;
+    /* v8 ignore next 2 */
+    if (!deactivatedAtUtc)
+      throw new Error('Invariant: deactivatedAtUtc must be set after deactivate()');
+
     return right({
       profileId: profile.id,
       status: profile.status,
-      deactivatedAtUtc: profile.deactivatedAtUtc!.toISO(),
+      deactivatedAtUtc: deactivatedAtUtc.toISO(),
     });
   }
 }

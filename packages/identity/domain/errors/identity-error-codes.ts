@@ -16,5 +16,4 @@ export const IdentityErrorCodes = {
   USER_ALREADY_HAS_PROFILE: 'IDENTITY.USER_ALREADY_HAS_PROFILE',
 } as const;
 
-export type IdentityErrorCode =
-  (typeof IdentityErrorCodes)[keyof typeof IdentityErrorCodes];
+export type IdentityErrorCode = (typeof IdentityErrorCodes)[keyof typeof IdentityErrorCodes];

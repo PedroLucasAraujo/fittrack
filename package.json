@@ -1,0 +1,40 @@
+{
+  "name": "@fittrack/root",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint packages/",
+    "lint:fix": "eslint packages/ --fix",
+    "format": "prettier --write \"packages/**/*.ts\"",
+    "format:check": "prettier --check \"packages/**/*.ts\"",
+    "typecheck": "npm run typecheck:core && npm run typecheck:identity && npm run typecheck:billing",
+    "typecheck:core": "cd packages/core && npx tsc --noEmit",
+    "typecheck:identity": "cd packages/identity && npx tsc --noEmit",
+    "typecheck:billing": "cd packages/billing && npx tsc --noEmit",
+    "test": "npm run test:core && npm run test:identity && npm run test:billing",
+    "test:core": "cd packages/core && npx vitest run --coverage",
+    "test:identity": "cd packages/identity && npx vitest run --coverage",
+    "test:billing": "cd packages/billing && npx vitest run --coverage",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "8.24.1",
+    "@typescript-eslint/parser": "8.24.1",
+    "eslint": "9.20.0",
+    "husky": "9.1.7",
+    "lint-staged": "15.4.3",
+    "prettier": "3.5.2",
+    "typescript-eslint": "8.24.1"
+  },
+  "lint-staged": {
+    "packages/**/*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

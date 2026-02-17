@@ -1,5 +1,5 @@
-import { Either } from "./either";
-import { DomainError } from "../errors/domain-error";
+import { Either } from './either';
+import { DomainError } from '../errors/domain-error';
 
 /**
  * Standard return type for domain operations that can fail.

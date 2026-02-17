@@ -3,10 +3,7 @@ import { generateId } from '@fittrack/core';
 import { TransactionStatus } from '../../../domain/enums/transaction-status.js';
 import { BillingErrorCodes } from '../../../domain/errors/billing-error-codes.js';
 import { TransactionNotConfirmedError } from '../../../domain/errors/transaction-not-confirmed-error.js';
-import {
-  makeTransaction,
-  makeNewTransaction,
-} from '../../factories/make-transaction.js';
+import { makeTransaction, makeNewTransaction } from '../../factories/make-transaction.js';
 
 describe('Transaction', () => {
   // ── Creation ──────────────────────────────────────────────────────────────
@@ -74,9 +71,7 @@ describe('Transaction', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          BillingErrorCodes.INVALID_TRANSACTION_TRANSITION,
-        );
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_TRANSACTION_TRANSITION);
       }
     });
 
@@ -166,9 +161,7 @@ describe('Transaction', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          BillingErrorCodes.INVALID_TRANSACTION_TRANSITION,
-        );
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_TRANSACTION_TRANSITION);
       }
     });
 

@@ -6,7 +6,7 @@
  * discriminate via `isLeft()` / `isRight()` or the `_tag` literal type.
  */
 export class Left<L, R> {
-  readonly _tag = "Left";
+  readonly _tag = 'Left';
   readonly value: L;
 
   constructor(value: L) {
@@ -30,7 +30,7 @@ export class Left<L, R> {
  * the `_tag` literal type.
  */
 export class Right<L, R> {
-  readonly _tag = "Right";
+  readonly _tag = 'Right';
   readonly value: R;
 
   constructor(value: R) {

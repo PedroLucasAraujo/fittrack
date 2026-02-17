@@ -10,8 +10,7 @@ interface UniqueEntityIdProps {
 }
 
 /** UUIDv4 regex — version nibble = 4, variant nibble = 8/9/a/b. */
-const UUID_V4_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * A typed wrapper around a UUIDv4 string used as the identity of domain

@@ -39,11 +39,7 @@ export interface TransactionProps {
  * referencing aggregates in Identity and Billing contexts (ADR-0047 §5).
  */
 export class Transaction extends AggregateRoot<TransactionProps> {
-  private constructor(
-    id: string,
-    props: TransactionProps,
-    version: number = 0,
-  ) {
+  private constructor(id: string, props: TransactionProps, version: number = 0) {
     super(id, props, version);
   }
 
@@ -75,11 +71,7 @@ export class Transaction extends AggregateRoot<TransactionProps> {
     return right(transaction);
   }
 
-  static reconstitute(
-    id: string,
-    props: TransactionProps,
-    version: number,
-  ): Transaction {
+  static reconstitute(id: string, props: TransactionProps, version: number): Transaction {
     return new Transaction(id, props, version);
   }
 
@@ -89,10 +81,7 @@ export class Transaction extends AggregateRoot<TransactionProps> {
   confirm(gatewayTransactionId: string): DomainResult<void> {
     if (this.props.status !== TransactionStatus.PENDING) {
       return left(
-        new InvalidTransactionTransitionError(
-          this.props.status,
-          TransactionStatus.CONFIRMED,
-        ),
+        new InvalidTransactionTransitionError(this.props.status, TransactionStatus.CONFIRMED),
       );
     }
 
@@ -106,10 +95,7 @@ export class Transaction extends AggregateRoot<TransactionProps> {
   fail(): DomainResult<void> {
     if (this.props.status !== TransactionStatus.PENDING) {
       return left(
-        new InvalidTransactionTransitionError(
-          this.props.status,
-          TransactionStatus.FAILED,
-        ),
+        new InvalidTransactionTransitionError(this.props.status, TransactionStatus.FAILED),
       );
     }
 
@@ -128,10 +114,7 @@ export class Transaction extends AggregateRoot<TransactionProps> {
 
     if (!allowed.includes(this.props.status)) {
       return left(
-        new InvalidTransactionTransitionError(
-          this.props.status,
-          TransactionStatus.CHARGEBACK,
-        ),
+        new InvalidTransactionTransitionError(this.props.status, TransactionStatus.CHARGEBACK),
       );
     }
 
@@ -144,10 +127,7 @@ export class Transaction extends AggregateRoot<TransactionProps> {
   refund(): DomainResult<void> {
     if (this.props.status !== TransactionStatus.CONFIRMED) {
       return left(
-        new InvalidTransactionTransitionError(
-          this.props.status,
-          TransactionStatus.REFUNDED,
-        ),
+        new InvalidTransactionTransitionError(this.props.status, TransactionStatus.REFUNDED),
       );
     }
 

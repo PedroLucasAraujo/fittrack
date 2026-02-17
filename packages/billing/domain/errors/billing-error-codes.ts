@@ -17,5 +17,4 @@ export const BillingErrorCodes = {
   ACCESS_GRANT_NOT_FOUND: 'BILLING.ACCESS_GRANT_NOT_FOUND',
 } as const;
 
-export type BillingErrorCode =
-  (typeof BillingErrorCodes)[keyof typeof BillingErrorCodes];
+export type BillingErrorCode = (typeof BillingErrorCodes)[keyof typeof BillingErrorCodes];

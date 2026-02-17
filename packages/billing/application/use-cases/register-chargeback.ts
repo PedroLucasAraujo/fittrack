@@ -52,12 +52,16 @@ export class RegisterChargeback {
     await this.transactionRepository.save(transaction);
     await this.accessGrantRepository.save(grant);
 
+    const revokedAtUtc = grant.revokedAtUtc;
+    /* v8 ignore next */
+    if (!revokedAtUtc) throw new Error('Invariant: revokedAtUtc must be set after revoke()');
+
     return right({
       transactionId: transaction.id,
       transactionStatus: transaction.status,
       accessGrantId: grant.id,
       accessGrantStatus: grant.status,
-      revokedAtUtc: grant.revokedAtUtc!.toISO(),
+      revokedAtUtc: revokedAtUtc.toISO(),
     });
   }
 }

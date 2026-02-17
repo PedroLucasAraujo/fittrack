@@ -4,10 +4,6 @@ import { BillingErrorCodes } from './billing-error-codes.js';
 
 export class InvalidPlatformFeeError extends DomainError {
   constructor(reason: string, context?: Record<string, unknown>) {
-    super(
-      reason,
-      BillingErrorCodes.INVALID_PLATFORM_FEE as ErrorCode,
-      context,
-    );
+    super(reason, BillingErrorCodes.INVALID_PLATFORM_FEE as ErrorCode, context);
   }
 }

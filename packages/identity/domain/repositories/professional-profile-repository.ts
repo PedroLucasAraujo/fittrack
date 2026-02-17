@@ -7,7 +7,6 @@ import type { ProfessionalProfile } from '../aggregates/professional-profile.js'
  * Implementations live in the infrastructure layer and use Prisma.
  * The domain layer only depends on this interface.
  */
-export interface IProfessionalProfileRepository
-  extends IRepository<ProfessionalProfile> {
+export interface IProfessionalProfileRepository extends IRepository<ProfessionalProfile> {
   findByUserId(userId: string): Promise<ProfessionalProfile | null>;
 }
