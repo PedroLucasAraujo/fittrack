@@ -35,8 +35,7 @@ export class CloseProfessionalProfile {
 
     const deactivatedAtUtc = profile.deactivatedAtUtc;
     /* v8 ignore next */
-    if (!deactivatedAtUtc)
-      throw new Error('Invariant: deactivatedAtUtc must be set after deactivate()');
+    if (!deactivatedAtUtc) throw new Error('Invariant: deactivatedAtUtc must be set after deactivate()');
 
     return right({
       profileId: profile.id,
