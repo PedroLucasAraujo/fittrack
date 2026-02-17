@@ -47,9 +47,7 @@ describe('ActivateServicePlan', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
-      expect(result.value.code).toBe(
-        BillingErrorCodes.INVALID_SERVICE_PLAN_TRANSITION,
-      );
+      expect(result.value.code).toBe(BillingErrorCodes.INVALID_SERVICE_PLAN_TRANSITION);
     }
   });
 

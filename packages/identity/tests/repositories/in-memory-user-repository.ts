@@ -16,9 +16,7 @@ export class InMemoryUserRepository implements IUserRepository {
   }
 
   async findByEmail(email: Email): Promise<User | null> {
-    return (
-      this.items.find((u) => u.email.equals(email)) ?? null
-    );
+    return this.items.find((u) => u.email.equals(email)) ?? null;
   }
 
   async save(entity: User): Promise<void> {

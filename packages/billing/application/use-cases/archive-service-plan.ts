@@ -6,9 +6,7 @@ import type { ArchiveServicePlanInputDTO } from '../dtos/archive-service-plan-in
 import type { ArchiveServicePlanOutputDTO } from '../dtos/archive-service-plan-output-dto.js';
 
 export class ArchiveServicePlan {
-  constructor(
-    private readonly planRepository: IServicePlanRepository,
-  ) {}
+  constructor(private readonly planRepository: IServicePlanRepository) {}
 
   async execute(
     dto: ArchiveServicePlanInputDTO,
@@ -26,10 +24,14 @@ export class ArchiveServicePlan {
 
     await this.planRepository.save(plan);
 
+    const archivedAtUtc = plan.archivedAtUtc;
+    /* v8 ignore next */
+    if (!archivedAtUtc) throw new Error('Invariant: archivedAtUtc must be set after archive()');
+
     return right({
       planId: plan.id,
       status: plan.status,
-      archivedAtUtc: plan.archivedAtUtc!.toISO(),
+      archivedAtUtc: archivedAtUtc.toISO(),
     });
   }
 }

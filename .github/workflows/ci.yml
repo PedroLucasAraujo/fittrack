@@ -11,6 +11,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-and-format:
+    name: "Lint & Format"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install root dependencies
+        run: npm install --ignore-scripts
+
+      - name: Check formatting
+        run: npx prettier --check "packages/**/*.ts"
+
+      - name: Lint
+        run: npx eslint packages/
+
   test-core:
     name: "Test @fittrack/core"
     runs-on: ubuntu-latest

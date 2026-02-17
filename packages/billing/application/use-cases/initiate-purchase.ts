@@ -21,9 +21,7 @@ export class InitiatePurchase {
     private readonly transactionRepository: ITransactionRepository,
   ) {}
 
-  async execute(
-    dto: InitiatePurchaseInputDTO,
-  ): Promise<DomainResult<InitiatePurchaseOutputDTO>> {
+  async execute(dto: InitiatePurchaseInputDTO): Promise<DomainResult<InitiatePurchaseOutputDTO>> {
     const clientIdResult = UniqueEntityId.create(dto.clientId);
     if (clientIdResult.isLeft()) return left(clientIdResult.value);
 

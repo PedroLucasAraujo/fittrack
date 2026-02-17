@@ -1,5 +1,5 @@
-import { DomainInvariantError } from "../errors/domain-invariant-error";
-import type { ErrorCode } from "../errors/error-codes";
+import { DomainInvariantError } from '../errors/domain-invariant-error';
+import type { ErrorCode } from '../errors/error-codes';
 
 /**
  * Asserts a domain invariant inside an aggregate root's domain methods.

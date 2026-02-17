@@ -15,9 +15,7 @@ import type { BanProfessionalProfileOutputDTO } from '../dtos/ban-professional-p
  * Returns an Output DTO — never exposes the aggregate.
  */
 export class BanProfessionalProfile {
-  constructor(
-    private readonly profileRepository: IProfessionalProfileRepository,
-  ) {}
+  constructor(private readonly profileRepository: IProfessionalProfileRepository) {}
 
   async execute(
     dto: BanProfessionalProfileInputDTO,
@@ -27,9 +25,7 @@ export class BanProfessionalProfile {
 
     const profile = await this.profileRepository.findById(idResult.value);
     if (!profile) {
-      return left(
-        new ProfessionalProfileNotFoundError(dto.professionalProfileId),
-      );
+      return left(new ProfessionalProfileNotFoundError(dto.professionalProfileId));
     }
 
     const banResult = profile.ban(dto.reason);
@@ -37,11 +33,15 @@ export class BanProfessionalProfile {
 
     await this.profileRepository.save(profile);
 
+    const bannedAtUtc = profile.bannedAtUtc;
+    /* v8 ignore next */
+    if (!bannedAtUtc) throw new Error('Invariant: bannedAtUtc must be set after ban()');
+
     return right({
       profileId: profile.id,
       status: profile.status,
       riskStatus: profile.riskStatus,
-      bannedAtUtc: profile.bannedAtUtc!.toISO(),
+      bannedAtUtc: bannedAtUtc.toISO(),
     });
   }
 }

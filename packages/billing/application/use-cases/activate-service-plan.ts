@@ -6,9 +6,7 @@ import type { ActivateServicePlanInputDTO } from '../dtos/activate-service-plan-
 import type { ActivateServicePlanOutputDTO } from '../dtos/activate-service-plan-output-dto.js';
 
 export class ActivateServicePlan {
-  constructor(
-    private readonly planRepository: IServicePlanRepository,
-  ) {}
+  constructor(private readonly planRepository: IServicePlanRepository) {}
 
   async execute(
     dto: ActivateServicePlanInputDTO,
@@ -26,10 +24,14 @@ export class ActivateServicePlan {
 
     await this.planRepository.save(plan);
 
+    const activatedAtUtc = plan.activatedAtUtc;
+    /* v8 ignore next */
+    if (!activatedAtUtc) throw new Error('Invariant: activatedAtUtc must be set after activate()');
+
     return right({
       planId: plan.id,
       status: plan.status,
-      activatedAtUtc: plan.activatedAtUtc!.toISO(),
+      activatedAtUtc: activatedAtUtc.toISO(),
     });
   }
 }

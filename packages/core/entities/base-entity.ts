@@ -6,8 +6,7 @@ import { ErrorCodes } from '../errors/error-codes';
  * Used to enforce ADR-0047 §6: "All aggregate roots use UUIDv4 as their
  * primary identifier. IDs are assigned at creation and are immutable."
  */
-const UUID_V4_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * Base class for all domain entities.

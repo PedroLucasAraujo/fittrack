@@ -1,6 +1,5 @@
 import { generateId, UTCDateTime, Money } from '@fittrack/core';
 import { Transaction } from '../../domain/aggregates/transaction.js';
-import type { TransactionProps } from '../../domain/aggregates/transaction.js';
 import { TransactionStatus } from '../../domain/enums/transaction-status.js';
 import { PlatformFee } from '../../domain/value-objects/platform-fee.js';
 
@@ -32,9 +31,7 @@ function defaultPlatformFee(): PlatformFee {
  * By default creates a PENDING transaction. Uses `reconstitute` to allow
  * setting arbitrary status.
  */
-export function makeTransaction(
-  overrides: TransactionOverrides = {},
-): Transaction {
+export function makeTransaction(overrides: TransactionOverrides = {}): Transaction {
   const amount = overrides.amount ?? (Money.create(9990, 'BRL').value as Money);
 
   return Transaction.reconstitute(
@@ -74,7 +71,7 @@ export function makeNewTransaction(
   const platformFee = overrides.platformFee ?? defaultPlatformFee();
 
   const result = Transaction.create({
-    id: overrides.id,
+    ...(overrides.id !== undefined ? { id: overrides.id } : {}),
     clientId: overrides.clientId ?? generateId(),
     professionalProfileId: overrides.professionalProfileId ?? generateId(),
     servicePlanId: overrides.servicePlanId ?? generateId(),

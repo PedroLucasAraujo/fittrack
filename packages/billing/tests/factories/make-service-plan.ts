@@ -1,6 +1,5 @@
 import { generateId, UTCDateTime, Money } from '@fittrack/core';
 import { ServicePlan } from '../../domain/aggregates/service-plan.js';
-import type { ServicePlanProps } from '../../domain/aggregates/service-plan.js';
 import { ServicePlanStatus } from '../../domain/enums/service-plan-status.js';
 import { PlanType } from '../../domain/enums/plan-type.js';
 
@@ -25,9 +24,7 @@ type ServicePlanOverrides = Partial<{
  * By default creates a plan in ACTIVE status, ready for most test scenarios.
  * Uses `reconstitute` to allow setting arbitrary status.
  */
-export function makeServicePlan(
-  overrides: ServicePlanOverrides = {},
-): ServicePlan {
+export function makeServicePlan(overrides: ServicePlanOverrides = {}): ServicePlan {
   const priceResult = Money.create(9990, 'BRL');
 
   return ServicePlan.reconstitute(
@@ -67,7 +64,7 @@ export function makeNewServicePlan(
   const priceResult = Money.create(9990, 'BRL');
 
   const result = ServicePlan.create({
-    id: overrides.id,
+    ...(overrides.id !== undefined ? { id: overrides.id } : {}),
     professionalProfileId: overrides.professionalProfileId ?? generateId(),
     name: overrides.name ?? 'Monthly Training Plan',
     description: overrides.description ?? 'Complete fitness training plan',

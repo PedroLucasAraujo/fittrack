@@ -35,7 +35,10 @@ describe('DomainInvariantError', () => {
   });
 
   it('sets context when provided', () => {
-    const err = new DomainInvariantError('msg', ErrorCodes.INVALID_UUID, { field: 'id', received: 'bad' });
+    const err = new DomainInvariantError('msg', ErrorCodes.INVALID_UUID, {
+      field: 'id',
+      received: 'bad',
+    });
     expect(err.context).toEqual({ field: 'id', received: 'bad' });
   });
 

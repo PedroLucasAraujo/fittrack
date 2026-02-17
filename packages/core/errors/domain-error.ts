@@ -18,13 +18,9 @@ import type { ErrorCode } from './error-codes';
  */
 export abstract class DomainError extends Error {
   readonly code: ErrorCode;
-  readonly context?: Readonly<Record<string, unknown>>;
+  readonly context?: Readonly<Record<string, unknown>> | undefined;
 
-  protected constructor(
-    message: string,
-    code: ErrorCode,
-    context?: Record<string, unknown>,
-  ) {
+  protected constructor(message: string, code: ErrorCode, context?: Record<string, unknown>) {
     super(message);
 
     // Restore the prototype chain so that `instanceof DomainError` (and its

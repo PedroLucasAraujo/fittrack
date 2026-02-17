@@ -1,6 +1,5 @@
 import { generateId, UTCDateTime } from '@fittrack/core';
 import { AccessGrant } from '../../domain/aggregates/access-grant.js';
-import type { AccessGrantProps } from '../../domain/aggregates/access-grant.js';
 import { AccessGrantStatus } from '../../domain/enums/access-grant-status.js';
 
 type AccessGrantOverrides = Partial<{
@@ -26,9 +25,7 @@ type AccessGrantOverrides = Partial<{
  * By default creates an ACTIVE grant with 12 session allotment.
  * Uses `reconstitute` to allow setting arbitrary status.
  */
-export function makeAccessGrant(
-  overrides: AccessGrantOverrides = {},
-): AccessGrant {
+export function makeAccessGrant(overrides: AccessGrantOverrides = {}): AccessGrant {
   return AccessGrant.reconstitute(
     overrides.id ?? generateId(),
     {
@@ -66,7 +63,7 @@ export function makeNewAccessGrant(
   }> = {},
 ): AccessGrant {
   const result = AccessGrant.create({
-    id: overrides.id,
+    ...(overrides.id !== undefined ? { id: overrides.id } : {}),
     clientId: overrides.clientId ?? generateId(),
     professionalProfileId: overrides.professionalProfileId ?? generateId(),
     servicePlanId: overrides.servicePlanId ?? generateId(),

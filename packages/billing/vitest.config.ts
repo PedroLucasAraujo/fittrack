@@ -13,10 +13,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
-      include: [
-        'domain/**/*.ts',
-        'application/**/*.ts',
-      ],
+      include: ['domain/**/*.ts', 'application/**/*.ts'],
       exclude: [
         '**/tests/**',
         'vitest.config.ts',

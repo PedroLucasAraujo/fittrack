@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { UniqueEntityId } from '../../entities/unique-entity-id.js';
 
-const UUID_V4_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const VALID_UUID = '12345678-1234-4234-a234-123456789012';
 

@@ -73,9 +73,7 @@ describe('RegisterChargeback', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
-      expect(result.value.code).toBe(
-        BillingErrorCodes.INVALID_TRANSACTION_TRANSITION,
-      );
+      expect(result.value.code).toBe(BillingErrorCodes.INVALID_TRANSACTION_TRANSITION);
     }
   });
 

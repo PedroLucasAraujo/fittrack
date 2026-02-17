@@ -36,11 +36,7 @@ export interface ServicePlanProps {
  * ProfessionalProfile aggregate in the Identity context (ADR-0047 §5).
  */
 export class ServicePlan extends AggregateRoot<ServicePlanProps> {
-  private constructor(
-    id: string,
-    props: ServicePlanProps,
-    version: number = 0,
-  ) {
+  private constructor(id: string, props: ServicePlanProps, version: number = 0) {
     super(id, props, version);
   }
 
@@ -111,11 +107,7 @@ export class ServicePlan extends AggregateRoot<ServicePlanProps> {
     return right(plan);
   }
 
-  static reconstitute(
-    id: string,
-    props: ServicePlanProps,
-    version: number,
-  ): ServicePlan {
+  static reconstitute(id: string, props: ServicePlanProps, version: number): ServicePlan {
     return new ServicePlan(id, props, version);
   }
 
@@ -125,10 +117,7 @@ export class ServicePlan extends AggregateRoot<ServicePlanProps> {
   activate(): DomainResult<void> {
     if (this.props.status !== ServicePlanStatus.DRAFT) {
       return left(
-        new InvalidServicePlanTransitionError(
-          this.props.status,
-          ServicePlanStatus.ACTIVE,
-        ),
+        new InvalidServicePlanTransitionError(this.props.status, ServicePlanStatus.ACTIVE),
       );
     }
 
@@ -141,10 +130,7 @@ export class ServicePlan extends AggregateRoot<ServicePlanProps> {
   pause(): DomainResult<void> {
     if (this.props.status !== ServicePlanStatus.ACTIVE) {
       return left(
-        new InvalidServicePlanTransitionError(
-          this.props.status,
-          ServicePlanStatus.PAUSED,
-        ),
+        new InvalidServicePlanTransitionError(this.props.status, ServicePlanStatus.PAUSED),
       );
     }
 
@@ -156,10 +142,7 @@ export class ServicePlan extends AggregateRoot<ServicePlanProps> {
   resume(): DomainResult<void> {
     if (this.props.status !== ServicePlanStatus.PAUSED) {
       return left(
-        new InvalidServicePlanTransitionError(
-          this.props.status,
-          ServicePlanStatus.ACTIVE,
-        ),
+        new InvalidServicePlanTransitionError(this.props.status, ServicePlanStatus.ACTIVE),
       );
     }
 
@@ -173,10 +156,7 @@ export class ServicePlan extends AggregateRoot<ServicePlanProps> {
 
     if (!allowed.includes(this.props.status)) {
       return left(
-        new InvalidServicePlanTransitionError(
-          this.props.status,
-          ServicePlanStatus.ARCHIVED,
-        ),
+        new InvalidServicePlanTransitionError(this.props.status, ServicePlanStatus.ARCHIVED),
       );
     }
 

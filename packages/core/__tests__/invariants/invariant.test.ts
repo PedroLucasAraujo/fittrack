@@ -15,9 +15,9 @@ describe('invariant()', () => {
   });
 
   it('thrown error carries the provided message', () => {
-    expect(() =>
-      invariant(false, 'custom message', ErrorCodes.INVALID_UUID),
-    ).toThrow('custom message');
+    expect(() => invariant(false, 'custom message', ErrorCodes.INVALID_UUID)).toThrow(
+      'custom message',
+    );
   });
 
   it('thrown error carries the provided error code', () => {

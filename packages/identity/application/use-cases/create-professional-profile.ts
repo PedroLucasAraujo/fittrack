@@ -37,9 +37,7 @@ export class CreateProfessionalProfile {
       return left(new UserNotFoundError(dto.userId));
     }
 
-    const existingProfile = await this.profileRepository.findByUserId(
-      dto.userId,
-    );
+    const existingProfile = await this.profileRepository.findByUserId(dto.userId);
     if (existingProfile) {
       return left(new UserAlreadyHasProfileError(dto.userId));
     }

@@ -21,11 +21,7 @@ describe('ConfirmPayment', () => {
     transactionRepository = new InMemoryTransactionRepository();
     planRepository = new InMemoryServicePlanRepository();
     accessGrantRepository = new InMemoryAccessGrantRepository();
-    sut = new ConfirmPayment(
-      transactionRepository,
-      planRepository,
-      accessGrantRepository,
-    );
+    sut = new ConfirmPayment(transactionRepository, planRepository, accessGrantRepository);
   });
 
   it('confirms payment and creates AccessGrant', async () => {
@@ -73,7 +69,7 @@ describe('ConfirmPayment', () => {
     });
 
     expect(accessGrantRepository.items).toHaveLength(1);
-    const grant = accessGrantRepository.items[0];
+    const grant = accessGrantRepository.items[0]!;
     expect(grant.transactionId).toBe(tx.id);
     expect(grant.clientId).toBe(tx.clientId);
     expect(grant.servicePlanId).toBe(plan.id);
@@ -156,9 +152,7 @@ describe('ConfirmPayment', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
-      expect(result.value.code).toBe(
-        BillingErrorCodes.INVALID_TRANSACTION_TRANSITION,
-      );
+      expect(result.value.code).toBe(BillingErrorCodes.INVALID_TRANSACTION_TRANSITION);
     }
   });
 

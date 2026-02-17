@@ -136,7 +136,7 @@ describe('WatchedList', () => {
   describe('compound scenario', () => {
     it('add, remove, re-add across multiple items tracks correctly', () => {
       const list = ItemList.create([a, b]);
-      list.add(c);    // new
+      list.add(c); // new
       list.remove(a); // initial → removed
       list.remove(c); // new → cancelled
 

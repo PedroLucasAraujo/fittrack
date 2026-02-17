@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { generateId } from '@fittrack/core';
-import { ProfessionalProfile } from '../../../domain/aggregates/professional-profile.js';
 import { ProfessionalProfileStatus } from '../../../domain/enums/professional-profile-status.js';
 import { RiskStatus } from '../../../domain/enums/risk-status.js';
 import { PersonName } from '../../../domain/value-objects/person-name.js';
@@ -82,9 +81,7 @@ describe('ProfessionalProfile', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          IdentityErrorCodes.INVALID_PROFILE_TRANSITION,
-        );
+        expect(result.value.code).toBe(IdentityErrorCodes.INVALID_PROFILE_TRANSITION);
       }
     });
 
@@ -271,9 +268,7 @@ describe('ProfessionalProfile', () => {
       const result = profile.ban('Double ban');
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          IdentityErrorCodes.INVALID_PROFILE_TRANSITION,
-        );
+        expect(result.value.code).toBe(IdentityErrorCodes.INVALID_PROFILE_TRANSITION);
       }
     });
 
@@ -418,9 +413,7 @@ describe('ProfessionalProfile', () => {
       const result = profile.close('Double close');
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          IdentityErrorCodes.INVALID_PROFILE_TRANSITION,
-        );
+        expect(result.value.code).toBe(IdentityErrorCodes.INVALID_PROFILE_TRANSITION);
       }
     });
   });
@@ -454,9 +447,7 @@ describe('ProfessionalProfile', () => {
       const result = profile.escalateToWatchlist();
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          IdentityErrorCodes.INVALID_RISK_STATUS_TRANSITION,
-        );
+        expect(result.value.code).toBe(IdentityErrorCodes.INVALID_RISK_STATUS_TRANSITION);
       }
     });
 
@@ -507,9 +498,7 @@ describe('ProfessionalProfile', () => {
       const result = profile.escalateToBanned('Re-ban');
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(
-          IdentityErrorCodes.INVALID_RISK_STATUS_TRANSITION,
-        );
+        expect(result.value.code).toBe(IdentityErrorCodes.INVALID_RISK_STATUS_TRANSITION);
       }
     });
   });

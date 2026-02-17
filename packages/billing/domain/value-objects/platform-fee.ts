@@ -37,10 +37,7 @@ export class PlatformFee extends ValueObject<PlatformFeeProps> {
    * @param totalAmount   - Total transaction amount (Money value object)
    * @param feePercentage - Fee in basis points (0–10000 inclusive). Must be a non-negative integer.
    */
-  static create(
-    totalAmount: Money,
-    feePercentage: number,
-  ): DomainResult<PlatformFee> {
+  static create(totalAmount: Money, feePercentage: number): DomainResult<PlatformFee> {
     if (!Number.isInteger(feePercentage)) {
       return left(
         new InvalidPlatformFeeError(
@@ -59,19 +56,14 @@ export class PlatformFee extends ValueObject<PlatformFeeProps> {
       );
     }
 
-    const platformCents = Math.floor(
-      (totalAmount.amount * feePercentage) / 10000,
-    );
+    const platformCents = Math.floor((totalAmount.amount * feePercentage) / 10000);
     const professionalCents = totalAmount.amount - platformCents;
 
     const platformMoneyResult = Money.create(platformCents, totalAmount.currency);
     /* v8 ignore next */
     if (platformMoneyResult.isLeft()) return left(platformMoneyResult.value);
 
-    const professionalMoneyResult = Money.create(
-      professionalCents,
-      totalAmount.currency,
-    );
+    const professionalMoneyResult = Money.create(professionalCents, totalAmount.currency);
     /* v8 ignore next */
     if (professionalMoneyResult.isLeft()) return left(professionalMoneyResult.value);
 

@@ -5,7 +5,10 @@
       "Bash(npx vitest run)",
       "Bash(npx vitest:*)",
       "Bash(del \"c:\\\\Users\\\\User\\\\Desktop\\\\Área de Trabalho\\\\Saas\\\\fittrack\\\\packages\\\\identity\\\\domain\\\\events\\\\user-created.ts\")",
-      "Bash(del \"c:\\\\Users\\\\User\\\\Desktop\\\\Área de Trabalho\\\\Saas\\\\fittrack\\\\packages\\\\identity\\\\domain\\\\events\\\\professional-profile-created.ts\")"
+      "Bash(del \"c:\\\\Users\\\\User\\\\Desktop\\\\Área de Trabalho\\\\Saas\\\\fittrack\\\\packages\\\\identity\\\\domain\\\\events\\\\professional-profile-created.ts\")",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)"
     ]
   }
 }

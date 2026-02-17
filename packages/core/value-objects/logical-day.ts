@@ -62,9 +62,9 @@ export class LogicalDay extends ValueObject<LogicalDayProps> {
       );
     }
 
-    const year = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10);
-    const day = parseInt(match[3], 10);
+    const year = parseInt(match[1]!, 10);
+    const month = parseInt(match[2]!, 10);
+    const day = parseInt(match[3]!, 10);
 
     if (month < 1 || month > 12) {
       return left(
@@ -120,10 +120,7 @@ export class LogicalDay extends ValueObject<LogicalDayProps> {
    * Returns `Left<DomainInvariantError>` for invalid or unrecognised IANA
    * timezone identifiers.
    */
-  static fromDate(
-    occurredAtUtc: Date,
-    timezoneUsed: string,
-  ): DomainResult<LogicalDay> {
+  static fromDate(occurredAtUtc: Date, timezoneUsed: string): DomainResult<LogicalDay> {
     try {
       // en-CA locale produces "YYYY-MM-DD" which matches logicalDay format.
       const formatter = new Intl.DateTimeFormat('en-CA', {

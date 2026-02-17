@@ -17,11 +17,7 @@ import type { ErrorCode } from './error-codes';
  * layer decides how to present the error.
  */
 export class DomainInvariantError extends DomainError {
-  constructor(
-    message: string,
-    code: ErrorCode,
-    context?: Record<string, unknown>,
-  ) {
+  constructor(message: string, code: ErrorCode, context?: Record<string, unknown>) {
     super(message, code, context);
   }
 }

@@ -7,9 +7,7 @@ import type { ProfessionalProfile } from '../../domain/aggregates/professional-p
  *
  * Stores profiles in an array and supports upsert semantics on `save()`.
  */
-export class InMemoryProfessionalProfileRepository
-  implements IProfessionalProfileRepository
-{
+export class InMemoryProfessionalProfileRepository implements IProfessionalProfileRepository {
   items: ProfessionalProfile[] = [];
 
   async findById(id: UniqueEntityId): Promise<ProfessionalProfile | null> {
