@@ -34,8 +34,9 @@ export class CloseProfessionalProfile {
     await this.profileRepository.save(profile);
 
     const deactivatedAtUtc = profile.deactivatedAtUtc;
-    /* v8 ignore next */
-    if (!deactivatedAtUtc) throw new Error('Invariant: deactivatedAtUtc must be set after deactivate()');
+    /* v8 ignore next 2 */
+    if (!deactivatedAtUtc)
+      throw new Error('Invariant: deactivatedAtUtc must be set after deactivate()');
 
     return right({
       profileId: profile.id,
