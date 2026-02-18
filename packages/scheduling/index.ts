@@ -22,6 +22,7 @@ export { BookingNotFoundError } from './domain/errors/booking-not-found-error.js
 export { DoubleBookingError } from './domain/errors/double-booking-error.js';
 export { OperationalLimitExceededError } from './domain/errors/operational-limit-exceeded-error.js';
 export { ProfessionalBannedError } from './domain/errors/professional-banned-error.js';
+export { AccessGrantInvalidError } from './domain/errors/access-grant-invalid-error.js';
 export { RecurringScheduleNotFoundError } from './domain/errors/recurring-schedule-not-found-error.js';
 export { WorkingAvailabilityNotFoundError } from './domain/errors/working-availability-not-found-error.js';
 
@@ -46,6 +47,7 @@ export type { CreateSessionInputDTO } from './application/dtos/create-session-in
 export type { CreateWorkingAvailabilityInputDTO } from './application/dtos/create-working-availability-input-dto.js';
 export type { UpdateWorkingAvailabilityInputDTO } from './application/dtos/update-working-availability-input-dto.js';
 export type { CreateBookingInputDTO } from './application/dtos/create-booking-input-dto.js';
+export type { AccessGrantValidationDTO } from './application/dtos/access-grant-validation-dto.js';
 export type { CancelBookingInputDTO } from './application/dtos/cancel-booking-input-dto.js';
 export type { CreateRecurringScheduleInputDTO } from './application/dtos/create-recurring-schedule-input-dto.js';
 

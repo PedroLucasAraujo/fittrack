@@ -1,6 +1,7 @@
 import type { UniqueEntityId } from '@fittrack/core';
 import type { IAccessGrantRepository } from '../../domain/repositories/access-grant-repository.js';
 import type { AccessGrant } from '../../domain/aggregates/access-grant.js';
+import { AccessGrantStatus } from '../../domain/enums/access-grant-status.js';
 
 export class InMemoryAccessGrantRepository implements IAccessGrantRepository {
   items: AccessGrant[] = [];
@@ -11,6 +12,22 @@ export class InMemoryAccessGrantRepository implements IAccessGrantRepository {
 
   async findByTransactionId(transactionId: string): Promise<AccessGrant | null> {
     return this.items.find((g) => g.transactionId === transactionId) ?? null;
+  }
+
+  async findActiveByClientAndProfessionalAndPlan(
+    clientId: string,
+    professionalProfileId: string,
+    servicePlanId: string,
+  ): Promise<AccessGrant | null> {
+    return (
+      this.items.find(
+        (g) =>
+          g.clientId === clientId &&
+          g.professionalProfileId === professionalProfileId &&
+          g.servicePlanId === servicePlanId &&
+          g.status === AccessGrantStatus.ACTIVE,
+      ) ?? null
+    );
   }
 
   async save(entity: AccessGrant): Promise<void> {

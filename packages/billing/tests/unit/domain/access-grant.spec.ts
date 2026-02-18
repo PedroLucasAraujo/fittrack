@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { AccessGrantStatus } from '../../../domain/enums/access-grant-status.js';
 import { BillingErrorCodes } from '../../../domain/errors/billing-error-codes.js';
+import { AccessGrantExpiredError } from '../../../domain/errors/access-grant-expired-error.js';
+import { AccessGrantSuspendedError } from '../../../domain/errors/access-grant-suspended-error.js';
+import { AccessGrantRevokedError } from '../../../domain/errors/access-grant-revoked-error.js';
 import { makeAccessGrant, makeNewAccessGrant } from '../../factories/make-access-grant.js';
 
 describe('AccessGrant', () => {
@@ -215,6 +218,79 @@ describe('AccessGrant', () => {
     });
   });
 
+  // ── ConsumeSession (ADR-0046 §4) ──────────────────────────────────────
+
+  describe('consumeSession()', () => {
+    it('increments sessionsConsumed by 1 when ACTIVE', () => {
+      const grant = makeAccessGrant({ status: AccessGrantStatus.ACTIVE, sessionsConsumed: 0 });
+
+      const result = grant.consumeSession();
+
+      expect(result.isRight()).toBe(true);
+      expect(grant.sessionsConsumed).toBe(1);
+      expect(grant.status).toBe(AccessGrantStatus.ACTIVE);
+    });
+
+    it('auto-expires when sessionAllotment is reached', () => {
+      const grant = makeAccessGrant({
+        status: AccessGrantStatus.ACTIVE,
+        sessionAllotment: 3,
+        sessionsConsumed: 2,
+      });
+
+      const result = grant.consumeSession();
+
+      expect(result.isRight()).toBe(true);
+      expect(grant.sessionsConsumed).toBe(3);
+      expect(grant.status).toBe(AccessGrantStatus.EXPIRED);
+    });
+
+    it('does not auto-expire when allotment not yet reached', () => {
+      const grant = makeAccessGrant({
+        status: AccessGrantStatus.ACTIVE,
+        sessionAllotment: 5,
+        sessionsConsumed: 3,
+      });
+
+      grant.consumeSession();
+
+      expect(grant.status).toBe(AccessGrantStatus.ACTIVE);
+    });
+
+    it('does not auto-expire when sessionAllotment is null (unlimited)', () => {
+      const grant = makeAccessGrant({
+        status: AccessGrantStatus.ACTIVE,
+        sessionAllotment: null,
+        sessionsConsumed: 999,
+      });
+
+      grant.consumeSession();
+
+      expect(grant.status).toBe(AccessGrantStatus.ACTIVE);
+    });
+
+    it('rejects when SUSPENDED', () => {
+      const grant = makeAccessGrant({ status: AccessGrantStatus.SUSPENDED });
+
+      const result = grant.consumeSession();
+
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) {
+        expect(result.value.code).toBe(BillingErrorCodes.INVALID_ACCESS_GRANT_TRANSITION);
+      }
+    });
+
+    it('rejects when EXPIRED (terminal)', () => {
+      const grant = makeAccessGrant({ status: AccessGrantStatus.EXPIRED });
+      expect(grant.consumeSession().isLeft()).toBe(true);
+    });
+
+    it('rejects when REVOKED (terminal)', () => {
+      const grant = makeAccessGrant({ status: AccessGrantStatus.REVOKED });
+      expect(grant.consumeSession().isLeft()).toBe(true);
+    });
+  });
+
   // ── Query methods ──────────────────────────────────────────────────────
 
   describe('isValid()', () => {
@@ -297,5 +373,34 @@ describe('AccessGrant', () => {
       expect(grant.validFrom).toBeDefined();
       expect(grant.createdAtUtc).toBeDefined();
     });
+  });
+});
+
+// ── AccessGrant state error classes (ADR-0046 §3) ─────────────────────────────
+
+describe('AccessGrantExpiredError', () => {
+  it('has the correct error code and message', () => {
+    const id = generateId();
+    const err = new AccessGrantExpiredError(id);
+    expect(err.code).toBe(BillingErrorCodes.ACCESS_GRANT_EXPIRED);
+    expect(err.message).toContain(id);
+  });
+});
+
+describe('AccessGrantSuspendedError', () => {
+  it('has the correct error code and message', () => {
+    const id = generateId();
+    const err = new AccessGrantSuspendedError(id);
+    expect(err.code).toBe(BillingErrorCodes.ACCESS_GRANT_SUSPENDED);
+    expect(err.message).toContain(id);
+  });
+});
+
+describe('AccessGrantRevokedError', () => {
+  it('has the correct error code and message', () => {
+    const id = generateId();
+    const err = new AccessGrantRevokedError(id);
+    expect(err.code).toBe(BillingErrorCodes.ACCESS_GRANT_REVOKED);
+    expect(err.message).toContain(id);
   });
 });
