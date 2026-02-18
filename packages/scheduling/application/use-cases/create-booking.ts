@@ -11,8 +11,9 @@ import type { ISessionRepository } from '../../domain/repositories/session-repos
 import type { CreateBookingInputDTO } from '../dtos/create-booking-input-dto.js';
 import type { CreateBookingOutputDTO } from '../dtos/create-booking-output-dto.js';
 
-/** Maximum open bookings per client per professional (ADR-0041). */
-const MAX_OPEN_BOOKINGS_PER_CLIENT = 10;
+export interface CreateBookingLimits {
+  maxOpenBookingsPerClient: number;
+}
 
 /**
  * Creates a Booking for a client on a specific session.
@@ -23,7 +24,7 @@ const MAX_OPEN_BOOKINGS_PER_CLIENT = 10;
  * 2. Banned state (ADR-0022): checked via `isBanned` callback.
  * 3. Session must be ACTIVE.
  * 4. Double-booking prevention (ADR-0006): domain layer check.
- * 5. Open booking limit (ADR-0041): max 10 per client.
+ * 5. Open booking limit (ADR-0041): configurable via constructor.
  * 6. Temporal (ADR-0010): logicalDay computed from client's timezone, immutable.
  *
  * Events (BookingConfirmed) are NOT dispatched here — they are dispatched
@@ -33,6 +34,7 @@ export class CreateBooking {
   constructor(
     private readonly bookingRepository: IBookingRepository,
     private readonly sessionRepository: ISessionRepository,
+    private readonly limits: CreateBookingLimits,
   ) {}
 
   async execute(
@@ -77,17 +79,17 @@ export class CreateBooking {
       return left(new DoubleBookingError(dto.sessionId, logicalDayResult.value.value));
     }
 
-    // 5. Open booking limit (ADR-0041)
+    // 5. Open booking limit (ADR-0041) — configurable, not hardcoded
     const openCount = await this.bookingRepository.countOpenByClientId(
       dto.clientId,
       dto.professionalProfileId,
     );
-    if (openCount >= MAX_OPEN_BOOKINGS_PER_CLIENT) {
+    if (openCount >= this.limits.maxOpenBookingsPerClient) {
       return left(
         new OperationalLimitExceededError(
           'MAX_OPEN_BOOKINGS_PER_CLIENT',
           openCount,
-          MAX_OPEN_BOOKINGS_PER_CLIENT,
+          this.limits.maxOpenBookingsPerClient,
         ),
       );
     }

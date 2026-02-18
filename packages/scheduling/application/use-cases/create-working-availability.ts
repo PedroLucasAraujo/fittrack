@@ -3,6 +3,7 @@ import type { DomainResult, DomainError } from '@fittrack/core';
 import { DayOfWeek } from '../../domain/enums/day-of-week.js';
 import { TimeSlot } from '../../domain/value-objects/time-slot.js';
 import { WorkingAvailability } from '../../domain/aggregates/working-availability.js';
+import { ProfessionalBannedError } from '../../domain/errors/professional-banned-error.js';
 import type { IWorkingAvailabilityRepository } from '../../domain/repositories/working-availability-repository.js';
 import type { CreateWorkingAvailabilityInputDTO } from '../dtos/create-working-availability-input-dto.js';
 import type { CreateWorkingAvailabilityOutputDTO } from '../dtos/create-working-availability-output-dto.js';
@@ -13,14 +14,23 @@ import type { ErrorCode } from '@fittrack/core';
 /**
  * Creates a WorkingAvailability for a professional on a specific day of the week.
  *
- * Per ADR-0010 §7: availability windows use the professional's timezone.
+ * ## Enforced invariants
+ *
+ * 1. Banned state (ADR-0022 / ADR-0041 §2): BANNED blocks all new domain entities.
+ * 2. Per ADR-0010 §7: availability windows use the professional's timezone.
  */
 export class CreateWorkingAvailability {
   constructor(private readonly workingAvailabilityRepository: IWorkingAvailabilityRepository) {}
 
   async execute(
     dto: CreateWorkingAvailabilityInputDTO,
+    isBanned: boolean,
   ): Promise<DomainResult<CreateWorkingAvailabilityOutputDTO>> {
+    // 1. Banned state enforcement (ADR-0022 / ADR-0041 §2)
+    if (isBanned) {
+      return left(new ProfessionalBannedError(dto.professionalProfileId));
+    }
+
     // Validate dayOfWeek
     const dayOfWeek = dto.dayOfWeek as DayOfWeek;
     if (!Object.values(DayOfWeek).includes(dayOfWeek)) {

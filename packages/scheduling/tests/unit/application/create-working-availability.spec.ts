@@ -15,15 +15,18 @@ describe('CreateWorkingAvailability', () => {
   });
 
   it('creates working availability with valid slots', async () => {
-    const result = await sut.execute({
-      professionalProfileId: generateId(),
-      dayOfWeek: DayOfWeek.MONDAY,
-      timezoneUsed: 'America/Sao_Paulo',
-      slots: [
-        { startTime: '08:00', endTime: '12:00' },
-        { startTime: '14:00', endTime: '18:00' },
-      ],
-    });
+    const result = await sut.execute(
+      {
+        professionalProfileId: generateId(),
+        dayOfWeek: DayOfWeek.MONDAY,
+        timezoneUsed: 'America/Sao_Paulo',
+        slots: [
+          { startTime: '08:00', endTime: '12:00' },
+          { startTime: '14:00', endTime: '18:00' },
+        ],
+      },
+      false,
+    );
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -33,24 +36,48 @@ describe('CreateWorkingAvailability', () => {
     expect(repository.items).toHaveLength(1);
   });
 
+  it('blocks creation when professional is banned (ADR-0022)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId: generateId(),
+        dayOfWeek: DayOfWeek.MONDAY,
+        timezoneUsed: 'America/Sao_Paulo',
+        slots: [{ startTime: '08:00', endTime: '12:00' }],
+      },
+      true,
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.PROFESSIONAL_BANNED);
+    }
+    expect(repository.items).toHaveLength(0);
+  });
+
   it('returns error for invalid day of week', async () => {
-    const result = await sut.execute({
-      professionalProfileId: generateId(),
-      dayOfWeek: 99, // invalid
-      timezoneUsed: 'America/Sao_Paulo',
-      slots: [{ startTime: '08:00', endTime: '12:00' }],
-    });
+    const result = await sut.execute(
+      {
+        professionalProfileId: generateId(),
+        dayOfWeek: 99, // invalid
+        timezoneUsed: 'America/Sao_Paulo',
+        slots: [{ startTime: '08:00', endTime: '12:00' }],
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
   });
 
   it('returns error for invalid time slot format', async () => {
-    const result = await sut.execute({
-      professionalProfileId: generateId(),
-      dayOfWeek: DayOfWeek.TUESDAY,
-      timezoneUsed: 'America/Sao_Paulo',
-      slots: [{ startTime: '8:00', endTime: '12:00' }], // invalid format
-    });
+    const result = await sut.execute(
+      {
+        professionalProfileId: generateId(),
+        dayOfWeek: DayOfWeek.TUESDAY,
+        timezoneUsed: 'America/Sao_Paulo',
+        slots: [{ startTime: '8:00', endTime: '12:00' }], // invalid format
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
@@ -59,15 +86,18 @@ describe('CreateWorkingAvailability', () => {
   });
 
   it('returns error for overlapping slots', async () => {
-    const result = await sut.execute({
-      professionalProfileId: generateId(),
-      dayOfWeek: DayOfWeek.WEDNESDAY,
-      timezoneUsed: 'America/Sao_Paulo',
-      slots: [
-        { startTime: '08:00', endTime: '12:00' },
-        { startTime: '11:00', endTime: '15:00' },
-      ],
-    });
+    const result = await sut.execute(
+      {
+        professionalProfileId: generateId(),
+        dayOfWeek: DayOfWeek.WEDNESDAY,
+        timezoneUsed: 'America/Sao_Paulo',
+        slots: [
+          { startTime: '08:00', endTime: '12:00' },
+          { startTime: '11:00', endTime: '15:00' },
+        ],
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
@@ -76,12 +106,15 @@ describe('CreateWorkingAvailability', () => {
   });
 
   it('creates with empty slots', async () => {
-    const result = await sut.execute({
-      professionalProfileId: generateId(),
-      dayOfWeek: DayOfWeek.SUNDAY,
-      timezoneUsed: 'America/Sao_Paulo',
-      slots: [],
-    });
+    const result = await sut.execute(
+      {
+        professionalProfileId: generateId(),
+        dayOfWeek: DayOfWeek.SUNDAY,
+        timezoneUsed: 'America/Sao_Paulo',
+        slots: [],
+      },
+      false,
+    );
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {

@@ -62,5 +62,7 @@ export { CreateSession } from './application/use-cases/create-session.js';
 export { CreateWorkingAvailability } from './application/use-cases/create-working-availability.js';
 export { UpdateWorkingAvailability } from './application/use-cases/update-working-availability.js';
 export { CreateBooking } from './application/use-cases/create-booking.js';
+export type { CreateBookingLimits } from './application/use-cases/create-booking.js';
 export { CancelBooking } from './application/use-cases/cancel-booking.js';
 export { CreateRecurringSchedule } from './application/use-cases/create-recurring-schedule.js';
+export type { CreateRecurringScheduleLimits } from './application/use-cases/create-recurring-schedule.js';

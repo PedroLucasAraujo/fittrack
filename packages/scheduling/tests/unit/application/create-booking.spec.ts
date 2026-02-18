@@ -20,7 +20,9 @@ describe('CreateBooking', () => {
   beforeEach(() => {
     bookingRepository = new InMemoryBookingRepository();
     sessionRepository = new InMemorySessionRepository();
-    sut = new CreateBooking(bookingRepository, sessionRepository);
+    sut = new CreateBooking(bookingRepository, sessionRepository, {
+      maxOpenBookingsPerClient: 10,
+    });
 
     professionalProfileId = generateId();
     session = makeSession({

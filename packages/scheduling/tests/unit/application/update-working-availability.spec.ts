@@ -20,11 +20,14 @@ describe('UpdateWorkingAvailability', () => {
     const availability = makeWorkingAvailability({ professionalProfileId });
     repository.items.push(availability);
 
-    const result = await sut.execute({
-      workingAvailabilityId: availability.id,
-      professionalProfileId,
-      slots: [{ startTime: '10:00', endTime: '14:00' }],
-    });
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: availability.id,
+        professionalProfileId,
+        slots: [{ startTime: '10:00', endTime: '14:00' }],
+      },
+      false,
+    );
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -33,12 +36,34 @@ describe('UpdateWorkingAvailability', () => {
     }
   });
 
+  it('blocks update when professional is banned (ADR-0022)', async () => {
+    const availability = makeWorkingAvailability({ professionalProfileId });
+    repository.items.push(availability);
+
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: availability.id,
+        professionalProfileId,
+        slots: [{ startTime: '10:00', endTime: '14:00' }],
+      },
+      true,
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.PROFESSIONAL_BANNED);
+    }
+  });
+
   it('returns error for invalid UUID', async () => {
-    const result = await sut.execute({
-      workingAvailabilityId: 'not-a-uuid',
-      professionalProfileId,
-      slots: [],
-    });
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: 'not-a-uuid',
+        professionalProfileId,
+        slots: [],
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
@@ -47,11 +72,14 @@ describe('UpdateWorkingAvailability', () => {
   });
 
   it('returns error when not found', async () => {
-    const result = await sut.execute({
-      workingAvailabilityId: generateId(),
-      professionalProfileId,
-      slots: [],
-    });
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: generateId(),
+        professionalProfileId,
+        slots: [],
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
@@ -66,11 +94,14 @@ describe('UpdateWorkingAvailability', () => {
     });
     repository.items.push(availability);
 
-    const result = await sut.execute({
-      workingAvailabilityId: availability.id,
-      professionalProfileId, // different tenant
-      slots: [],
-    });
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: availability.id,
+        professionalProfileId, // different tenant
+        slots: [],
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
@@ -82,11 +113,14 @@ describe('UpdateWorkingAvailability', () => {
     const availability = makeWorkingAvailability({ professionalProfileId });
     repository.items.push(availability);
 
-    const result = await sut.execute({
-      workingAvailabilityId: availability.id,
-      professionalProfileId,
-      slots: [{ startTime: '14:00', endTime: '10:00' }], // start > end
-    });
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: availability.id,
+        professionalProfileId,
+        slots: [{ startTime: '14:00', endTime: '10:00' }], // start > end
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
@@ -98,14 +132,17 @@ describe('UpdateWorkingAvailability', () => {
     const availability = makeWorkingAvailability({ professionalProfileId });
     repository.items.push(availability);
 
-    const result = await sut.execute({
-      workingAvailabilityId: availability.id,
-      professionalProfileId,
-      slots: [
-        { startTime: '08:00', endTime: '12:00' },
-        { startTime: '10:00', endTime: '14:00' },
-      ],
-    });
+    const result = await sut.execute(
+      {
+        workingAvailabilityId: availability.id,
+        professionalProfileId,
+        slots: [
+          { startTime: '08:00', endTime: '12:00' },
+          { startTime: '10:00', endTime: '14:00' },
+        ],
+      },
+      false,
+    );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {

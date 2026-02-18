@@ -19,10 +19,10 @@ import type { ISessionRepository } from '../../domain/repositories/session-repos
 import type { CreateRecurringScheduleInputDTO } from '../dtos/create-recurring-schedule-input-dto.js';
 import type { CreateRecurringScheduleOutputDTO } from '../dtos/create-recurring-schedule-output-dto.js';
 
-/** Maximum recurring sessions per schedule (ADR-0041). */
-const MAX_RECURRING_SESSIONS = 52;
-/** Reduced limit for WATCHLIST professionals (ADR-0022). */
-const WATCHLIST_MAX_RECURRING_SESSIONS = 12;
+export interface CreateRecurringScheduleLimits {
+  maxRecurringSessions: number;
+  watchlistMaxRecurringSessions: number;
+}
 
 /**
  * Creates a RecurringSchedule and generates its recurring sessions.
@@ -33,8 +33,8 @@ const WATCHLIST_MAX_RECURRING_SESSIONS = 12;
  * 2. Banned state (ADR-0022): blocks all creation.
  * 3. Session must be ACTIVE.
  * 4. Recurrence count within hard limits (ADR-0041):
- *    - Normal: max 52 sessions.
- *    - WATCHLIST: max 12 sessions.
+ *    - Normal: configurable max sessions.
+ *    - WATCHLIST: configurable reduced limit.
  * 5. Temporal (ADR-0010): each generated session gets logicalDay from
  *    professional's timezone (recurring schedules use professional's TZ).
  */
@@ -42,6 +42,7 @@ export class CreateRecurringSchedule {
   constructor(
     private readonly recurringScheduleRepository: IRecurringScheduleRepository,
     private readonly sessionRepository: ISessionRepository,
+    private readonly limits: CreateRecurringScheduleLimits,
   ) {}
 
   async execute(
@@ -65,10 +66,10 @@ export class CreateRecurringSchedule {
       );
     }
 
-    // 3. Validate recurrence count (ADR-0041)
+    // 3. Validate recurrence count (ADR-0041) — configurable, not hardcoded
     const maxSessions = riskContext.isWatchlist
-      ? WATCHLIST_MAX_RECURRING_SESSIONS
-      : MAX_RECURRING_SESSIONS;
+      ? this.limits.watchlistMaxRecurringSessions
+      : this.limits.maxRecurringSessions;
 
     if (
       !Number.isInteger(dto.recurrenceCount) ||

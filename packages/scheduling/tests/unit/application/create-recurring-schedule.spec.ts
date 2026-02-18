@@ -19,7 +19,10 @@ describe('CreateRecurringSchedule', () => {
   beforeEach(() => {
     recurringScheduleRepository = new InMemoryRecurringScheduleRepository();
     sessionRepository = new InMemorySessionRepository();
-    sut = new CreateRecurringSchedule(recurringScheduleRepository, sessionRepository);
+    sut = new CreateRecurringSchedule(recurringScheduleRepository, sessionRepository, {
+      maxRecurringSessions: 52,
+      watchlistMaxRecurringSessions: 12,
+    });
 
     professionalProfileId = generateId();
     session = makeSession({
