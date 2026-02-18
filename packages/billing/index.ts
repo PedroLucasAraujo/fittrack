@@ -18,6 +18,9 @@ export { InvalidPlatformFeeError } from './domain/errors/invalid-platform-fee-er
 export { ServicePlanNotFoundError } from './domain/errors/service-plan-not-found-error.js';
 export { TransactionNotFoundError } from './domain/errors/transaction-not-found-error.js';
 export { AccessGrantNotFoundError } from './domain/errors/access-grant-not-found-error.js';
+export { AccessGrantExpiredError } from './domain/errors/access-grant-expired-error.js';
+export { AccessGrantSuspendedError } from './domain/errors/access-grant-suspended-error.js';
+export { AccessGrantRevokedError } from './domain/errors/access-grant-revoked-error.js';
 export { TransactionNotConfirmedError } from './domain/errors/transaction-not-confirmed-error.js';
 export { ServicePlanNotActiveError } from './domain/errors/service-plan-not-active-error.js';
 
@@ -47,6 +50,9 @@ export type { ArchiveServicePlanInputDTO } from './application/dtos/archive-serv
 export type { InitiatePurchaseInputDTO } from './application/dtos/initiate-purchase-input-dto.js';
 export type { ConfirmPaymentInputDTO } from './application/dtos/confirm-payment-input-dto.js';
 export type { RegisterChargebackInputDTO } from './application/dtos/register-chargeback-input-dto.js';
+export type { SuspendAccessGrantInputDTO } from './application/dtos/suspend-access-grant-input-dto.js';
+export type { ReinstateAccessGrantInputDTO } from './application/dtos/reinstate-access-grant-input-dto.js';
+export type { RefundPaymentInputDTO } from './application/dtos/refund-payment-input-dto.js';
 
 // ── Application — Output DTOs ────────────────────────────────────────────────
 export type { CreateServicePlanOutputDTO } from './application/dtos/create-service-plan-output-dto.js';
@@ -55,6 +61,9 @@ export type { ArchiveServicePlanOutputDTO } from './application/dtos/archive-ser
 export type { InitiatePurchaseOutputDTO } from './application/dtos/initiate-purchase-output-dto.js';
 export type { ConfirmPaymentOutputDTO } from './application/dtos/confirm-payment-output-dto.js';
 export type { RegisterChargebackOutputDTO } from './application/dtos/register-chargeback-output-dto.js';
+export type { SuspendAccessGrantOutputDTO } from './application/dtos/suspend-access-grant-output-dto.js';
+export type { ReinstateAccessGrantOutputDTO } from './application/dtos/reinstate-access-grant-output-dto.js';
+export type { RefundPaymentOutputDTO } from './application/dtos/refund-payment-output-dto.js';
 
 // ── Application — Use Cases ──────────────────────────────────────────────────
 export { CreateServicePlan } from './application/use-cases/create-service-plan.js';
@@ -63,3 +72,6 @@ export { ArchiveServicePlan } from './application/use-cases/archive-service-plan
 export { InitiatePurchase } from './application/use-cases/initiate-purchase.js';
 export { ConfirmPayment } from './application/use-cases/confirm-payment.js';
 export { RegisterChargeback } from './application/use-cases/register-chargeback.js';
+export { SuspendAccessGrant } from './application/use-cases/suspend-access-grant.js';
+export { ReinstateAccessGrant } from './application/use-cases/reinstate-access-grant.js';
+export { RefundPayment } from './application/use-cases/refund-payment.js';

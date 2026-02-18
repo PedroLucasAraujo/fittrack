@@ -9,6 +9,7 @@ import { makeSession } from '../../factories/make-session.js';
 import { makeBooking } from '../../factories/make-booking.js';
 import { SessionStatus } from '../../../domain/enums/session-status.js';
 import { ErrorCodes } from '@fittrack/core';
+import type { AccessGrantValidationDTO } from '../../../application/dtos/access-grant-validation-dto.js';
 
 describe('CreateBooking', () => {
   let bookingRepository: InMemoryBookingRepository;
@@ -16,6 +17,7 @@ describe('CreateBooking', () => {
   let sut: CreateBooking;
   let professionalProfileId: string;
   let session: ReturnType<typeof makeSession>;
+  let validGrant: AccessGrantValidationDTO;
 
   beforeEach(() => {
     bookingRepository = new InMemoryBookingRepository();
@@ -30,6 +32,8 @@ describe('CreateBooking', () => {
       status: SessionStatus.ACTIVE,
     });
     sessionRepository.items.push(session);
+
+    validGrant = { valid: true, accessGrantId: generateId() };
   });
 
   it('creates a booking successfully in PENDING status', async () => {
@@ -42,6 +46,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isRight()).toBe(true);
@@ -64,11 +69,132 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       true,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
       expect(result.value.code).toBe(SchedulingErrorCodes.PROFESSIONAL_BANNED);
+    }
+    expect(bookingRepository.items).toHaveLength(0);
+  });
+
+  it('blocks booking when AccessGrant not found (ADR-0046 §3)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        scheduledAtUtc: '2025-07-15T14:00:00.000Z',
+        timezoneUsed: 'America/Sao_Paulo',
+      },
+      false,
+      { valid: false, reason: 'NONE_FOUND' },
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.ACCESS_GRANT_INVALID);
+    }
+    expect(bookingRepository.items).toHaveLength(0);
+  });
+
+  it('blocks booking when AccessGrant invalid with no reason (defaults to NONE_FOUND)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        scheduledAtUtc: '2025-07-15T14:00:00.000Z',
+        timezoneUsed: 'America/Sao_Paulo',
+      },
+      false,
+      { valid: false }, // reason omitted — exercises the ?? 'NONE_FOUND' fallback
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.ACCESS_GRANT_INVALID);
+    }
+    expect(bookingRepository.items).toHaveLength(0);
+  });
+
+  it('blocks booking when AccessGrant is EXPIRED (ADR-0046 §3)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        scheduledAtUtc: '2025-07-15T14:00:00.000Z',
+        timezoneUsed: 'America/Sao_Paulo',
+      },
+      false,
+      { valid: false, reason: 'EXPIRED', accessGrantId: generateId() },
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.ACCESS_GRANT_INVALID);
+    }
+    expect(bookingRepository.items).toHaveLength(0);
+  });
+
+  it('blocks booking when AccessGrant is SUSPENDED (ADR-0046 §3)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        scheduledAtUtc: '2025-07-15T14:00:00.000Z',
+        timezoneUsed: 'America/Sao_Paulo',
+      },
+      false,
+      { valid: false, reason: 'SUSPENDED', accessGrantId: generateId() },
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.ACCESS_GRANT_INVALID);
+    }
+    expect(bookingRepository.items).toHaveLength(0);
+  });
+
+  it('blocks booking when AccessGrant is REVOKED (ADR-0046 §3)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        scheduledAtUtc: '2025-07-15T14:00:00.000Z',
+        timezoneUsed: 'America/Sao_Paulo',
+      },
+      false,
+      { valid: false, reason: 'REVOKED', accessGrantId: generateId() },
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.ACCESS_GRANT_INVALID);
+    }
+    expect(bookingRepository.items).toHaveLength(0);
+  });
+
+  it('blocks booking when AccessGrant has no sessions remaining (ADR-0046 §3)', async () => {
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        scheduledAtUtc: '2025-07-15T14:00:00.000Z',
+        timezoneUsed: 'America/Sao_Paulo',
+      },
+      false,
+      { valid: false, reason: 'NO_SESSIONS', accessGrantId: generateId() },
+    );
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(SchedulingErrorCodes.ACCESS_GRANT_INVALID);
     }
     expect(bookingRepository.items).toHaveLength(0);
   });
@@ -83,6 +209,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -101,6 +228,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -120,6 +248,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -144,6 +273,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -162,6 +292,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -180,6 +311,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'Invalid/Timezone',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -200,6 +332,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     // Try to create second booking on same session+day
@@ -212,6 +345,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);
@@ -250,6 +384,7 @@ describe('CreateBooking', () => {
         timezoneUsed: 'America/Sao_Paulo',
       },
       false,
+      validGrant,
     );
 
     expect(result.isLeft()).toBe(true);

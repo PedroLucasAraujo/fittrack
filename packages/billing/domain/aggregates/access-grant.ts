@@ -147,6 +147,34 @@ export class AccessGrant extends AggregateRoot<AccessGrantProps> {
     return right(undefined);
   }
 
+  /**
+   * Increments `sessionsConsumed` by 1 (ADR-0046 §4).
+   *
+   * If `sessionAllotment` is reached after increment, auto-transitions to
+   * `EXPIRED` in the same operation. May only be called when `status` is `ACTIVE`.
+   *
+   * TODO: ADR-0047 — This method is called from a use case that also creates
+   * an Execution aggregate (two aggregate roots in one transaction). Must be
+   * split into two domain transactions via `ExecutionRecorded` event when
+   * outbox infrastructure is available (ADR-0003).
+   */
+  consumeSession(): DomainResult<void> {
+    if (this.props.status !== AccessGrantStatus.ACTIVE) {
+      return left(new InvalidAccessGrantTransitionError(this.props.status, 'CONSUME_SESSION'));
+    }
+
+    this.props.sessionsConsumed += 1;
+
+    if (
+      this.props.sessionAllotment !== null &&
+      this.props.sessionsConsumed >= this.props.sessionAllotment
+    ) {
+      this.props.status = AccessGrantStatus.EXPIRED;
+    }
+
+    return right(undefined);
+  }
+
   // ── Query methods ────────────────────────────────────────────────────────
 
   /** True only when ACTIVE — the only state that permits Execution creation. */
