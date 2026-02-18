@@ -26,7 +26,9 @@ An Aggregate Root is an entity that:
 | `UserProfile` | Identity / UserProfile | — | `UserProfileCreated`, `UserProfileUpdated` |
 | `ProfessionalProfile` | ProfessionalProfile | PlatformEntitlement | `ProfessionalProfileCreated`, `RiskStatusChanged`, `PlatformEntitlementChanged` |
 | `ServicePlan` | ServicePlan / Catalog | Deliverable (snapshot) | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
-| `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted` |
+| `Session` | Scheduling | — | `SessionCreated`, `SessionArchived` |
+| `WorkingAvailability` | Scheduling | — | `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated` |
+| `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted`, `BookingNoShow` |
 | `RecurringSchedule` | Scheduling | RecurringSession | `RecurringScheduleCreated`, `RecurringSessionAdded` |
 | `Execution` | Execution | ExecutionCorrection | `ExecutionRecorded`, `ExecutionCorrectionRecorded` |
 | `SelfLog` | Execution / PersonalMode | — | `SelfLogRecorded` |
@@ -86,6 +88,10 @@ interface IExecutionRepository
 interface IAccessGrantRepository
 interface IServicePlanRepository
 interface ITransactionRepository
+interface ISessionRepository
+interface IWorkingAvailabilityRepository
+interface IBookingRepository
+interface IRecurringScheduleRepository
 ```
 
 Repository interfaces return aggregate roots (not partial projections). Partial projections for read models are served by separate read model projectors (ADR-0014), not by the domain repository.
