@@ -26,11 +26,6 @@ export type { ExerciseAssignmentProps } from './domain/entities/exercise-assignm
 export { Deliverable } from './domain/aggregates/deliverable.js';
 export type { DeliverableProps } from './domain/aggregates/deliverable.js';
 
-// ── Domain Events ──────────────────────────────────────────────────────────────
-export { DeliverableCreated } from './domain/events/deliverable-created.js';
-export { DeliverableActivated } from './domain/events/deliverable-activated.js';
-export { DeliverableArchived } from './domain/events/deliverable-archived.js';
-
 // ── Repositories ───────────────────────────────────────────────────────────────
 export type { IDeliverableRepository } from './domain/repositories/deliverable-repository.js';
 

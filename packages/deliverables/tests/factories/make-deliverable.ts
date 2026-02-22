@@ -47,7 +47,7 @@ export function makeDeliverable(overrides: DeliverableOverrides = {}): Deliverab
   const props: DeliverableProps = {
     professionalProfileId: overrides.professionalProfileId ?? generateId(),
     title: overrides.title ?? titleResult.value,
-    type: overrides.type ?? DeliverableType.PROGRAM,
+    type: overrides.type ?? DeliverableType.TRAINING_PRESCRIPTION,
     status: overrides.status ?? DeliverableStatus.DRAFT,
     contentVersion: overrides.contentVersion ?? 1,
     description: overrides.description !== undefined ? overrides.description : null,
@@ -88,8 +88,9 @@ export function makeNewDeliverable(
     ...(overrides.id !== undefined ? { id: overrides.id } : {}),
     professionalProfileId: overrides.professionalProfileId ?? generateId(),
     title: titleResult.value,
-    type: overrides.type ?? DeliverableType.PROGRAM,
+    type: overrides.type ?? DeliverableType.TRAINING_PRESCRIPTION,
     description: overrides.description ?? null,
+    createdAtUtc: UTCDateTime.now(),
     logicalDay,
     timezoneUsed: overrides.timezoneUsed ?? 'America/Sao_Paulo',
   });

@@ -26,11 +26,6 @@ import type { CreateDeliverableOutputDTO } from '../dtos/create-deliverable-outp
  * bounded context is available, `catalogItemId` and `catalogVersion` enrich
  * traceability without changing the immutability model.
  *
- * ## Domain events
- *
- * `DeliverableCreated` is NOT emitted by the aggregate (ADR-0009 §1).
- * The application layer (HTTP handler / event handler) dispatches it after
- * calling `deliverable.getDomainEvents()` post-save.
  */
 export class CreateDeliverable {
   constructor(private readonly deliverableRepository: IDeliverableRepository) {}
@@ -57,6 +52,7 @@ export class CreateDeliverable {
       title: titleResult.value,
       type: dto.type,
       description: dto.description ?? null,
+      createdAtUtc: createdAtUtcResult.value,
       logicalDay: logicalDayResult.value,
       timezoneUsed: dto.timezoneUsed,
     });
@@ -66,8 +62,12 @@ export class CreateDeliverable {
 
     const deliverable = deliverableResult.value;
 
-    // 5. Attach initial exercises (PROGRAM type only)
-    if (dto.type === DeliverableType.PROGRAM && dto.exercises && dto.exercises.length > 0) {
+    // 5. Attach initial exercises (TRAINING_PRESCRIPTION type only)
+    if (
+      dto.type === DeliverableType.TRAINING_PRESCRIPTION &&
+      dto.exercises &&
+      dto.exercises.length > 0
+    ) {
       for (const exerciseInput of dto.exercises) {
         const snapshotCreatedAtUtc =
           exerciseInput.catalogItemId != null ? createdAtUtcResult.value.toISO() : null;

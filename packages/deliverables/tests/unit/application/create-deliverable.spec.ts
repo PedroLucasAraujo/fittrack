@@ -17,11 +17,11 @@ describe('CreateDeliverable', () => {
 
   // ── Happy paths ────────────────────────────────────────────────────────────
 
-  it('creates a DRAFT PROGRAM deliverable and returns output DTO', async () => {
+  it('creates a DRAFT TRAINING_PRESCRIPTION deliverable and returns output DTO', async () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Full Body Strength',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
     });
@@ -30,7 +30,7 @@ describe('CreateDeliverable', () => {
     if (result.isRight()) {
       const output = result.value;
       expect(output.title).toBe('Full Body Strength');
-      expect(output.type).toBe(DeliverableType.PROGRAM);
+      expect(output.type).toBe(DeliverableType.TRAINING_PRESCRIPTION);
       expect(output.status).toBe(DeliverableStatus.DRAFT);
       expect(output.contentVersion).toBe(1);
       expect(output.exerciseCount).toBe(0);
@@ -40,11 +40,11 @@ describe('CreateDeliverable', () => {
     }
   });
 
-  it('creates a PROGRAM deliverable with initial exercises', async () => {
+  it('creates a TRAINING_PRESCRIPTION deliverable with initial exercises', async () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Upper Body',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
       exercises: [
@@ -77,18 +77,18 @@ describe('CreateDeliverable', () => {
     }
   });
 
-  it('creates an ASSESSMENT_TEMPLATE deliverable', async () => {
+  it('creates a PHYSIOLOGICAL_ASSESSMENT deliverable', async () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Body Composition Assessment',
-      type: DeliverableType.ASSESSMENT_TEMPLATE,
+      type: DeliverableType.PHYSIOLOGICAL_ASSESSMENT,
       createdAtUtc: '2026-02-22T08:00:00.000Z',
       timezoneUsed: 'UTC',
     });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
-      expect(result.value.type).toBe(DeliverableType.ASSESSMENT_TEMPLATE);
+      expect(result.value.type).toBe(DeliverableType.PHYSIOLOGICAL_ASSESSMENT);
     }
   });
 
@@ -104,7 +104,7 @@ describe('CreateDeliverable', () => {
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
-      // Exercises are ignored for non-PROGRAM types
+      // Exercises are ignored for non-TRAINING_PRESCRIPTION types
       expect(result.value.exerciseCount).toBe(0);
     }
   });
@@ -113,7 +113,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Hypertrophy Program',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       description: 'Focus on volume and progressive overload',
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
@@ -129,7 +129,7 @@ describe('CreateDeliverable', () => {
     await sut.execute({
       professionalProfileId: generateId(),
       title: 'Strength Program',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
     });
@@ -143,7 +143,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Program with Catalog',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
       exercises: [
@@ -166,11 +166,11 @@ describe('CreateDeliverable', () => {
     }
   });
 
-  it('creates a PROGRAM with time-based exercise (no sets/reps — covers ?? null branches)', async () => {
+  it('creates a TRAINING_PRESCRIPTION with time-based exercise (no sets/reps — covers ?? null branches)', async () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Cardio Circuit',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
       exercises: [{ name: 'Plank Hold', durationSeconds: 60 }],
@@ -188,7 +188,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: 'not-a-uuid',
       title: 'Program',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
     });
@@ -200,7 +200,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: '',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
     });
@@ -215,7 +215,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'A'.repeat(121),
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'America/Sao_Paulo',
     });
@@ -230,7 +230,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Program',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000+03:00',
       timezoneUsed: 'America/Sao_Paulo',
     });
@@ -242,7 +242,7 @@ describe('CreateDeliverable', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(),
       title: 'Program',
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       createdAtUtc: '2026-02-22T10:00:00.000Z',
       timezoneUsed: 'Not/ATimezone',
     });

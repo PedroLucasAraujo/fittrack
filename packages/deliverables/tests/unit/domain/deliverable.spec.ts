@@ -393,7 +393,7 @@ describe('Deliverable', () => {
     it('transitions DRAFT → ACTIVE for PROGRAM with exercises', () => {
       const deliverable = makeDeliverable({
         status: DeliverableStatus.DRAFT,
-        type: DeliverableType.PROGRAM,
+        type: DeliverableType.TRAINING_PRESCRIPTION,
         exercises: [makeExerciseAssignment()],
       });
 
@@ -420,7 +420,7 @@ describe('Deliverable', () => {
     it('transitions DRAFT → ACTIVE for ASSESSMENT_TEMPLATE (no exercises required)', () => {
       const deliverable = makeDeliverable({
         status: DeliverableStatus.DRAFT,
-        type: DeliverableType.ASSESSMENT_TEMPLATE,
+        type: DeliverableType.PHYSIOLOGICAL_ASSESSMENT,
         exercises: [],
       });
 
@@ -442,7 +442,7 @@ describe('Deliverable', () => {
     it('rejects activation of PROGRAM with no exercises', () => {
       const deliverable = makeDeliverable({
         status: DeliverableStatus.DRAFT,
-        type: DeliverableType.PROGRAM,
+        type: DeliverableType.TRAINING_PRESCRIPTION,
         exercises: [],
       });
 
@@ -584,12 +584,12 @@ describe('Deliverable', () => {
       const profileId = generateId();
       const deliverable = makeDeliverable({
         professionalProfileId: profileId,
-        type: DeliverableType.ASSESSMENT_TEMPLATE,
+        type: DeliverableType.PHYSIOLOGICAL_ASSESSMENT,
         description: 'Full body assessment',
       });
 
       expect(deliverable.professionalProfileId).toBe(profileId);
-      expect(deliverable.type).toBe(DeliverableType.ASSESSMENT_TEMPLATE);
+      expect(deliverable.type).toBe(DeliverableType.PHYSIOLOGICAL_ASSESSMENT);
       expect(deliverable.description).toBe('Full body assessment');
       expect(deliverable.logicalDay).toBeDefined();
       expect(deliverable.timezoneUsed).toBeDefined();

@@ -8,12 +8,12 @@
  * New types must not be added without an ADR amendment.
  */
 export const DeliverableType = {
-  /** Structured workout program with exercise assignments. */
-  PROGRAM: 'PROGRAM',
+  /** Structured workout prescription with ordered exercise assignments. */
+  TRAINING_PRESCRIPTION: 'TRAINING_PRESCRIPTION',
   /** Nutritional prescription with food assignments. */
   DIET_PLAN: 'DIET_PLAN',
-  /** Physiological assessment template with measurement fields. */
-  ASSESSMENT_TEMPLATE: 'ASSESSMENT_TEMPLATE',
+  /** Physiological assessment with measurement fields. */
+  PHYSIOLOGICAL_ASSESSMENT: 'PHYSIOLOGICAL_ASSESSMENT',
 } as const;
 
 export type DeliverableType = (typeof DeliverableType)[keyof typeof DeliverableType];

@@ -23,7 +23,7 @@ describe('ArchiveDeliverable', () => {
     const deliverable = makeDeliverable({
       professionalProfileId: profileId,
       status: DeliverableStatus.DRAFT,
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
     });
     await repository.save(deliverable);
 
@@ -64,7 +64,7 @@ describe('ArchiveDeliverable', () => {
     const deliverable = makeDeliverable({
       professionalProfileId: profileId,
       status: DeliverableStatus.ACTIVE,
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
     });
     await repository.save(deliverable);
 
@@ -78,7 +78,7 @@ describe('ArchiveDeliverable', () => {
     const deliverable = makeDeliverable({
       professionalProfileId: profileId,
       status: DeliverableStatus.DRAFT,
-      type: DeliverableType.ASSESSMENT_TEMPLATE,
+      type: DeliverableType.PHYSIOLOGICAL_ASSESSMENT,
     });
     await repository.save(deliverable);
 
@@ -90,7 +90,7 @@ describe('ArchiveDeliverable', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.deliverableId).toBe(deliverable.id);
-      expect(result.value.type).toBe(DeliverableType.ASSESSMENT_TEMPLATE);
+      expect(result.value.type).toBe(DeliverableType.PHYSIOLOGICAL_ASSESSMENT);
     }
   });
 

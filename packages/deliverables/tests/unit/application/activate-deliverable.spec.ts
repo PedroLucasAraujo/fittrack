@@ -18,12 +18,12 @@ describe('ActivateDeliverable', () => {
 
   // ── Happy paths ────────────────────────────────────────────────────────────
 
-  it('activates a DRAFT PROGRAM with exercises', async () => {
+  it('activates a DRAFT TRAINING_PRESCRIPTION with exercises', async () => {
     const profileId = generateId();
     const deliverable = makeDeliverable({
       professionalProfileId: profileId,
       status: DeliverableStatus.DRAFT,
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       exercises: [makeExerciseAssignment()],
     });
     await repository.save(deliverable);
@@ -61,12 +61,12 @@ describe('ActivateDeliverable', () => {
     }
   });
 
-  it('activates a DRAFT ASSESSMENT_TEMPLATE', async () => {
+  it('activates a DRAFT PHYSIOLOGICAL_ASSESSMENT', async () => {
     const profileId = generateId();
     const deliverable = makeDeliverable({
       professionalProfileId: profileId,
       status: DeliverableStatus.DRAFT,
-      type: DeliverableType.ASSESSMENT_TEMPLATE,
+      type: DeliverableType.PHYSIOLOGICAL_ASSESSMENT,
     });
     await repository.save(deliverable);
 
@@ -152,12 +152,12 @@ describe('ActivateDeliverable', () => {
 
   // ── State machine errors ────────────────────────────────────────────────────
 
-  it('returns error when PROGRAM has no exercises', async () => {
+  it('returns error when TRAINING_PRESCRIPTION has no exercises', async () => {
     const profileId = generateId();
     const deliverable = makeDeliverable({
       professionalProfileId: profileId,
       status: DeliverableStatus.DRAFT,
-      type: DeliverableType.PROGRAM,
+      type: DeliverableType.TRAINING_PRESCRIPTION,
       exercises: [],
     });
     await repository.save(deliverable);

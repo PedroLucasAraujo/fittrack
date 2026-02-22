@@ -34,11 +34,11 @@ export interface DeliverableProps {
   description: string | null;
 
   /**
-   * Ordered exercise prescriptions for PROGRAM type.
+   * Ordered exercise prescriptions for TRAINING_PRESCRIPTION type.
    *
    * Subordinate entities — owned exclusively by this aggregate (ADR-0047 §4).
    * Mutable only while status is DRAFT (ADR-0011 §3 — snapshot semantics).
-   * Empty for DIET_PLAN and ASSESSMENT_TEMPLATE types.
+   * Empty for DIET_PLAN and PHYSIOLOGICAL_ASSESSMENT types.
    */
   exercises: ExerciseAssignment[];
 
@@ -116,7 +116,7 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
    * `createdAtUtc` and `timezoneUsed` per ADR-0010.
    *
    * The created Deliverable has no exercises. Use `addExercise()` before
-   * calling `activate()` for PROGRAM type.
+   * calling `activate()` for TRAINING_PRESCRIPTION type.
    */
   static create(props: {
     id?: string;
@@ -124,11 +124,12 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
     title: DeliverableTitle;
     type: DeliverableType;
     description?: string | null;
+    createdAtUtc: UTCDateTime;
     logicalDay: LogicalDay;
     timezoneUsed: string;
   }): DomainResult<Deliverable> {
     const id = props.id ?? generateId();
-    const createdAtUtc = UTCDateTime.now();
+    const createdAtUtc = props.createdAtUtc;
 
     const deliverable = new Deliverable(id, {
       professionalProfileId: props.professionalProfileId,
@@ -213,8 +214,8 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
    * Locks the content snapshot. After activation, exercises can no longer
    * be added or removed (ADR-0011 §3).
    *
-   * Invariant for PROGRAM type: at least one ExerciseAssignment must exist
-   * before activation. An empty program is not a valid prescription (ADR-0044 §2).
+   * Invariant for TRAINING_PRESCRIPTION type: at least one ExerciseAssignment must exist
+   * before activation. An empty prescription is not a valid delivery (ADR-0044 §2).
    */
   activate(): DomainResult<void> {
     if (this.props.status !== DeliverableStatus.DRAFT) {
@@ -223,7 +224,10 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
       );
     }
 
-    if (this.props.type === DeliverableType.PROGRAM && this.props.exercises.length === 0) {
+    if (
+      this.props.type === DeliverableType.TRAINING_PRESCRIPTION &&
+      this.props.exercises.length === 0
+    ) {
       return left(new EmptyExerciseListError(this.id));
     }
 

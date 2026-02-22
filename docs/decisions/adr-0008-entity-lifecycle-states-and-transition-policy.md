@@ -173,7 +173,7 @@ Note: `CHARGEBACK` is a terminal state. A chargeback on a refunded transaction i
 
 ### 8. Deliverable Lifecycle
 
-A Deliverable is a professional content template (PROGRAM, DIET_PLAN, ASSESSMENT_TEMPLATE) managed in the `@fittrack/deliverables` bounded context.
+A Deliverable is a professional content prescription (TRAINING_PRESCRIPTION, DIET_PLAN, PHYSIOLOGICAL_ASSESSMENT) managed in the `@fittrack/deliverables` bounded context.
 
 | Status | Description |
 |--------|-------------|
@@ -183,15 +183,15 @@ A Deliverable is a professional content template (PROGRAM, DIET_PLAN, ASSESSMENT
 
 **Valid Transitions:**
 ```
-DRAFT → ACTIVE  (event: DeliverableActivated)
-DRAFT → ARCHIVED (event: DeliverableArchived)
-ACTIVE → ARCHIVED (event: DeliverableArchived)
+DRAFT → ACTIVE   (no domain event emitted by aggregate — ADR-0009 §1)
+DRAFT → ARCHIVED (no domain event emitted by aggregate — ADR-0009 §1)
+ACTIVE → ARCHIVED (no domain event emitted by aggregate — ADR-0009 §1)
 ```
 
 Terminal states: `ARCHIVED`. No transitions out of `ARCHIVED`.
 
 **Invariants specific to Deliverable:**
-- A `PROGRAM` Deliverable must have at least one `ExerciseAssignment` before transitioning `DRAFT → ACTIVE` (ADR-0044 §2).
+- A `TRAINING_PRESCRIPTION` Deliverable must have at least one `ExerciseAssignment` before transitioning `DRAFT → ACTIVE` (ADR-0044 §2).
 - `addExercise` and `removeExercise` are only permitted in `DRAFT` status. Attempting these operations on `ACTIVE` or `ARCHIVED` raises `DeliverableNotDraftError`.
 - `contentVersion` is incremented on every `addExercise` or `removeExercise` call. It tracks the business version of the content and starts at 1.
 

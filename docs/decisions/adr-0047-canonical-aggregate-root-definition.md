@@ -26,7 +26,7 @@ An Aggregate Root is an entity that:
 | `UserProfile` | Identity / UserProfile | — | `UserProfileCreated`, `UserProfileUpdated` |
 | `ProfessionalProfile` | ProfessionalProfile | PlatformEntitlement | `ProfessionalProfileCreated`, `RiskStatusChanged`, `PlatformEntitlementChanged` |
 | `ServicePlan` | ServicePlan / Catalog | — | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
-| `Deliverable` | Deliverables | ExerciseAssignment | `DeliverableCreated`, `DeliverableActivated`, `DeliverableArchived` |
+| `Deliverable` | Deliverables | ExerciseAssignment | — (no domain events emitted at current implementation scope; ADR-0009 §1) |
 | `Session` | Scheduling | — | `SessionCreated`, `SessionArchived` |
 | `WorkingAvailability` | Scheduling | — | `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated` |
 | `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted`, `BookingNoShow` |
@@ -60,7 +60,7 @@ An Aggregate Root is an entity that:
 | **Value Object** | By value (structural equality) | No (replaced, not modified) | Embedded in any aggregate |
 
 Examples:
-- `Deliverable` is an aggregate root in the Deliverables bounded context (`@fittrack/deliverables`). It is NOT a subordinate of `ServicePlan`. It has its own `IDeliverableRepository` and lifecycle (DRAFT → ACTIVE → ARCHIVED per ADR-0008 §8).
+- `Deliverable` is an aggregate root in the Deliverables bounded context (`@fittrack/deliverables`). It is NOT a subordinate of `ServicePlan`. It has its own `IDeliverableRepository` and lifecycle (DRAFT → ACTIVE → ARCHIVED per ADR-0008 §8). Authorized types: `TRAINING_PRESCRIPTION`, `DIET_PLAN`, `PHYSIOLOGICAL_ASSESSMENT` (ADR-0044 §1).
 - `ExerciseAssignment` is a subordinate entity of `Deliverable` (content snapshot per ADR-0011; mutated only in DRAFT status, locked on activation).
 - `ExecutionCorrection` is a subordinate entity of `Execution` (append-only; owned by `Execution`).
 - A `Money` type (integer cents + currency code) is a value object embedded in `Transaction`.
