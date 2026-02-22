@@ -171,6 +171,30 @@ Terminal states: `FAILED`, `REFUNDED`, `CHARGEBACK`.
 
 Note: `CHARGEBACK` is a terminal state. A chargeback on a refunded transaction is possible and must be supported.
 
+### 8. Deliverable Lifecycle
+
+A Deliverable is a professional content prescription (TRAINING_PRESCRIPTION, DIET_PLAN, PHYSIOLOGICAL_ASSESSMENT) managed in the `@fittrack/deliverables` bounded context.
+
+| Status | Description |
+|--------|-------------|
+| `DRAFT` | Created; content is mutable. Not yet assignable via AccessGrant. |
+| `ACTIVE` | Content locked (snapshot semantics, ADR-0011 §3). Assignable to clients via AccessGrant. |
+| `ARCHIVED` | Permanently retired. No new assignments permitted. Existing references retained for audit. |
+
+**Valid Transitions:**
+```
+DRAFT → ACTIVE   (no domain event emitted by aggregate — ADR-0009 §1)
+DRAFT → ARCHIVED (no domain event emitted by aggregate — ADR-0009 §1)
+ACTIVE → ARCHIVED (no domain event emitted by aggregate — ADR-0009 §1)
+```
+
+Terminal states: `ARCHIVED`. No transitions out of `ARCHIVED`.
+
+**Invariants specific to Deliverable:**
+- A `TRAINING_PRESCRIPTION` Deliverable must have at least one `ExerciseAssignment` before transitioning `DRAFT → ACTIVE` (ADR-0044 §2).
+- `addExercise` and `removeExercise` are only permitted in `DRAFT` status. Attempting these operations on `ACTIVE` or `ARCHIVED` raises `DeliverableNotDraftError`.
+- `contentVersion` is incremented on every `addExercise` or `removeExercise` call. It tracks the business version of the content and starts at 1.
+
 ## Invariants
 
 1. Every valid status transition has a corresponding named domain event that the Application layer MAY dispatch (ADR-0009 §1). Aggregates do not emit events directly.
@@ -201,4 +225,5 @@ Note: `CHARGEBACK` is a terminal state. A chargeback on a refunded transaction i
 - ADR-0009: Domain Event Contract (event structure)
 - ADR-0012: Enum and Shared Type Governance (status enum management)
 - ADR-0013: Soft Delete and Data Retention Policy (CLOSED status and AccessGrant preservation extension)
+- ADR-0044: Deliverable Type Expansion Policy (PROGRAM exercise invariant)
 - ADR-0046: AccessGrant Lifecycle Policy (detailed AccessGrant states)

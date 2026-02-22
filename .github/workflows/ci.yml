@@ -203,3 +203,49 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
         working-directory: packages/scheduling
+
+  test-deliverables:
+    name: "Test @fittrack/deliverables"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install deliverables dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/deliverables
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/deliverables
+
+  typecheck-deliverables:
+    name: "Typecheck @fittrack/deliverables"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install deliverables dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/deliverables
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/deliverables
