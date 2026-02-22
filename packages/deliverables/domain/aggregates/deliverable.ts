@@ -244,7 +244,7 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
    * (ADR-0005 — Execution immutability).
    */
   archive(): DomainResult<void> {
-    const allowed = [DeliverableStatus.DRAFT, DeliverableStatus.ACTIVE];
+    const allowed: DeliverableStatus[] = [DeliverableStatus.DRAFT, DeliverableStatus.ACTIVE];
 
     if (!allowed.includes(this.props.status)) {
       return left(

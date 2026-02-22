@@ -608,7 +608,6 @@ import { ExerciseNotFoundError } from '../../../domain/errors/exercise-not-found
 import { InvalidDeliverableError } from '../../../domain/errors/invalid-deliverable-error.js';
 import { InvalidDeliverableTransitionError } from '../../../domain/errors/invalid-deliverable-transition-error.js';
 import { DeliverableTitle } from '../../../domain/value-objects/deliverable-title.js';
-import type { ExerciseAssignment } from '../../../domain/entities/exercise-assignment.js';
 
 describe('DeliverableNotFoundError', () => {
   it('has correct code and message', () => {
@@ -747,5 +746,21 @@ describe('ExerciseAssignment', () => {
     expect(exercise.name).toBe('Dead Hang');
     expect(exercise.durationSeconds).toBe(45);
     expect(exercise.orderIndex).toBe(2);
+  });
+
+  it('defaults orderIndex to 0 when not provided (covers ?? 0 branch)', () => {
+    const exercise = ExerciseAssignment.create({
+      catalogItemId: null,
+      catalogVersion: null,
+      snapshotCreatedAtUtc: null,
+      name: 'Push-up',
+      sets: null,
+      reps: null,
+      durationSeconds: null,
+      restSeconds: null,
+      notes: null,
+    });
+
+    expect(exercise.orderIndex).toBe(0);
   });
 });

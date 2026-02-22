@@ -2,7 +2,6 @@ import { left, right, UniqueEntityId, UTCDateTime, LogicalDay } from '@fittrack/
 import type { DomainResult } from '@fittrack/core';
 import { Deliverable } from '../../domain/aggregates/deliverable.js';
 import { DeliverableTitle } from '../../domain/value-objects/deliverable-title.js';
-import { ExerciseAssignment } from '../../domain/entities/exercise-assignment.js';
 import { DeliverableType } from '../../domain/enums/deliverable-type.js';
 import type { IDeliverableRepository } from '../../domain/repositories/deliverable-repository.js';
 import type { CreateDeliverableInputDTO } from '../dtos/create-deliverable-input-dto.js';
@@ -72,7 +71,7 @@ export class CreateDeliverable {
         const snapshotCreatedAtUtc =
           exerciseInput.catalogItemId != null ? createdAtUtcResult.value.toISO() : null;
 
-        const exercise = ExerciseAssignment.create({
+        const addResult = deliverable.addExercise({
           catalogItemId: exerciseInput.catalogItemId ?? null,
           catalogVersion: exerciseInput.catalogVersion ?? null,
           snapshotCreatedAtUtc,
@@ -83,8 +82,6 @@ export class CreateDeliverable {
           restSeconds: exerciseInput.restSeconds ?? null,
           notes: exerciseInput.notes ?? null,
         });
-
-        const addResult = deliverable.addExercise(exercise.props);
         /* v8 ignore next */
         if (addResult.isLeft()) return left(addResult.value);
       }

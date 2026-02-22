@@ -24,14 +24,15 @@ export class InMemoryDeliverableRepository implements IDeliverableRepository {
     page: PageRequest,
   ): Promise<PaginatedResult<Deliverable>> {
     const filtered = this.items.filter((d) => d.professionalProfileId === professionalProfileId);
-    const start = (page.page - 1) * page.pageSize;
-    const data = filtered.slice(start, start + page.pageSize);
+    const start = (page.page - 1) * page.limit;
+    const items = filtered.slice(start, start + page.limit);
 
     return {
-      data,
+      items,
       total: filtered.length,
       page: page.page,
-      pageSize: page.pageSize,
+      limit: page.limit,
+      hasNextPage: page.page * page.limit < filtered.length,
     };
   }
 
