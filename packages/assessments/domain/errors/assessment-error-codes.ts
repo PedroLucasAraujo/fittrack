@@ -1,0 +1,26 @@
+/**
+ * Error code registry for the Assessments bounded context.
+ *
+ * Namespaced with `ASSESSMENT.` prefix to prevent collisions with core
+ * ErrorCodes and codes from other bounded contexts (ADR-0012).
+ */
+export const AssessmentErrorCodes = {
+  // ── Template errors ──────────────────────────────────────────────────────
+  INVALID_ASSESSMENT_TEMPLATE: 'ASSESSMENT.INVALID_TEMPLATE',
+  INVALID_ASSESSMENT_TEMPLATE_TRANSITION: 'ASSESSMENT.INVALID_TEMPLATE_TRANSITION',
+  ASSESSMENT_TEMPLATE_NOT_FOUND: 'ASSESSMENT.TEMPLATE_NOT_FOUND',
+  ASSESSMENT_TEMPLATE_NOT_DRAFT: 'ASSESSMENT.TEMPLATE_NOT_DRAFT',
+  ASSESSMENT_TEMPLATE_NOT_ACTIVE: 'ASSESSMENT.TEMPLATE_NOT_ACTIVE',
+  EMPTY_TEMPLATE_FIELDS: 'ASSESSMENT.EMPTY_TEMPLATE_FIELDS',
+  TEMPLATE_FIELD_NOT_FOUND: 'ASSESSMENT.TEMPLATE_FIELD_NOT_FOUND',
+  // ── Response errors ──────────────────────────────────────────────────────
+  ASSESSMENT_RESPONSE_NOT_FOUND: 'ASSESSMENT.RESPONSE_NOT_FOUND',
+  INVALID_ASSESSMENT_RESPONSE: 'ASSESSMENT.INVALID_RESPONSE',
+  DUPLICATE_FIELD_RESPONSE: 'ASSESSMENT.DUPLICATE_FIELD_RESPONSE',
+  FIELD_VALUE_TYPE_MISMATCH: 'ASSESSMENT.FIELD_VALUE_TYPE_MISMATCH',
+  // ── Cross-context validation errors ─────────────────────────────────────
+  EXECUTION_NOT_CONFIRMED: 'ASSESSMENT.EXECUTION_NOT_CONFIRMED',
+  DELIVERABLE_NOT_PHYSIOLOGICAL_ASSESSMENT: 'ASSESSMENT.DELIVERABLE_NOT_PHYSIOLOGICAL_ASSESSMENT',
+} as const;
+
+export type AssessmentErrorCode = (typeof AssessmentErrorCodes)[keyof typeof AssessmentErrorCodes];
