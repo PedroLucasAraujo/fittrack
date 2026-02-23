@@ -13,6 +13,17 @@ export interface ExecutionRecordedPayload {
   readonly logicalDay: string;
   /** Execution status at time of event emission — always 'CONFIRMED'. */
   readonly status: string;
+  /**
+   * UTC instant when the service was actually delivered (ISO 8601, ends with 'Z').
+   * Required by downstream SelfLog projection handler to populate ADR-0010 temporal
+   * fields on the SelfLogEntry aggregate (ADR-0010 §1).
+   */
+  readonly occurredAtUtc: string;
+  /**
+   * Client's IANA timezone used to compute logicalDay (ADR-0010).
+   * Required by downstream SelfLog projection handler.
+   */
+  readonly timezoneUsed: string;
 }
 
 /**
