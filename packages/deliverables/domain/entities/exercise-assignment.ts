@@ -72,6 +72,25 @@ export interface ExerciseAssignmentProps {
 }
 
 /**
+ * Input type for `ExerciseAssignment.create()`.
+ *
+ * The four ADR-0011 §2 catalog snapshot fields (`category`, `muscleGroups`,
+ * `instructions`, `mediaUrl`) and `orderIndex` are optional and default to
+ * `null` / `0` respectively, preserving backward compatibility with call
+ * sites that predate the Catalog module.
+ */
+export type ExerciseAssignmentCreateInput = Omit<
+  ExerciseAssignmentProps,
+  'orderIndex' | 'category' | 'muscleGroups' | 'instructions' | 'mediaUrl'
+> & {
+  orderIndex?: number;
+  category?: string | null;
+  muscleGroups?: string[] | null;
+  instructions?: string | null;
+  mediaUrl?: string | null;
+};
+
+/**
  * ExerciseAssignment — subordinate entity of the Deliverable aggregate (ADR-0047 §4).
  *
  * Represents one exercise prescription within a TRAINING_PRESCRIPTION Deliverable.
@@ -116,19 +135,7 @@ export class ExerciseAssignment extends BaseEntity<ExerciseAssignmentProps> {
    * When a CatalogItem has been resolved, these fields should be populated
    * from the catalog snapshot to satisfy ADR-0011 §2.
    */
-  static create(
-    props: Omit<
-      ExerciseAssignmentProps,
-      'orderIndex' | 'category' | 'muscleGroups' | 'instructions' | 'mediaUrl'
-    > & {
-      orderIndex?: number;
-      category?: string | null;
-      muscleGroups?: string[] | null;
-      instructions?: string | null;
-      mediaUrl?: string | null;
-    },
-    id?: string,
-  ): ExerciseAssignment {
+  static create(props: ExerciseAssignmentCreateInput, id?: string): ExerciseAssignment {
     return new ExerciseAssignment(id ?? generateId(), {
       ...props,
       category: props.category ?? null,
