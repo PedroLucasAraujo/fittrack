@@ -143,6 +143,8 @@ export class CreateExecution {
         deliverableId: execution.deliverableId,
         logicalDay: execution.logicalDay.value,
         status: execution.status,
+        occurredAtUtc: execution.occurredAtUtc.toISO(),
+        timezoneUsed: execution.timezoneUsed,
       }),
     );
 

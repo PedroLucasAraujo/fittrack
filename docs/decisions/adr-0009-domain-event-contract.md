@@ -133,8 +133,9 @@ The following events are formally recognized. All events conform to the structur
 | `BookingCancelledBySystem` | Booking | Scheduling | bookingId, reason |
 | `BookingCompleted` | Booking | Scheduling | bookingId, executionId |
 | `BookingNoShow` | Booking | Scheduling | bookingId |
-| `ExecutionRecorded` | Execution | Execution | executionId, clientId, professionalProfileId, deliverableId, logicalDay, status |
+| `ExecutionRecorded` (v2) | Execution | Execution | executionId, clientId, professionalProfileId, deliverableId, logicalDay, status, occurredAtUtc, timezoneUsed |
 | `ExecutionCorrectionRecorded` | Execution | Execution | correctionId, originalExecutionId, reason |
+| `SelfLogRecorded` | SelfLog | Execution / PersonalMode | selfLogEntryId, clientId, professionalProfileId, logicalDay, sourceType, sourceId, correctedEntryId |
 | `ServicePlanPublished` | ServicePlan | ServicePlan | servicePlanId, professionalProfileId |
 | `ServicePlanArchived` | ServicePlan | ServicePlan | servicePlanId |
 | `PersonalModeActivated` | PersonalModeProfile | PersonalMode | userId |
