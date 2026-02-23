@@ -115,6 +115,10 @@ export function makeExerciseAssignment(
     catalogItemId: string | null;
     catalogVersion: number | null;
     snapshotCreatedAtUtc: string | null;
+    category: string | null;
+    muscleGroups: string[] | null;
+    instructions: string | null;
+    mediaUrl: string | null;
   }> = {},
 ): ExerciseAssignment {
   return ExerciseAssignment.create(
@@ -123,6 +127,10 @@ export function makeExerciseAssignment(
       catalogVersion: overrides.catalogVersion ?? null,
       snapshotCreatedAtUtc: overrides.snapshotCreatedAtUtc ?? null,
       name: overrides.name ?? 'Squat',
+      category: overrides.category ?? null,
+      muscleGroups: overrides.muscleGroups ?? null,
+      instructions: overrides.instructions ?? null,
+      mediaUrl: overrides.mediaUrl ?? null,
       sets: overrides.sets !== undefined ? overrides.sets : 3,
       reps: overrides.reps !== undefined ? overrides.reps : 10,
       durationSeconds: overrides.durationSeconds ?? null,

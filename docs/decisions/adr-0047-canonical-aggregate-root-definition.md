@@ -26,6 +26,7 @@ An Aggregate Root is an entity that:
 | `UserProfile` | Identity / UserProfile | — | `UserProfileCreated`, `UserProfileUpdated` |
 | `ProfessionalProfile` | ProfessionalProfile | PlatformEntitlement | `ProfessionalProfileCreated`, `RiskStatusChanged`, `PlatformEntitlementChanged` |
 | `ServicePlan` | ServicePlan / Catalog | — | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
+| `CatalogItem` | Catalog | — | — (no cross-context consumers at MVP scope; ADR-0009 §5, ADR-0001 §5) |
 | `Deliverable` | Deliverables | ExerciseAssignment | — (no domain events emitted at current implementation scope; ADR-0009 §1) |
 | `Session` | Scheduling | — | `SessionCreated`, `SessionArchived` |
 | `WorkingAvailability` | Scheduling | — | `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated` |
@@ -89,6 +90,7 @@ Each aggregate root has exactly one repository interface following the naming co
 interface IExecutionRepository
 interface IAccessGrantRepository
 interface IDeliverableRepository
+interface ICatalogItemRepository
 interface IServicePlanRepository
 interface ITransactionRepository
 interface ISessionRepository
