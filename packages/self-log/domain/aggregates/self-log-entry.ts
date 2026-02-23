@@ -190,12 +190,7 @@ export class SelfLogEntry extends AggregateRoot<SelfLogEntryProps> {
     const value = props.value ?? null;
     if (value !== null) {
       if (!Number.isFinite(value) || value < 0) {
-        return left(
-          new InvalidSelfLogEntryError(
-            `value must be a finite non-negative number. Received: ${value}`,
-            { value },
-          ),
-        );
+        return left(new InvalidSelfLogEntryError('value must be a finite non-negative number'));
       }
     }
 

@@ -30,10 +30,17 @@ export interface ExecutionRecordedPayload {
  * Emitted by `CreateExecution` after the Execution record is persisted
  * and `sessionsConsumed` is atomically incremented (ADR-0009 §4).
  *
- * Downstream consumers (Metrics, Analytics) use this event to trigger
- * metric derivation (ADR-0043, ADR-0014).
+ * Downstream consumers (Metrics, Analytics, SelfLog) use this event to trigger
+ * metric derivation (ADR-0043, ADR-0014) and SelfLog projection (ADR-0016).
  *
- * eventVersion: 1
+ * ## Schema changelog
+ *
+ * - v2 (current): added `occurredAtUtc` and `timezoneUsed` to payload
+ *   (required by SelfLog projection handler — ADR-0010).
+ * - v1 (initial): executionId, clientId, professionalProfileId, deliverableId,
+ *   logicalDay, status.
+ *
+ * eventVersion: 2
  */
 export class ExecutionRecordedEvent extends BaseDomainEvent {
   readonly eventType = 'ExecutionRecorded' as const;
@@ -44,6 +51,6 @@ export class ExecutionRecordedEvent extends BaseDomainEvent {
     readonly tenantId: string,
     readonly payload: Readonly<ExecutionRecordedPayload>,
   ) {
-    super(1);
+    super(2);
   }
 }
