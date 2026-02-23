@@ -2,6 +2,9 @@ import { AggregateRoot, UTCDateTime, LogicalDay, generateId, left, right } from 
 import type { DomainResult } from '@fittrack/core';
 import { ExecutionCorrection } from '../entities/execution-correction.js';
 import { CorrectionReasonRequiredError } from '../errors/correction-reason-required-error.js';
+import { InvalidExecutionError } from '../errors/invalid-execution-error.js';
+import { ExecutionStatus } from '../value-objects/execution-status.js';
+import type { ExecutionStatus as ExecutionStatusType } from '../value-objects/execution-status.js';
 
 export interface ExecutionProps {
   /**
@@ -54,6 +57,13 @@ export interface ExecutionProps {
   createdAtUtc: UTCDateTime;
 
   /**
+   * Lifecycle status (ADR-0005 §8-9).
+   * PENDING → CONFIRMED (terminal) or PENDING → CANCELLED (terminal).
+   * Mutable only through `confirm()` and `cancel()`.
+   */
+  status: ExecutionStatusType;
+
+  /**
    * Ordered correction history for this Execution (ADR-0005 §4).
    *
    * Append-only: entries are added via `Execution.recordCorrection()`.
@@ -78,12 +88,11 @@ export interface ExecutionProps {
  * - Professional account closure or banning (ADR-0022 §4)
  * - LGPD erasure requests (ADR-0037 §5 — structure retained, PII anonymized)
  *
- * ## No status field
+ * ## Status lifecycle (ADR-0005 §8-9)
  *
- * Execution has no lifecycle state machine. The existence of an Execution record
- * IS the confirmation of delivery. Errors in recorded deliveries are handled
- * exclusively via `ExecutionCorrection` compensating records (ADR-0005 §4),
- * not through status transitions.
+ * PENDING → CONFIRMED (terminal): delivery confirmed; triggers metric derivation.
+ * PENDING → CANCELLED (terminal): cancelled before confirmation; retained forever.
+ * No transition is possible from CONFIRMED or CANCELLED.
  *
  * ## Creation prerequisites (ADR-0017 §5, ADR-0046 §3)
  *
@@ -116,7 +125,7 @@ export class Execution extends AggregateRoot<ExecutionProps> {
   }
 
   /**
-   * Creates a new Execution record.
+   * Creates a new Execution record in PENDING status (ADR-0005 §8-9).
    *
    * All temporal value objects (`occurredAtUtc`, `logicalDay`) must be
    * pre-constructed and validated by the Application layer.
@@ -125,6 +134,7 @@ export class Execution extends AggregateRoot<ExecutionProps> {
    *
    * The corrections list is initialized empty.
    * The factory always returns `Right<Execution>` when called with valid domain objects.
+   * Call `confirm()` immediately after to transition to CONFIRMED before persisting.
    */
   static create(props: {
     id?: string;
@@ -149,6 +159,7 @@ export class Execution extends AggregateRoot<ExecutionProps> {
         logicalDay: props.logicalDay,
         timezoneUsed: props.timezoneUsed,
         createdAtUtc: props.createdAtUtc,
+        status: ExecutionStatus.PENDING,
         corrections: [],
       },
       0,
@@ -160,10 +171,51 @@ export class Execution extends AggregateRoot<ExecutionProps> {
     return new Execution(id, props, version);
   }
 
+  // ── Status transitions (ADR-0005 §9) ─────────────────────────────────────────
+
+  /**
+   * Transitions the Execution from PENDING to CONFIRMED (ADR-0005 §9).
+   *
+   * CONFIRMED is a terminal state — no further status transitions are permitted.
+   * A CONFIRMED Execution is the trigger for metric derivation (ADR-0043, ADR-0014).
+   *
+   * Returns Left<InvalidExecutionError> if the Execution is not in PENDING status.
+   */
+  confirm(): DomainResult<void> {
+    if (this.props.status !== ExecutionStatus.PENDING) {
+      return left(
+        new InvalidExecutionError(`cannot confirm an Execution in ${this.props.status} status`),
+      );
+    }
+    this.props.status = ExecutionStatus.CONFIRMED;
+    return right(undefined);
+  }
+
+  /**
+   * Transitions the Execution from PENDING to CANCELLED (ADR-0005 §9).
+   *
+   * CANCELLED is a terminal state — no further status transitions are permitted.
+   * A CANCELLED Execution is retained permanently and is never deleted (ADR-0005 §3).
+   *
+   * Returns Left<InvalidExecutionError> if the Execution is not in PENDING status.
+   */
+  cancel(): DomainResult<void> {
+    if (this.props.status !== ExecutionStatus.PENDING) {
+      return left(
+        new InvalidExecutionError(`cannot cancel an Execution in ${this.props.status} status`),
+      );
+    }
+    this.props.status = ExecutionStatus.CANCELLED;
+    return right(undefined);
+  }
+
   // ── Correction operations (ADR-0005 §4) ──────────────────────────────────────
 
   /**
    * Appends an `ExecutionCorrection` to this Execution's history.
+   *
+   * Only CONFIRMED Executions may receive corrections. A PENDING Execution has
+   * not yet been fully recorded; a CANCELLED Execution was never delivered.
    *
    * Corrections never modify the original Execution fields — they are
    * compensating records that explain why the delivery record was erroneous.
@@ -175,6 +227,14 @@ export class Execution extends AggregateRoot<ExecutionProps> {
    * @param correctedBy UUID of the professional recording the correction.
    */
   recordCorrection(reason: string, correctedBy: string): DomainResult<ExecutionCorrection> {
+    if (this.props.status !== ExecutionStatus.CONFIRMED) {
+      return left(
+        new InvalidExecutionError(
+          `corrections can only be recorded on CONFIRMED executions; current status: ${this.props.status}`,
+        ),
+      );
+    }
+
     if (!reason || reason.trim().length === 0) {
       return left(new CorrectionReasonRequiredError());
     }
@@ -228,6 +288,11 @@ export class Execution extends AggregateRoot<ExecutionProps> {
 
   get createdAtUtc(): UTCDateTime {
     return this.props.createdAtUtc;
+  }
+
+  /** Current lifecycle status (ADR-0005 §8-9). */
+  get status(): ExecutionStatusType {
+    return this.props.status;
   }
 
   /** Returns a shallow copy — callers must not mutate the returned array. */

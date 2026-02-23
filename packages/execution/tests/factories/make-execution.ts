@@ -1,7 +1,9 @@
 import { generateId, UTCDateTime, LogicalDay } from '@fittrack/core';
 import { Execution } from '../../domain/aggregates/execution.js';
 import { ExecutionCorrection } from '../../domain/entities/execution-correction.js';
+import { ExecutionStatus } from '../../domain/value-objects/execution-status.js';
 import type { ExecutionProps } from '../../domain/aggregates/execution.js';
+import type { ExecutionStatus as ExecutionStatusType } from '../../domain/value-objects/execution-status.js';
 
 type ExecutionOverrides = Partial<{
   id: string;
@@ -13,6 +15,8 @@ type ExecutionOverrides = Partial<{
   logicalDay: LogicalDay;
   timezoneUsed: string;
   createdAtUtc: UTCDateTime;
+  /** Defaults to CONFIRMED — reconstitute() represents already-persisted Executions. */
+  status: ExecutionStatusType;
   corrections: ExecutionCorrection[];
   version: number;
 }>;
@@ -41,6 +45,7 @@ export function makeExecution(overrides: ExecutionOverrides = {}): Execution {
     logicalDay,
     timezoneUsed: overrides.timezoneUsed ?? 'America/Sao_Paulo',
     createdAtUtc: overrides.createdAtUtc ?? UTCDateTime.now(),
+    status: overrides.status ?? ExecutionStatus.CONFIRMED,
     corrections: overrides.corrections ?? [],
   };
 

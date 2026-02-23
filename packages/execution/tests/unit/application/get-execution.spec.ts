@@ -38,6 +38,7 @@ describe('GetExecution', () => {
       expect(output.timezoneUsed).toBe(execution.timezoneUsed);
       expect(output.occurredAtUtc).toBeDefined();
       expect(output.createdAtUtc).toBeDefined();
+      expect(output.status).toBe('CONFIRMED');
       expect(output.corrections).toHaveLength(0);
     }
   });

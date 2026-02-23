@@ -32,6 +32,7 @@ export class ListExecutions {
         occurredAtUtc: e.occurredAtUtc.toISO(),
         logicalDay: e.logicalDay.value,
         timezoneUsed: e.timezoneUsed,
+        status: e.status,
         correctionCount: e.corrections.length,
       })),
       total: result.total,

@@ -15,6 +15,8 @@ export interface GetExecutionOutputDTO {
   timezoneUsed: string;
   /** ISO 8601 UTC string of when the record was created. */
   createdAtUtc: string;
+  /** Lifecycle status (ADR-0005 §8-9). */
+  status: string;
   /** Full correction history (ADR-0005 §4). Ordered by correctedAtUtc ascending. */
   corrections: Array<{
     correctionId: string;

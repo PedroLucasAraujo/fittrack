@@ -1,22 +1,16 @@
 import type { DomainResult } from '@fittrack/core';
 
 /**
- * Port for cross-context AccessGrant operations required by the Execution
+ * Port for cross-context AccessGrant validation required by the Execution
  * bounded context (ADR-0001 §3, ADR-0046).
  *
  * The Execution context must NEVER call the AccessGrant repository directly.
- * This port defines the two AccessGrant operations needed by `CreateExecution`:
+ * This port exposes only the validation step of `CreateExecution`.
  *
- * 1. **Validation**: All 5 ADR-0046 §3 checks in a single call.
- * 2. **Session increment**: Atomically increments `sessionsConsumed` (ADR-0046 §4).
- *
- * ## ADR-0046 §4 — Transactional atomicity (documented ADR-0003 exception)
- *
- * The infrastructure adapter implementing this port MUST execute
- * `executionRepository.save()` and `incrementSessionsConsumed()` within the
- * same database transaction. This is an explicit exception to the
- * one-aggregate-per-transaction rule (ADR-0003), required by ADR-0046 §4 to
- * prevent session over-consumption during the eventual consistency window.
+ * The session-consumption increment (ADR-0046 §4) is handled separately
+ * by `ICreateExecutionUnitOfWork`, which wraps both the Execution INSERT and
+ * the `sessionsConsumed` increment in a single database transaction —
+ * the documented exception to ADR-0003 §1.
  */
 export interface IAccessGrantPort {
   /**
@@ -37,14 +31,4 @@ export interface IAccessGrantPort {
     professionalProfileId: string;
     currentUtc: string;
   }): Promise<DomainResult<void>>;
-
-  /**
-   * Increments `sessionsConsumed` by 1.
-   *
-   * MUST be called within the same transaction as `IExecutionRepository.save()`
-   * per ADR-0046 §4. The infrastructure adapter is responsible for transactional
-   * atomicity. If incrementing causes `sessionsConsumed >= sessionAllotment`,
-   * the AccessGrant transitions to EXPIRED (infrastructure concern).
-   */
-  incrementSessionsConsumed(accessGrantId: string): Promise<void>;
 }

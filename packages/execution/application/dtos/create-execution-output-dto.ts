@@ -14,4 +14,6 @@ export interface CreateExecutionOutputDTO {
   timezoneUsed: string;
   /** ISO 8601 UTC string of when the record was created. */
   createdAtUtc: string;
+  /** Lifecycle status at creation — always 'CONFIRMED' (ADR-0005 §9). */
+  status: string;
 }

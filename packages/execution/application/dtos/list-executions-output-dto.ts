@@ -11,6 +11,8 @@ export interface ListExecutionItemDTO {
   /** YYYY-MM-DD calendar date in client's timezone (ADR-0010). */
   logicalDay: string;
   timezoneUsed: string;
+  /** Lifecycle status (ADR-0005 §8-9). */
+  status: string;
   /** Number of corrections recorded on this Execution. */
   correctionCount: number;
 }

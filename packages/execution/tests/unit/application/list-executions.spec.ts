@@ -57,6 +57,7 @@ describe('ListExecutions', () => {
       expect(item.logicalDay).toBe(execution.logicalDay.value);
       expect(item.timezoneUsed).toBe(execution.timezoneUsed);
       expect(item.occurredAtUtc).toBeDefined();
+      expect(item.status).toBe('CONFIRMED');
       expect(item.correctionCount).toBe(2);
     }
   });

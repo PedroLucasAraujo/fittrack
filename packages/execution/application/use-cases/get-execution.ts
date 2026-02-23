@@ -38,6 +38,7 @@ export class GetExecution {
       logicalDay: execution.logicalDay.value,
       timezoneUsed: execution.timezoneUsed,
       createdAtUtc: execution.createdAtUtc.toISO(),
+      status: execution.status,
       corrections: execution.corrections.map((c) => ({
         correctionId: c.id,
         reason: c.reason,

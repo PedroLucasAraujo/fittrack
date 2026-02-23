@@ -2,14 +2,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { CreateExecution } from '../../../application/use-cases/create-execution.js';
 import { ExecutionErrorCodes } from '../../../domain/errors/execution-error-codes.js';
-import { InMemoryExecutionRepository } from '../../repositories/in-memory-execution-repository.js';
 import { InMemoryAccessGrantStub } from '../../stubs/in-memory-access-grant-stub.js';
 import { InMemoryDeliverableStub } from '../../stubs/in-memory-deliverable-stub.js';
+import { InMemoryCreateExecutionUnitOfWork } from '../../stubs/in-memory-create-execution-unit-of-work-stub.js';
+import { InMemoryExecutionEventPublisherStub } from '../../stubs/in-memory-execution-event-publisher-stub.js';
 
 describe('CreateExecution', () => {
-  let repository: InMemoryExecutionRepository;
+  let unitOfWork: InMemoryCreateExecutionUnitOfWork;
   let accessGrantStub: InMemoryAccessGrantStub;
   let deliverableStub: InMemoryDeliverableStub;
+  let eventPublisher: InMemoryExecutionEventPublisherStub;
   let sut: CreateExecution;
 
   let professionalProfileId: string;
@@ -18,10 +20,11 @@ describe('CreateExecution', () => {
   let deliverableId: string;
 
   beforeEach(() => {
-    repository = new InMemoryExecutionRepository();
+    unitOfWork = new InMemoryCreateExecutionUnitOfWork();
     accessGrantStub = new InMemoryAccessGrantStub();
     deliverableStub = new InMemoryDeliverableStub();
-    sut = new CreateExecution(repository, accessGrantStub, deliverableStub);
+    eventPublisher = new InMemoryExecutionEventPublisherStub();
+    sut = new CreateExecution(unitOfWork, accessGrantStub, deliverableStub, eventPublisher);
 
     professionalProfileId = generateId();
     clientId = generateId();
@@ -35,7 +38,7 @@ describe('CreateExecution', () => {
 
   // ── Happy paths ────────────────────────────────────────────────────────────
 
-  it('creates an Execution and returns the output DTO', async () => {
+  it('creates a CONFIRMED Execution and returns the output DTO', async () => {
     const result = await sut.execute({
       professionalProfileId,
       clientId,
@@ -57,10 +60,11 @@ describe('CreateExecution', () => {
       expect(output.timezoneUsed).toBe('America/Sao_Paulo');
       expect(output.executionId).toBeDefined();
       expect(output.createdAtUtc).toBeDefined();
+      expect(output.status).toBe('CONFIRMED');
     }
   });
 
-  it('persists the Execution in the repository', async () => {
+  it('persists the Execution via the unit of work', async () => {
     await sut.execute({
       professionalProfileId,
       clientId,
@@ -70,10 +74,10 @@ describe('CreateExecution', () => {
       timezoneUsed: 'UTC',
     });
 
-    expect(repository.items).toHaveLength(1);
+    expect(unitOfWork.items).toHaveLength(1);
   });
 
-  it('increments sessionsConsumed on the AccessGrant after saving (ADR-0046 §4)', async () => {
+  it('increments sessionsConsumed atomically via the unit of work (ADR-0046 §4)', async () => {
     await sut.execute({
       professionalProfileId,
       clientId,
@@ -83,7 +87,27 @@ describe('CreateExecution', () => {
       timezoneUsed: 'UTC',
     });
 
-    expect(accessGrantStub.incrementedFor).toContain(accessGrantId);
+    expect(unitOfWork.incrementedFor).toContain(accessGrantId);
+  });
+
+  it('dispatches ExecutionRecorded event post-commit (ADR-0009 §4)', async () => {
+    await sut.execute({
+      professionalProfileId,
+      clientId,
+      accessGrantId,
+      deliverableId,
+      occurredAtUtc: '2026-02-22T10:00:00.000Z',
+      timezoneUsed: 'UTC',
+    });
+
+    expect(eventPublisher.publishedExecutionRecorded).toHaveLength(1);
+    const event = eventPublisher.publishedExecutionRecorded[0]!;
+    expect(event.eventType).toBe('ExecutionRecorded');
+    expect(event.tenantId).toBe(professionalProfileId);
+    expect(event.payload.clientId).toBe(clientId);
+    expect(event.payload.professionalProfileId).toBe(professionalProfileId);
+    expect(event.payload.deliverableId).toBe(deliverableId);
+    expect(event.payload.status).toBe('CONFIRMED');
   });
 
   it('computes logicalDay correctly for UTC timezone (same day)', async () => {
@@ -102,8 +126,7 @@ describe('CreateExecution', () => {
     }
   });
 
-  it('uses an explicit id when provided in the DTO (via repository item)', async () => {
-    const explicitId = generateId();
+  it('executionId in output is a valid UUIDv4', async () => {
     const result = await sut.execute({
       professionalProfileId,
       clientId,
@@ -113,14 +136,12 @@ describe('CreateExecution', () => {
       timezoneUsed: 'UTC',
     });
 
-    // executionId must be a UUIDv4
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.executionId).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       );
     }
-    void explicitId;
   });
 
   // ── Input validation errors ────────────────────────────────────────────────
@@ -272,7 +293,7 @@ describe('CreateExecution', () => {
       timezoneUsed: 'UTC',
     });
 
-    expect(accessGrantStub.incrementedFor).toHaveLength(0);
+    expect(unitOfWork.incrementedFor).toHaveLength(0);
   });
 
   it('does NOT persist an Execution when validation fails', async () => {
@@ -287,6 +308,21 @@ describe('CreateExecution', () => {
       timezoneUsed: 'UTC',
     });
 
-    expect(repository.items).toHaveLength(0);
+    expect(unitOfWork.items).toHaveLength(0);
+  });
+
+  it('does NOT dispatch ExecutionRecorded event when validation fails', async () => {
+    accessGrantStub.shouldValidationSucceed = false;
+
+    await sut.execute({
+      professionalProfileId,
+      clientId,
+      accessGrantId,
+      deliverableId,
+      occurredAtUtc: '2026-02-22T10:00:00.000Z',
+      timezoneUsed: 'UTC',
+    });
+
+    expect(eventPublisher.publishedExecutionRecorded).toHaveLength(0);
   });
 });

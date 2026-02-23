@@ -1,11 +1,13 @@
 import { left, right, UniqueEntityId, UTCDateTime, LogicalDay } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { Execution } from '../../domain/aggregates/execution.js';
+import { ExecutionRecordedEvent } from '../../domain/events/execution-recorded-event.js';
 import { InvalidExecutionError } from '../../domain/errors/invalid-execution-error.js';
 import { DeliverableInactiveError } from '../../domain/errors/deliverable-inactive-error.js';
-import type { IExecutionRepository } from '../../domain/repositories/execution-repository.js';
+import type { ICreateExecutionUnitOfWork } from '../ports/create-execution-unit-of-work-port.js';
 import type { IAccessGrantPort } from '../ports/access-grant-port.js';
 import type { IDeliverableVerificationPort } from '../ports/deliverable-port.js';
+import type { IExecutionEventPublisher } from '../ports/execution-event-publisher-port.js';
 import type { CreateExecutionInputDTO } from '../dtos/create-execution-input-dto.js';
 import type { CreateExecutionOutputDTO } from '../dtos/create-execution-output-dto.js';
 
@@ -22,19 +24,25 @@ import type { CreateExecutionOutputDTO } from '../dtos/create-execution-output-d
  * 4. Deliverable active (ADR-0044 §2): verified via `IDeliverableVerificationPort`
  *    (cross-context check via public API — ADR-0029, ADR-0001 §3).
  * 5. AccessGrant validity (ADR-0046 §3): all 5 checks via `IAccessGrantPort.validate()`.
- * 6. Session consumption (ADR-0046 §4): `sessionsConsumed` incremented atomically
- *    with the Execution INSERT (documented ADR-0003 exception — see IExecutionRepository).
+ * 6. Status lifecycle (ADR-0005 §9): Execution is created PENDING and immediately
+ *    confirmed to CONFIRMED before persistence.
+ * 7. Session consumption atomicity (ADR-0046 §4): Execution INSERT and
+ *    `sessionsConsumed` increment execute within the same DB transaction via
+ *    `ICreateExecutionUnitOfWork` — documented exception to ADR-0003 §1.
+ * 8. Event publication (ADR-0009 §4, §7): `ExecutionRecorded` is dispatched
+ *    post-commit to trigger downstream metric derivation (ADR-0043, ADR-0014).
  *
  * ## Immutability (ADR-0005)
  *
- * Once saved, the Execution record is never updated or deleted. Corrections
+ * Once persisted, the Execution record is never updated or deleted. Corrections
  * are handled by `RecordExecutionCorrection`.
  */
 export class CreateExecution {
   constructor(
-    private readonly executionRepository: IExecutionRepository,
+    private readonly unitOfWork: ICreateExecutionUnitOfWork,
     private readonly accessGrantPort: IAccessGrantPort,
     private readonly deliverablePort: IDeliverableVerificationPort,
+    private readonly eventPublisher: IExecutionEventPublisher,
   ) {}
 
   async execute(dto: CreateExecutionInputDTO): Promise<DomainResult<CreateExecutionOutputDTO>> {
@@ -97,7 +105,7 @@ export class CreateExecution {
       return left(accessGrantResult.value);
     }
 
-    // 6. Create Execution domain object (always succeeds with valid domain objects)
+    // 6. Create Execution in PENDING status (ADR-0005 §8-9)
     const executionResult = Execution.create({
       professionalProfileId: dto.professionalProfileId,
       clientId: dto.clientId,
@@ -114,12 +122,29 @@ export class CreateExecution {
 
     const execution = executionResult.value;
 
-    // 7. Persist Execution (ADR-0005 — immutable historical record, INSERT only)
-    await this.executionRepository.save(execution);
+    // 7. Confirm: PENDING → CONFIRMED (ADR-0005 §9)
+    //    Always succeeds on a freshly created PENDING execution.
+    const confirmResult = execution.confirm();
 
-    // 8. Atomically increment sessionsConsumed (ADR-0046 §4).
-    //    Infrastructure MUST execute steps 7 and 8 within the same DB transaction.
-    await this.accessGrantPort.incrementSessionsConsumed(dto.accessGrantId);
+    /* v8 ignore next */
+    if (confirmResult.isLeft()) return left(confirmResult.value);
+
+    // 8. Atomically INSERT Execution and increment sessionsConsumed (ADR-0046 §4).
+    //    ICreateExecutionUnitOfWork wraps both in a single DB transaction —
+    //    documented exception to ADR-0003 §1.
+    await this.unitOfWork.commitExecution(execution, dto.accessGrantId);
+
+    // 9. Publish ExecutionRecorded event post-commit (ADR-0009 §4, §7).
+    await this.eventPublisher.publishExecutionRecorded(
+      new ExecutionRecordedEvent(execution.id, execution.professionalProfileId, {
+        executionId: execution.id,
+        clientId: execution.clientId,
+        professionalProfileId: execution.professionalProfileId,
+        deliverableId: execution.deliverableId,
+        logicalDay: execution.logicalDay.value,
+        status: execution.status,
+      }),
+    );
 
     return right({
       executionId: execution.id,
@@ -131,6 +156,7 @@ export class CreateExecution {
       logicalDay: execution.logicalDay.value,
       timezoneUsed: execution.timezoneUsed,
       createdAtUtc: execution.createdAtUtc.toISO(),
+      status: execution.status,
     });
   }
 }

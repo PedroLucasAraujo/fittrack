@@ -7,14 +7,11 @@ import type { IAccessGrantPort } from '../../application/ports/access-grant-port
  * In-memory stub for IAccessGrantPort.
  *
  * Configure `shouldValidationSucceed` and `validationFailReason` before each test.
- * Tracks all `incrementSessionsConsumed` calls in `incrementedFor`.
+ * Session consumption is handled by InMemoryCreateExecutionUnitOfWork.
  */
 export class InMemoryAccessGrantStub implements IAccessGrantPort {
   shouldValidationSucceed = true;
   validationFailReason = 'access grant is not valid';
-
-  /** Ordered list of accessGrantIds passed to `incrementSessionsConsumed`. */
-  incrementedFor: string[] = [];
 
   async validate(params: {
     accessGrantId: string;
@@ -27,9 +24,5 @@ export class InMemoryAccessGrantStub implements IAccessGrantPort {
       return right(undefined);
     }
     return left(new AccessGrantInvalidError(this.validationFailReason));
-  }
-
-  async incrementSessionsConsumed(accessGrantId: string): Promise<void> {
-    this.incrementedFor.push(accessGrantId);
   }
 }

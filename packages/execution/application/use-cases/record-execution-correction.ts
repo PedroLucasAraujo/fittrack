@@ -2,7 +2,9 @@ import { left, right, UniqueEntityId } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { ExecutionNotFoundError } from '../../domain/errors/execution-not-found-error.js';
 import { InvalidExecutionError } from '../../domain/errors/invalid-execution-error.js';
+import { ExecutionCorrectionRecordedEvent } from '../../domain/events/execution-correction-recorded-event.js';
 import type { IExecutionRepository } from '../../domain/repositories/execution-repository.js';
+import type { IExecutionEventPublisher } from '../ports/execution-event-publisher-port.js';
 import type { RecordExecutionCorrectionInputDTO } from '../dtos/record-execution-correction-input-dto.js';
 import type { RecordExecutionCorrectionOutputDTO } from '../dtos/record-execution-correction-output-dto.js';
 
@@ -12,18 +14,23 @@ import type { RecordExecutionCorrectionOutputDTO } from '../dtos/record-executio
  * ## Enforced invariants
  *
  * 1. Tenant isolation (ADR-0025): scoped lookup via `professionalProfileId`.
- * 2. Correction reason: non-empty string required (audit traceability, ADR-0027).
- * 3. Immutability (ADR-0005): original Execution fields are NEVER modified.
+ * 2. Status guard (ADR-0005 §9): only CONFIRMED Executions may receive corrections.
+ * 3. Correction reason: non-empty string required (audit traceability, ADR-0027).
+ * 4. Immutability (ADR-0005): original Execution fields are NEVER modified.
  *    The correction is appended as a new `ExecutionCorrection` subordinate entity.
- * 4. `correctedBy` must be a valid UUIDv4 (stored for audit, ADR-0027).
+ * 5. `correctedBy` must be a valid UUIDv4 (stored for audit, ADR-0027).
  *
- * ## Effect
+ * ## Event publication (ADR-0005 §4, ADR-0009 §4, §7)
  *
- * After save, the Application layer (or event bus subscriber) should dispatch
- * `ExecutionCorrectionRecorded` to trigger metric recomputation (ADR-0043).
+ * After saving, `ExecutionCorrectionRecorded` is dispatched post-commit by this
+ * use case (the sole authority for event dispatch — ADR-0009 §4). Downstream
+ * consumers (Metrics context) use this event to trigger recomputation (ADR-0043).
  */
 export class RecordExecutionCorrection {
-  constructor(private readonly executionRepository: IExecutionRepository) {}
+  constructor(
+    private readonly executionRepository: IExecutionRepository,
+    private readonly eventPublisher: IExecutionEventPublisher,
+  ) {}
 
   async execute(
     dto: RecordExecutionCorrectionInputDTO,
@@ -44,14 +51,23 @@ export class RecordExecutionCorrection {
       return left(new ExecutionNotFoundError(dto.executionId));
     }
 
-    // 3. Append correction (validates reason non-empty)
+    // 3. Append correction (validates CONFIRMED status and non-empty reason)
     const correctionResult = execution.recordCorrection(dto.reason, dto.correctedBy);
     if (correctionResult.isLeft()) return left(correctionResult.value);
 
     const correction = correctionResult.value;
 
-    // 4. Persist the updated Execution (with appended correction)
+    // 4. Persist the Execution with the appended correction
     await this.executionRepository.save(execution);
+
+    // 5. Publish ExecutionCorrectionRecorded post-commit (ADR-0005 §4, ADR-0009 §4, §7)
+    await this.eventPublisher.publishExecutionCorrectionRecorded(
+      new ExecutionCorrectionRecordedEvent(execution.id, execution.professionalProfileId, {
+        correctionId: correction.id,
+        originalExecutionId: execution.id,
+        reason: correction.reason,
+      }),
+    );
 
     return right({
       correctionId: correction.id,

@@ -7,6 +7,10 @@ export { AccessGrantInvalidError } from './domain/errors/access-grant-invalid-er
 export { DeliverableInactiveError } from './domain/errors/deliverable-inactive-error.js';
 export { CorrectionReasonRequiredError } from './domain/errors/correction-reason-required-error.js';
 
+// ── Value Objects ───────────────────────────────────────────────────────────────
+export { ExecutionStatus } from './domain/value-objects/execution-status.js';
+export type { ExecutionStatus as ExecutionStatusType } from './domain/value-objects/execution-status.js';
+
 // ── Entities ───────────────────────────────────────────────────────────────────
 export { ExecutionCorrection } from './domain/entities/execution-correction.js';
 export type { ExecutionCorrectionProps } from './domain/entities/execution-correction.js';
@@ -15,12 +19,20 @@ export type { ExecutionCorrectionProps } from './domain/entities/execution-corre
 export { Execution } from './domain/aggregates/execution.js';
 export type { ExecutionProps } from './domain/aggregates/execution.js';
 
+// ── Domain Events ──────────────────────────────────────────────────────────────
+export { ExecutionRecordedEvent } from './domain/events/execution-recorded-event.js';
+export type { ExecutionRecordedPayload } from './domain/events/execution-recorded-event.js';
+export { ExecutionCorrectionRecordedEvent } from './domain/events/execution-correction-recorded-event.js';
+export type { ExecutionCorrectionRecordedPayload } from './domain/events/execution-correction-recorded-event.js';
+
 // ── Repositories ───────────────────────────────────────────────────────────────
 export type { IExecutionRepository } from './domain/repositories/execution-repository.js';
 
 // ── Ports ──────────────────────────────────────────────────────────────────────
 export type { IAccessGrantPort } from './application/ports/access-grant-port.js';
 export type { IDeliverableVerificationPort } from './application/ports/deliverable-port.js';
+export type { IExecutionEventPublisher } from './application/ports/execution-event-publisher-port.js';
+export type { ICreateExecutionUnitOfWork } from './application/ports/create-execution-unit-of-work-port.js';
 
 // ── DTOs ───────────────────────────────────────────────────────────────────────
 export type { CreateExecutionInputDTO } from './application/dtos/create-execution-input-dto.js';
