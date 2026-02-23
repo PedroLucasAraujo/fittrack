@@ -20,7 +20,10 @@ export { DeliverableTitle } from './domain/value-objects/deliverable-title.js';
 
 // ── Entities ───────────────────────────────────────────────────────────────────
 export { ExerciseAssignment } from './domain/entities/exercise-assignment.js';
-export type { ExerciseAssignmentProps } from './domain/entities/exercise-assignment.js';
+export type {
+  ExerciseAssignmentProps,
+  ExerciseAssignmentCreateInput,
+} from './domain/entities/exercise-assignment.js';
 
 // ── Aggregates ─────────────────────────────────────────────────────────────────
 export { Deliverable } from './domain/aggregates/deliverable.js';

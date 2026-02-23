@@ -4,7 +4,10 @@ import { DeliverableType } from '../enums/deliverable-type.js';
 import { DeliverableStatus } from '../enums/deliverable-status.js';
 import { DeliverableTitle } from '../value-objects/deliverable-title.js';
 import { ExerciseAssignment } from '../entities/exercise-assignment.js';
-import type { ExerciseAssignmentProps } from '../entities/exercise-assignment.js';
+import type {
+  ExerciseAssignmentProps,
+  ExerciseAssignmentCreateInput,
+} from '../entities/exercise-assignment.js';
 import { InvalidDeliverableTransitionError } from '../errors/invalid-deliverable-transition-error.js';
 import { DeliverableNotDraftError } from '../errors/deliverable-not-draft-error.js';
 import { EmptyExerciseListError } from '../errors/empty-exercise-list-error.js';
@@ -163,7 +166,7 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
    * `contentVersion` is incremented to track changes.
    */
   addExercise(
-    props: Omit<ExerciseAssignmentProps, 'orderIndex'>,
+    props: ExerciseAssignmentCreateInput,
     exerciseId?: string,
   ): DomainResult<ExerciseAssignment> {
     if (this.props.status !== DeliverableStatus.DRAFT) {

@@ -734,6 +734,10 @@ describe('ExerciseAssignment', () => {
       catalogVersion: null,
       snapshotCreatedAtUtc: null,
       name: 'Dead Hang',
+      category: null,
+      muscleGroups: null,
+      instructions: null,
+      mediaUrl: null,
       sets: null,
       reps: null,
       durationSeconds: 45,
@@ -762,5 +766,68 @@ describe('ExerciseAssignment', () => {
     });
 
     expect(exercise.orderIndex).toBe(0);
+  });
+
+  it('exposes catalog snapshot getters with non-null values (ADR-0011 §2)', () => {
+    const exercise = ExerciseAssignment.create({
+      catalogItemId: 'cat-1',
+      catalogVersion: 2,
+      snapshotCreatedAtUtc: '2026-02-23T00:00:00.000Z',
+      name: 'Bench Press',
+      category: 'STRENGTH',
+      muscleGroups: ['CHEST', 'TRICEPS'],
+      instructions: 'Lie flat on bench, lower bar to chest',
+      mediaUrl: 'https://example.com/bench-press.mp4',
+      sets: 3,
+      reps: 10,
+      durationSeconds: null,
+      restSeconds: 90,
+      notes: null,
+    });
+
+    expect(exercise.category).toBe('STRENGTH');
+    expect(exercise.muscleGroups).toEqual(['CHEST', 'TRICEPS']);
+    expect(exercise.instructions).toBe('Lie flat on bench, lower bar to chest');
+    expect(exercise.mediaUrl).toBe('https://example.com/bench-press.mp4');
+  });
+
+  it('returns null for catalog snapshot getters when fields are omitted', () => {
+    const exercise = ExerciseAssignment.create({
+      catalogItemId: null,
+      catalogVersion: null,
+      snapshotCreatedAtUtc: null,
+      name: 'Push-up',
+      sets: null,
+      reps: null,
+      durationSeconds: null,
+      restSeconds: null,
+      notes: null,
+      // category, muscleGroups, instructions, mediaUrl omitted → null defaults
+    });
+
+    expect(exercise.category).toBeNull();
+    expect(exercise.muscleGroups).toBeNull();
+    expect(exercise.instructions).toBeNull();
+    expect(exercise.mediaUrl).toBeNull();
+  });
+
+  it('muscleGroups getter returns a defensive copy (non-null branch)', () => {
+    const exercise = ExerciseAssignment.create({
+      catalogItemId: null,
+      catalogVersion: null,
+      snapshotCreatedAtUtc: null,
+      name: 'Row',
+      muscleGroups: ['BACK', 'BICEPS'],
+      sets: null,
+      reps: null,
+      durationSeconds: null,
+      restSeconds: null,
+      notes: null,
+    });
+
+    const copy = exercise.muscleGroups as string[];
+    copy.push('SHOULDERS');
+
+    expect(exercise.muscleGroups).toEqual(['BACK', 'BICEPS']);
   });
 });
