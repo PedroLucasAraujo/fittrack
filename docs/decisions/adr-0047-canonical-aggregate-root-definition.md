@@ -24,7 +24,7 @@ An Aggregate Root is an entity that:
 | Aggregate Root | Bounded Context | Subordinate Entities | Domain Events Published |
 |---------------|----------------|---------------------|------------------------|
 | `UserProfile` | Identity / UserProfile | — | `UserProfileCreated`, `UserProfileUpdated` |
-| `ProfessionalProfile` | ProfessionalProfile | PlatformEntitlement | `ProfessionalProfileCreated`, `RiskStatusChanged`, `PlatformEntitlementChanged` |
+| `ProfessionalProfile` | ProfessionalProfile | PlatformEntitlement | `ProfessionalProfileCreated`, `RiskStatusChanged` (v2, produced by Risk context), `PlatformEntitlementChanged` |
 | `ServicePlan` | ServicePlan / Catalog | — | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
 | `CatalogItem` | Catalog | — | — (no cross-context consumers at MVP scope; ADR-0009 §5, ADR-0001 §5) |
 | `Deliverable` | Deliverables | ExerciseAssignment | — (no domain events emitted at current implementation scope; ADR-0009 §1) |
@@ -40,6 +40,13 @@ An Aggregate Root is an entity that:
 | `ProfessionalClientLink` | UserProfile | — | `ClientLinked`, `ClientLinkEnded` |
 | `AuditLog` | Audit | — | (append-only; no domain events) |
 | `OutboxEvent` | Infrastructure | — | (infrastructure concern; not a domain aggregate) |
+
+**Note on Risk bounded context**: The Risk bounded context (ADR-0001 §1, ADR-0022) is
+**application-layer only**. `RiskStatus` is embedded as a state machine on `ProfessionalProfile`.
+No separate `RiskProfile` aggregate root exists. The `packages/risk/` module contains Use Cases
+that modify `ProfessionalProfile` via `IProfessionalRiskRepository` and publish `RiskStatusChanged`
+events. This is consistent with ADR-0003 (one aggregate per transaction) and ADR-0022 (canonical
+risk governance authority).
 
 ### 3. Aggregate Root Rules
 

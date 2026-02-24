@@ -1,3 +1,7 @@
+// ── Aggregates ────────────────────────────────────────────────────────────────
+export { ProfessionalProfile } from './domain/aggregates/professional-profile.js';
+export type { ProfessionalProfileProps } from './domain/aggregates/professional-profile.js';
+
 // ── Enums ────────────────────────────────────────────────────────────────────
 export { RiskStatus } from './domain/enums/risk-status.js';
 export { UserRole } from './domain/enums/user-role.js';
