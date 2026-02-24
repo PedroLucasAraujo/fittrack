@@ -118,7 +118,7 @@ The following events are formally recognized. All events conform to the structur
 | `ProfessionalProfileBanned` | ProfessionalProfile | Identity | profileId, userId, reason |
 | `ProfessionalProfileDeactivated` | ProfessionalProfile | Identity | profileId, userId, previousRiskStatus |
 | `ProfessionalProfileClosed` | ProfessionalProfile | Identity | profileId, userId, previousStatus, previousRiskStatus, reason |
-| `RiskStatusChanged` | ProfessionalProfile | Identity | profileId, previousStatus, newStatus |
+| `RiskStatusChanged` (v2) | ProfessionalProfile | Risk | profileId, previousStatus, newStatus, reason, evidenceRef |
 | `PurchaseCompleted` | Transaction | Billing | transactionId, servicePlanId, clientId, professionalProfileId, amount |
 | `PaymentFailed` | Transaction | Billing | transactionId, reason |
 | `ChargebackRegistered` | Transaction | Billing | transactionId, chargebackId, amount |
