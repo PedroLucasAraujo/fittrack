@@ -40,13 +40,13 @@ Every Metric record must carry:
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | UniqueEntityId | Unique metric record ID |
-| `derivedFromExecutionId` | UniqueEntityId | ID of the source Execution |
+| `sourceExecutionIds` | string[] | IDs of the source Execution(s) used to derive this metric (at least one; governed by ADR-0043). Supersedes the former singular `derivedFromExecutionId` field — see ADR-0043 §1 for the canonical field definition. |
 | `derivationRuleVersion` | string | Version of the derivation rule used (governed by ADR-0043) |
 | `metricType` | MetricType enum | Type of metric |
 | `value` | numeric | Computed metric value |
 | `unit` | string | Unit of measurement |
 | `computedAtUtc` | UTC timestamp | When this metric was computed |
-| `logicalDay` | ISO date string | logicalDay of the source Execution (per ADR-0010) |
+| `logicalDay` | ISO date string | logicalDay of the source Execution (per ADR-0010). For per-execution metrics this matches the source Execution's logicalDay directly. For aggregated metrics (e.g., WEEKLY_VOLUME) it represents the anchor date (ISO week start) of the derivation window. |
 
 ### 3. SelfLog Classification
 
@@ -97,11 +97,11 @@ Once a Metric record is persisted:
 ## Invariants
 
 1. Execution is the exclusive source of truth for service delivery facts. No derived entity supersedes it.
-2. Every Metric record carries `derivedFromExecutionId` and `derivationRuleVersion`.
+2. Every Metric record carries `sourceExecutionIds` (non-empty array) and `derivationRuleVersion`.
 3. Metric records are immutable after creation. Rule changes produce new records, not updates.
 4. SelfLog entries with `source=SELF` are never used in any domain rule evaluation.
 5. Read models never trigger domain mutations.
-6. logicalDay on a Metric record always matches the logicalDay of its source Execution.
+6. logicalDay on a Metric record reflects the derivation window anchor: the source Execution's logicalDay for per-execution metrics, or the ISO week start for windowed metrics.
 
 ## Constraints
 
