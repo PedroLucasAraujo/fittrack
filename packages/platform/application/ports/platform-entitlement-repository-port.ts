@@ -7,7 +7,7 @@ import type { PlatformEntitlement } from '../../domain/aggregates/platform-entit
  * The domain layer has zero infrastructure dependencies.
  */
 export interface IPlatformEntitlementRepository {
-  findById(id: string): Promise<PlatformEntitlement | null>;
+  findById(id: string, professionalProfileId: string): Promise<PlatformEntitlement | null>;
   findByProfessionalProfileId(professionalProfileId: string): Promise<PlatformEntitlement | null>;
   save(entitlement: PlatformEntitlement): Promise<void>;
 }

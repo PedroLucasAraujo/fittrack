@@ -87,7 +87,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    const result = await useCase.execute({ entitlementId: entitlement.id });
+    const result = await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     expect(result.isRight()).toBe(true);
     expect(entitlement.status).toBe(EntitlementStatus.EXPIRED);
@@ -102,7 +105,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    await useCase.execute({ entitlementId: entitlement.id });
+    await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -120,7 +126,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    await useCase.execute({ entitlementId: entitlement.id });
+    await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     const published = (publisher.publishEntitlementExpired as ReturnType<typeof vi.fn>).mock
       .calls[0]?.[0] as EntitlementExpired;
@@ -139,7 +148,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    const result = await useCase.execute({ entitlementId: entitlement.id });
+    const result = await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     expect(result.isRight()).toBe(true);
     expect(repo.save).not.toHaveBeenCalled();
@@ -150,7 +162,10 @@ describe('ExpireEntitlement', () => {
   // ── Not found ─────────────────────────────────────────────────────────────
 
   it('returns Left(EntitlementNotFoundError) when entitlement does not exist', async () => {
-    const result = await useCase.execute({ entitlementId: generateId() });
+    const result = await useCase.execute({
+      entitlementId: generateId(),
+      professionalProfileId: generateId(),
+    });
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.ENTITLEMENT_NOT_FOUND);
@@ -164,7 +179,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    const result = await useCase.execute({ entitlementId: entitlement.id });
+    const result = await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
@@ -177,7 +195,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    const result = await useCase.execute({ entitlementId: entitlement.id });
+    const result = await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
@@ -193,7 +214,10 @@ describe('ExpireEntitlement', () => {
     repo = makeRepo({ findById: vi.fn().mockResolvedValue(entitlement) });
     useCase = new ExpireEntitlement(repo, publisher, auditLog);
 
-    const result = await useCase.execute({ entitlementId: entitlement.id });
+    const result = await useCase.execute({
+      entitlementId: entitlement.id,
+      professionalProfileId: entitlement.professionalProfileId,
+    });
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);

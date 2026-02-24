@@ -30,7 +30,7 @@ export class ExpireEntitlement {
 
   async execute(dto: ExpireEntitlementInputDTO): Promise<DomainResult<void>> {
     // 1. Load aggregate by ID (scheduler provides entitlementId directly)
-    const entitlement = await this.repo.findById(dto.entitlementId);
+    const entitlement = await this.repo.findById(dto.entitlementId, dto.professionalProfileId);
     if (entitlement === null) {
       return left(new EntitlementNotFoundError(dto.entitlementId));
     }
