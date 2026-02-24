@@ -70,7 +70,7 @@ An Execution may only be created when a valid AccessGrant exists for the client,
 
 Metrics are derived from Execution records via the Metrics context (governed by ADR-0014 and ADR-0043). The following invariants hold:
 - Metrics are always derived; they are never the primary record.
-- A metric references its source Execution via `derivedFromExecutionId`.
+- A metric references its source Execution(s) via `sourceExecutionIds: string[]` (non-empty array; per ADR-0043 §1).
 - A metric carries the `derivationRuleVersion` at which it was computed.
 - Recomputation of metrics does not alter the source Execution.
 

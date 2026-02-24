@@ -136,6 +136,7 @@ The following events are formally recognized. All events conform to the structur
 | `ExecutionRecorded` (v2) | Execution | Execution | executionId, clientId, professionalProfileId, deliverableId, logicalDay, status, occurredAtUtc, timezoneUsed |
 | `ExecutionCorrectionRecorded` | Execution | Execution | correctionId, originalExecutionId, reason |
 | `SelfLogRecorded` | SelfLog | Execution / PersonalMode | selfLogEntryId, clientId, professionalProfileId, logicalDay, sourceType, sourceId, correctedEntryId |
+| `MetricComputed` | Metric | Metrics | metricId, clientId, professionalProfileId, metricType, logicalDay, derivationRuleVersion |
 | `ServicePlanPublished` | ServicePlan | ServicePlan | servicePlanId, professionalProfileId |
 | `ServicePlanArchived` | ServicePlan | ServicePlan | servicePlanId |
 | `PersonalModeActivated` | PersonalModeProfile | PersonalMode | userId |
