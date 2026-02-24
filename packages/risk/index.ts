@@ -7,6 +7,10 @@ export { InvalidRiskReasonError } from './domain/errors/invalid-risk-reason-erro
 // ── Application — Ports ───────────────────────────────────────────────────────
 export type { IProfessionalRiskRepository } from './application/ports/professional-risk-repository-port.js';
 export type { IRiskEventPublisher } from './application/ports/risk-event-publisher-port.js';
+export type {
+  IRiskAuditLog,
+  RiskStatusChangedAuditData,
+} from './application/ports/risk-audit-log-port.js';
 
 // ── Application — DTOs ────────────────────────────────────────────────────────
 export type { EscalateToWatchlistInputDTO } from './application/dtos/escalate-to-watchlist-input-dto.js';

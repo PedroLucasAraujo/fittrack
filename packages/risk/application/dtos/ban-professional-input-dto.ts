@@ -4,4 +4,8 @@ export interface BanProfessionalInputDTO {
   reason: string;
   /** Optional reference ID for the evidence that triggered the ban. */
   evidenceRef?: string;
+  /** userId of the admin performing this action (required for AuditLog — ADR-0027 §1). */
+  actorId: string;
+  /** Role of the admin performing this action (required for AuditLog — ADR-0027 §1). */
+  actorRole: string;
 }

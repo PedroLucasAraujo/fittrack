@@ -11,6 +11,7 @@ import { HandleChargebackRiskAssessment } from '../../../application/use-cases/h
 import { RiskErrorCodes } from '../../../domain/errors/risk-error-codes.js';
 import type { IProfessionalRiskRepository } from '../../../application/ports/professional-risk-repository-port.js';
 import type { IRiskEventPublisher } from '../../../application/ports/risk-event-publisher-port.js';
+import type { IRiskAuditLog } from '../../../application/ports/risk-audit-log-port.js';
 import type { RiskStatusChanged } from '@fittrack/identity';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -79,17 +80,26 @@ function makeEventPublisher(overrides: Partial<IRiskEventPublisher> = {}): IRisk
   };
 }
 
+function makeAuditLog(overrides: Partial<IRiskAuditLog> = {}): IRiskAuditLog {
+  return {
+    writeRiskStatusChanged: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
 // ── HandleChargebackRiskAssessment ────────────────────────────────────────────
 
 describe('HandleChargebackRiskAssessment', () => {
   let repo: IProfessionalRiskRepository;
   let eventPublisher: IRiskEventPublisher;
+  let auditLog: IRiskAuditLog;
   let useCase: HandleChargebackRiskAssessment;
 
   beforeEach(() => {
     repo = makeRepo();
     eventPublisher = makeEventPublisher();
-    useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+    auditLog = makeAuditLog();
+    useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
   });
 
   describe('execute()', () => {
@@ -105,12 +115,13 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId, transactionId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute(event);
 
       expect(result.isRight()).toBe(true);
       expect(repo.save).toHaveBeenCalledOnce();
+      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledOnce();
       expect(eventPublisher.publishRiskStatusChanged).toHaveBeenCalledOnce();
 
       const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
@@ -118,6 +129,32 @@ describe('HandleChargebackRiskAssessment', () => {
 
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.WATCHLIST);
+    });
+
+    it('writes AuditLog with actorId=SYSTEM, actorRole=SYSTEM on automated chargeback escalation', async () => {
+      const professionalProfileId = generateId();
+      const transactionId = generateId();
+      const profile = makeProfessionalProfile({
+        id: professionalProfileId,
+        riskStatus: RiskStatus.NORMAL,
+      });
+      const event = makeChargebackRegisteredEvent({ professionalProfileId, transactionId });
+
+      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
+
+      await useCase.execute(event);
+
+      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actorId: 'SYSTEM',
+          actorRole: 'SYSTEM',
+          targetEntityId: professionalProfileId,
+          tenantId: professionalProfileId,
+          previousStatus: RiskStatus.NORMAL,
+          newStatus: RiskStatus.WATCHLIST,
+        }),
+      );
     });
 
     it('sets evidenceRef to transactionId (event.aggregateId) on NORMAL chargeback', async () => {
@@ -130,7 +167,7 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId, transactionId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       await useCase.execute(event);
 
@@ -150,7 +187,7 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId, transactionId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       await useCase.execute(event);
 
@@ -172,12 +209,13 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId, transactionId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute(event);
 
       expect(result.isRight()).toBe(true);
       expect(repo.save).toHaveBeenCalledOnce();
+      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledOnce();
 
       const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
         .calls[0]?.[0] as RiskStatusChanged;
@@ -196,7 +234,7 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId, transactionId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       await useCase.execute(event);
 
@@ -218,12 +256,13 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute(event);
 
       expect(result.isRight()).toBe(true);
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
 
@@ -231,7 +270,7 @@ describe('HandleChargebackRiskAssessment', () => {
 
     it('returns Left(ProfessionalRiskNotFoundError) when tenantId does not match a profile', async () => {
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(null) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
       const event = makeChargebackRegisteredEvent({ professionalProfileId: generateId() });
 
       const result = await useCase.execute(event);
@@ -241,6 +280,7 @@ describe('HandleChargebackRiskAssessment', () => {
         expect(result.value.code).toBe(RiskErrorCodes.PROFESSIONAL_NOT_FOUND);
       }
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
 
@@ -258,12 +298,13 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute(event);
 
       expect(result.isLeft()).toBe(true);
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
 
@@ -278,7 +319,7 @@ describe('HandleChargebackRiskAssessment', () => {
       const event = makeChargebackRegisteredEvent({ professionalProfileId });
 
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher);
+      useCase = new HandleChargebackRiskAssessment(repo, eventPublisher, auditLog);
 
       await useCase.execute(event);
 

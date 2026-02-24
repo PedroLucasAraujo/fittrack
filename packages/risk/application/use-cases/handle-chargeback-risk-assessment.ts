@@ -1,10 +1,11 @@
-import { left, right } from '@fittrack/core';
+import { left, right, UTCDateTime } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { RiskStatus, RiskStatusChanged } from '@fittrack/identity';
 import type { ChargebackRegistered } from '@fittrack/billing';
 import { ProfessionalRiskNotFoundError } from '../../domain/errors/professional-risk-not-found-error.js';
 import type { IProfessionalRiskRepository } from '../ports/professional-risk-repository-port.js';
 import type { IRiskEventPublisher } from '../ports/risk-event-publisher-port.js';
+import type { IRiskAuditLog } from '../ports/risk-audit-log-port.js';
 
 /**
  * Automated risk escalation triggered by the `ChargebackRegistered` domain
@@ -24,6 +25,10 @@ import type { IRiskEventPublisher } from '../ports/risk-event-publisher-port.js'
  * a dedicated chargebackId in its current payload (billing package gap);
  * the transactionId is the best available reference.
  *
+ * ## AuditLog actor (ADR-0027 §3)
+ * Automated actions use `actorId = 'SYSTEM'` and `actorRole = 'SYSTEM'`
+ * to distinguish from human-initiated actions in the audit trail.
+ *
  * ## Idempotency (ADR-0007)
  * If the same `ChargebackRegistered` event is delivered twice:
  * - First delivery (NORMAL): NORMAL → WATCHLIST
@@ -41,6 +46,7 @@ export class HandleChargebackRiskAssessment {
   constructor(
     private readonly repo: IProfessionalRiskRepository,
     private readonly eventPublisher: IRiskEventPublisher,
+    private readonly auditLog: IRiskAuditLog,
   ) {}
 
   async execute(event: ChargebackRegistered): Promise<DomainResult<void>> {
@@ -79,7 +85,20 @@ export class HandleChargebackRiskAssessment {
     // 5. Persist (ADR-0003 — single aggregate per transaction)
     await this.repo.save(profile);
 
-    // 6. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)
+    // 6. Write AuditLog entry post-commit, fire-and-forget (ADR-0027 §2, ADR-0027 §3)
+    // Automated actions use actorId='SYSTEM', actorRole='SYSTEM' (ADR-0027 §3)
+    await this.auditLog.writeRiskStatusChanged({
+      actorId: 'SYSTEM',
+      actorRole: 'SYSTEM',
+      targetEntityId: profile.id,
+      tenantId: profile.id,
+      previousStatus,
+      newStatus: profile.riskStatus,
+      reason: `Chargeback registered: transactionId=${event.aggregateId}`,
+      occurredAtUtc: UTCDateTime.now().value,
+    });
+
+    // 7. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)
     await this.eventPublisher.publishRiskStatusChanged(
       new RiskStatusChanged(profile.id, profile.id, {
         previousStatus,

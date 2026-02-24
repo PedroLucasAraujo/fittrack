@@ -10,9 +10,12 @@ import { EscalateToWatchlist } from '../../../application/use-cases/escalate-to-
 import { RiskErrorCodes } from '../../../domain/errors/risk-error-codes.js';
 import type { IProfessionalRiskRepository } from '../../../application/ports/professional-risk-repository-port.js';
 import type { IRiskEventPublisher } from '../../../application/ports/risk-event-publisher-port.js';
+import type { IRiskAuditLog } from '../../../application/ports/risk-audit-log-port.js';
 import type { RiskStatusChanged } from '@fittrack/identity';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const MOCK_ACTOR = { actorId: 'admin-id-001', actorRole: 'ADMIN' } as const;
 
 function makeProfessionalProfile(
   overrides: Partial<{
@@ -57,17 +60,26 @@ function makeEventPublisher(overrides: Partial<IRiskEventPublisher> = {}): IRisk
   };
 }
 
+function makeAuditLog(overrides: Partial<IRiskAuditLog> = {}): IRiskAuditLog {
+  return {
+    writeRiskStatusChanged: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
 // ── EscalateToWatchlist ───────────────────────────────────────────────────────
 
 describe('EscalateToWatchlist', () => {
   let repo: IProfessionalRiskRepository;
   let eventPublisher: IRiskEventPublisher;
+  let auditLog: IRiskAuditLog;
   let useCase: EscalateToWatchlist;
 
   beforeEach(() => {
     repo = makeRepo();
     eventPublisher = makeEventPublisher();
-    useCase = new EscalateToWatchlist(repo, eventPublisher);
+    auditLog = makeAuditLog();
+    useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
   });
 
   describe('execute()', () => {
@@ -76,26 +88,29 @@ describe('EscalateToWatchlist', () => {
     it('transitions NORMAL → WATCHLIST and publishes RiskStatusChanged', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
         reason: 'Suspicious refund pattern detected',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isRight()).toBe(true);
       expect(repo.save).toHaveBeenCalledOnce();
+      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledOnce();
       expect(eventPublisher.publishRiskStatusChanged).toHaveBeenCalledOnce();
     });
 
     it('event payload has correct previousStatus=NORMAL, newStatus=WATCHLIST, reason', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       await useCase.execute({
         professionalProfileId: profile.id,
         reason: 'Admin review flagged',
+        ...MOCK_ACTOR,
       });
 
       const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
@@ -109,16 +124,41 @@ describe('EscalateToWatchlist', () => {
       expect(published.payload.evidenceRef).toBeNull();
     });
 
+    it('writes AuditLog with correct actorId, actorRole, targetEntityId, and status transition', async () => {
+      const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
+      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
+
+      await useCase.execute({
+        professionalProfileId: profile.id,
+        reason: 'Admin review flagged',
+        ...MOCK_ACTOR,
+      });
+
+      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actorId: MOCK_ACTOR.actorId,
+          actorRole: MOCK_ACTOR.actorRole,
+          targetEntityId: profile.id,
+          tenantId: profile.id,
+          previousStatus: RiskStatus.NORMAL,
+          newStatus: RiskStatus.WATCHLIST,
+          reason: 'Admin review flagged',
+        }),
+      );
+    });
+
     it('sets evidenceRef from dto when provided', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
       const evidenceRef = generateId();
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       await useCase.execute({
         professionalProfileId: profile.id,
         reason: 'Evidence-backed escalation',
         evidenceRef,
+        ...MOCK_ACTOR,
       });
 
       const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
@@ -130,11 +170,12 @@ describe('EscalateToWatchlist', () => {
     it('trims whitespace from reason before validating and publishing', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
         reason: '  Valid reason after trim  ',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isRight()).toBe(true);
@@ -149,6 +190,7 @@ describe('EscalateToWatchlist', () => {
       const result = await useCase.execute({
         professionalProfileId: generateId(),
         reason: '',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isLeft()).toBe(true);
@@ -156,6 +198,7 @@ describe('EscalateToWatchlist', () => {
         expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
       }
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
 
@@ -163,18 +206,21 @@ describe('EscalateToWatchlist', () => {
       const result = await useCase.execute({
         professionalProfileId: generateId(),
         reason: '   ',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
         expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
       }
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
     });
 
     it('returns Left(InvalidRiskReasonError) when reason exceeds 500 characters', async () => {
       const result = await useCase.execute({
         professionalProfileId: generateId(),
         reason: 'a'.repeat(501),
+        ...MOCK_ACTOR,
       });
 
       expect(result.isLeft()).toBe(true);
@@ -182,30 +228,34 @@ describe('EscalateToWatchlist', () => {
         expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
       }
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
     });
 
     it('accepts a reason of exactly 500 characters', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
         reason: 'a'.repeat(500),
+        ...MOCK_ACTOR,
       });
 
       expect(result.isRight()).toBe(true);
+      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledOnce();
     });
 
     // ── Repository — not found ────────────────────────────────────────────────
 
     it('returns Left(ProfessionalRiskNotFoundError) when profile does not exist', async () => {
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(null) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute({
         professionalProfileId: generateId(),
         reason: 'Valid reason',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isLeft()).toBe(true);
@@ -213,6 +263,7 @@ describe('EscalateToWatchlist', () => {
         expect(result.value.code).toBe(RiskErrorCodes.PROFESSIONAL_NOT_FOUND);
       }
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
 
@@ -221,15 +272,17 @@ describe('EscalateToWatchlist', () => {
     it('returns Left when profile is already WATCHLIST (invalid transition)', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.WATCHLIST });
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
         reason: 'Attempted re-escalation',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isLeft()).toBe(true);
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
 
@@ -239,15 +292,17 @@ describe('EscalateToWatchlist', () => {
         status: ProfessionalProfileStatus.BANNED,
       });
       repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new EscalateToWatchlist(repo, eventPublisher);
+      useCase = new EscalateToWatchlist(repo, eventPublisher, auditLog);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
         reason: 'Attempted escalation on banned profile',
+        ...MOCK_ACTOR,
       });
 
       expect(result.isLeft()).toBe(true);
       expect(repo.save).not.toHaveBeenCalled();
+      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
       expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
     });
   });

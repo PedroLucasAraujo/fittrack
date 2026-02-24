@@ -1,10 +1,11 @@
-import { left, right } from '@fittrack/core';
+import { left, right, UTCDateTime } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { RiskStatusChanged } from '@fittrack/identity';
 import { InvalidRiskReasonError } from '../../domain/errors/invalid-risk-reason-error.js';
 import { ProfessionalRiskNotFoundError } from '../../domain/errors/professional-risk-not-found-error.js';
 import type { IProfessionalRiskRepository } from '../ports/professional-risk-repository-port.js';
 import type { IRiskEventPublisher } from '../ports/risk-event-publisher-port.js';
+import type { IRiskAuditLog } from '../ports/risk-audit-log-port.js';
 import type { EscalateToWatchlistInputDTO } from '../dtos/escalate-to-watchlist-input-dto.js';
 
 /**
@@ -15,6 +16,7 @@ import type { EscalateToWatchlistInputDTO } from '../dtos/escalate-to-watchlist-
  *
  * ## Side effects
  * - Saves the updated ProfessionalProfile.
+ * - Writes RISK_STATUS_CHANGED AuditLog entry post-commit (ADR-0027 §2, ADR-0022 Invariant 3).
  * - Publishes `RiskStatusChanged` (v2) post-commit (ADR-0009 §4).
  *
  * ## One aggregate per transaction (ADR-0003)
@@ -26,6 +28,7 @@ export class EscalateToWatchlist {
   constructor(
     private readonly repo: IProfessionalRiskRepository,
     private readonly eventPublisher: IRiskEventPublisher,
+    private readonly auditLog: IRiskAuditLog,
   ) {}
 
   async execute(dto: EscalateToWatchlistInputDTO): Promise<DomainResult<void>> {
@@ -51,7 +54,19 @@ export class EscalateToWatchlist {
     // 5. Persist (ADR-0003 — single aggregate per transaction)
     await this.repo.save(profile);
 
-    // 6. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)
+    // 6. Write AuditLog entry post-commit, fire-and-forget (ADR-0027 §2, ADR-0022 Invariant 3)
+    await this.auditLog.writeRiskStatusChanged({
+      actorId: dto.actorId,
+      actorRole: dto.actorRole,
+      targetEntityId: profile.id,
+      tenantId: profile.id,
+      previousStatus,
+      newStatus: profile.riskStatus,
+      reason: trimmedReason,
+      occurredAtUtc: UTCDateTime.now().value,
+    });
+
+    // 7. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)
     await this.eventPublisher.publishRiskStatusChanged(
       new RiskStatusChanged(profile.id, profile.id, {
         previousStatus,
