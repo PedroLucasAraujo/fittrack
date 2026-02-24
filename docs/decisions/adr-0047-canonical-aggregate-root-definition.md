@@ -24,7 +24,8 @@ An Aggregate Root is an entity that:
 | Aggregate Root | Bounded Context | Subordinate Entities | Domain Events Published |
 |---------------|----------------|---------------------|------------------------|
 | `UserProfile` | Identity / UserProfile | — | `UserProfileCreated`, `UserProfileUpdated` |
-| `ProfessionalProfile` | ProfessionalProfile | PlatformEntitlement | `ProfessionalProfileCreated`, `RiskStatusChanged` (v2, produced by Risk context), `PlatformEntitlementChanged` |
+| `ProfessionalProfile` | ProfessionalProfile | — | `ProfessionalProfileCreated`, `RiskStatusChanged` (v2, produced by Risk context) |
+| `PlatformEntitlement` | Platform | — | `EntitlementGranted`, `EntitlementCapabilityAdded`, `EntitlementCapabilityRemoved`, `EntitlementSuspended`, `EntitlementReinstated`, `EntitlementExpired` |
 | `ServicePlan` | ServicePlan / Catalog | — | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
 | `CatalogItem` | Catalog | — | — (no cross-context consumers at MVP scope; ADR-0009 §5, ADR-0001 §5) |
 | `Deliverable` | Deliverables | ExerciseAssignment | — (no domain events emitted at current implementation scope; ADR-0009 §1) |

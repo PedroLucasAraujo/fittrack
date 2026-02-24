@@ -140,9 +140,15 @@ The following events are formally recognized. All events conform to the structur
 | `ServicePlanPublished` | ServicePlan | ServicePlan | servicePlanId, professionalProfileId |
 | `ServicePlanArchived` | ServicePlan | ServicePlan | servicePlanId |
 | `PersonalModeActivated` | PersonalModeProfile | PersonalMode | userId |
-| `EntitlementEnteredGracePeriod` | PlatformEntitlement | Billing | entitlementId, gracePeriodUntil |
-| `EntitlementRestored` | PlatformEntitlement | Billing | entitlementId |
-| `GracePeriodExpired` | PlatformEntitlement | Billing | entitlementId |
+| `EntitlementEnteredGracePeriod` | Subscription *(TBD)* | Billing | entitlementId, gracePeriodUntil |
+| `EntitlementRestored` | Subscription *(TBD)* | Billing | entitlementId |
+| `GracePeriodExpired` | Subscription *(TBD)* | Billing | entitlementId |
+| `EntitlementGranted` | PlatformEntitlement | Platform | entitlementId, professionalProfileId, entitlements, expiresAt |
+| `EntitlementCapabilityAdded` | PlatformEntitlement | Platform | entitlementId, capability, reason |
+| `EntitlementCapabilityRemoved` | PlatformEntitlement | Platform | entitlementId, capability, reason |
+| `EntitlementSuspended` | PlatformEntitlement | Platform | entitlementId, reason, evidenceRef |
+| `EntitlementReinstated` | PlatformEntitlement | Platform | entitlementId, reason |
+| `EntitlementExpired` | PlatformEntitlement | Platform | entitlementId, expiredAt |
 
 ### §8. Event Versioning Policy
 
