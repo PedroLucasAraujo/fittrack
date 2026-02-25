@@ -18,7 +18,7 @@ These invariants must NEVER be violated in any code change:
 4. **Snapshot at prescription** (ADR-0011): Deliverable content is embedded as an immutable snapshot; never references live catalog.
 5. **Subscription-first** (ADR-0017): Payment confirmation always precedes `AccessGrant` creation.
 6. **AccessGrant validity** (ADR-0046): 5 mandatory checks — status ACTIVE, correct clientId, correct professionalProfileId, validUntil not expired, sessionAllotment not exhausted.
-7. **Banned state** (ADR-0022): Blocks all mutations and invalidates all sessions. Not terminal (can be lifted).
+7. **Banned state** (ADR-0022): Blocks all mutations and invalidates all sessions. **Terminal and irreversible** — no transition out of BANNED is permitted under any circumstance.
 8. **Financial amounts** (ADR-0004): Integer cents only, never floating point.
 9. **One aggregate per transaction** (ADR-0003): Cross-aggregate references by ID only (ADR-0047).
 10. **No PII in logs/audit/cache/errors** (ADR-0037): Health data and financial amounts also prohibited in logs.

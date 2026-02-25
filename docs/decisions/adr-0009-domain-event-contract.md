@@ -139,6 +139,8 @@ The following events are formally recognized. All events conform to the structur
 | `MetricComputed` | Metric | Metrics | metricId, clientId, professionalProfileId, metricType, logicalDay, derivationRuleVersion |
 | `ServicePlanPublished` | ServicePlan | ServicePlan | servicePlanId, professionalProfileId |
 | `ServicePlanArchived` | ServicePlan | ServicePlan | servicePlanId |
+| `ProductPurchaseCompleted` | ProductPurchase | Products | productPurchaseId, productVersionId, clientId, professionalProfileId, transactionId |
+| `ProductPurchaseRefunded` | ProductPurchase | Products | productPurchaseId, refundId, revokedAccessGrantIds |
 | `PersonalModeActivated` | PersonalModeProfile | PersonalMode | userId |
 | `EntitlementEnteredGracePeriod` | Subscription *(TBD)* | Billing | entitlementId, gracePeriodUntil |
 | `EntitlementRestored` | Subscription *(TBD)* | Billing | entitlementId |
@@ -149,6 +151,7 @@ The following events are formally recognized. All events conform to the structur
 | `EntitlementSuspended` | PlatformEntitlement | Platform | entitlementId, reason, evidenceRef |
 | `EntitlementReinstated` | PlatformEntitlement | Platform | entitlementId, reason |
 | `EntitlementExpired` | PlatformEntitlement | Platform | entitlementId, expiredAt |
+| `TemplateVersionChanged` | CatalogItem | Catalog | catalogItemId, professionalProfileId, previousVersion, newVersion |
 
 ### §8. Event Versioning Policy
 

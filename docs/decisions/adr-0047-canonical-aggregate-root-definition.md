@@ -27,7 +27,7 @@ An Aggregate Root is an entity that:
 | `ProfessionalProfile` | ProfessionalProfile | — | `ProfessionalProfileCreated`, `RiskStatusChanged` (v2, produced by Risk context) |
 | `PlatformEntitlement` | Platform | — | `EntitlementGranted`, `EntitlementCapabilityAdded`, `EntitlementCapabilityRemoved`, `EntitlementSuspended`, `EntitlementReinstated`, `EntitlementExpired` |
 | `ServicePlan` | ServicePlan / Catalog | — | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
-| `CatalogItem` | Catalog | — | — (no cross-context consumers at MVP scope; ADR-0009 §5, ADR-0001 §5) |
+| `CatalogItem` | Catalog | — | `TemplateVersionChanged` (cache invalidation per ADR-0030) |
 | `Deliverable` | Deliverables | ExerciseAssignment | — (no domain events emitted at current implementation scope; ADR-0009 §1) |
 | `Session` | Scheduling | — | `SessionCreated`, `SessionArchived` |
 | `WorkingAvailability` | Scheduling | — | `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated` |
@@ -57,7 +57,7 @@ risk governance authority).
 | **No cross-aggregate references within a transaction** | Aggregates reference each other by ID only, never by object reference. |
 | **Repository per aggregate** | Each aggregate root has exactly one repository interface. No repository spans multiple roots. |
 | **Version field required** | Aggregate roots subject to concurrent modification carry a `version` field for optimistic locking (ADR-0006). |
-| **Events published by root** | Domain events are produced by the aggregate root, not by subordinate entities. |
+| **Events dispatched by Application layer** | Domain events are constructed and published exclusively by the Application layer (UseCase), after the transaction commit. Aggregate roots are pure state machines — they mutate state and return results but never create, collect, or publish events. The `addDomainEvent()` method inherited from `AggregateRoot` is reserved for potential future event sourcing and MUST NOT be called in concrete aggregates. The pattern is: `aggregate.method()` → `repo.save()` → `eventPublisher.publish(new Event())` in the UseCase. |
 | **Subordinate entities owned exclusively** | A subordinate entity is part of exactly one aggregate; it does not appear in another aggregate's boundary. |
 
 ### 4. Aggregate Root vs Entity vs Value Object
@@ -114,7 +114,7 @@ Repository interfaces return aggregate roots (not partial projections). Partial 
 1. One transaction modifies exactly one aggregate root.
 2. Aggregates reference each other by ID only; no cross-aggregate object references.
 3. Every aggregate root has exactly one repository interface.
-4. Domain events are published by aggregate roots only, not subordinate entities.
+4. Domain events are constructed and published by the Application layer (UseCase) only — aggregates and subordinate entities never create or publish events directly.
 5. Subordinate entities are owned by exactly one aggregate root and are not accessible directly by ID from outside the aggregate.
 
 ## Constraints

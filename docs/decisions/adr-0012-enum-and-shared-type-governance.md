@@ -27,8 +27,10 @@ All enums that are used across multiple bounded contexts or serialized to the pe
 | `ServicePlanStatus` | `DRAFT`, `ACTIVE`, `PAUSED`, `ARCHIVED`, `DELETED` | ServicePlan |
 | `ExecutionStatus` | `PENDING`, `CONFIRMED`, `CANCELLED` | Execution |
 | `MetricType` | `WEIGHT`, `BODY_FAT`, `VO2_MAX`, `RESTING_HEART_RATE`, `CUSTOM` | Metrics |
-| `DeliverableType` | `TRAINING`, `DIET`, `EVALUATION`, `SESSION` | Execution |
+| `DeliverableType` | `TRAINING_PRESCRIPTION`, `DIET_PLAN`, `PHYSIOLOGICAL_ASSESSMENT`, `SESSION` | Deliverables |
 | `SelfLogSource` | `EXECUTION`, `SELF` | PersonalMode |
+
+> **DeliverableType deprecation note:** Previous abbreviated values (`TRAINING`, `DIET`, `EVALUATION`) are deprecated. All new code must use the descriptive names above (`TRAINING_PRESCRIPTION`, `DIET_PLAN`, `PHYSIOLOGICAL_ASSESSMENT`). The deprecated values remain in the enum while any persisted record references them (per §4 Enum Deprecation Protocol).
 
 ### 3. Enum Addition Protocol
 

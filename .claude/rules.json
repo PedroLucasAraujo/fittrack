@@ -214,7 +214,7 @@
 
   "risk_governance": {
     "states": ["NORMAL", "WATCHLIST", "BANNED"],
-    "banned_is_terminal": false,
+    "banned_is_terminal": true,
     "banned_blocks_all_mutations": true,
     "banned_invalidates_all_sessions": true,
     "watchlist_triggers": {

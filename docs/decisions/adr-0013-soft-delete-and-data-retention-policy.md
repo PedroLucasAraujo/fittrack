@@ -22,7 +22,7 @@ Entities are classified into four tiers based on retention and deletion policy:
 | Tier | Policy | Examples |
 |------|--------|---------|
 | **Tier 1 — Permanent** | Never deleted, never soft-deleted. Hard deletion is prohibited. | Execution, Transaction, AccessGrant, LedgerEntry, AuditLog |
-| **Tier 2 — Retained on Closure** | Entity may be deactivated or closed, but record is permanently retained. | ProfessionalProfile, UserProfile, ServicePlan, Booking |
+| **Tier 2 — Retained on Closure** | Entity may be deactivated or closed, but record is permanently retained. | ProfessionalProfile, UserProfile, ServicePlan, Booking, SelfLog |
 | **Tier 3 — Soft Delete Permitted** | Soft delete allowed (sets `deletedAt` timestamp). Hard delete prohibited in production. | CatalogItem, RecurringSchedule, WorkingAvailability, FeatureFlag |
 | **Tier 4 — Ephemeral** | Hard delete permitted after TTL expiry. | IdempotencyKey (post-TTL), SessionToken, RefreshToken, TempUploadRecord |
 
@@ -46,6 +46,7 @@ The following invariants apply without exception:
 | UserProfile | Status → `DEACTIVATED` | PII may be anonymized (LGPD); Execution records retain anonymized userId |
 | ServicePlan | Status → `ARCHIVED` | Existing subscriptions and AccessGrants unaffected |
 | Booking | Status → terminal cancel/complete states | Record retained permanently |
+| SelfLog | No closure mechanism (never soft-deleted) | **Tier 2 regardless of `source` field (EXECUTION or SELF).** SelfLog contains health-related data (LGPD Category A) linked to the professional-client relationship. May serve as evidence of professional follow-up. PII fields are anonymizable via LGPD request; record structure is preserved permanently. Hard delete prohibited. |
 
 ### 4. Tier 3 — Soft Delete Protocol
 

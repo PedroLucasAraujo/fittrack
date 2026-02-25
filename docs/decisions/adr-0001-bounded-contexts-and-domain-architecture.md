@@ -28,6 +28,8 @@ The following bounded contexts are formally recognized. Each context owns its ag
 | PersonalMode | Self-directed client tracking without professional assignment |
 | Risk | Professional risk assessment, RiskStatus governance, operational limit enforcement |
 | Audit | Immutable audit event log, traceability records |
+| Deliverables | Prescriptions and content delivered to the client. Aggregate roots: Deliverable. Responsible for the Deliverable lifecycle (DRAFT → ACTIVE → ARCHIVED) and immutable snapshots. Independent from Execution — Executions reference DeliverableSnapshots by ID. |
+| Products | One-time purchasable products. Aggregate roots: Product, ProductPurchase. Responsible for versioned product catalog, one-time purchases, and AccessGrant issuance with source=PRODUCT_PURCHASE. Independent from Billing — reacts to TransactionConfirmed(type=ONE_TIME) events to create ProductPurchase and grant access. See ADR-0050. |
 
 ### 2. Aggregate Root Assignment
 
@@ -41,7 +43,7 @@ Each aggregate root belongs to exactly one bounded context. Complete listing gov
 | Booking | Scheduling |
 | RecurringSchedule | Scheduling |
 | Execution | Execution |
-| Deliverable | Execution |
+| Deliverable | Deliverables |
 | Transaction | Billing |
 | AccessGrant | Billing |
 | PlatformEntitlement | Billing |
@@ -49,6 +51,8 @@ Each aggregate root belongs to exactly one bounded context. Complete listing gov
 | PersonalModeProfile | PersonalMode |
 | SelfLog | PersonalMode |
 | AuditLog | Audit |
+| Product | Products |
+| ProductPurchase | Products |
 
 ### 3. Inter-Context Communication Rules
 
@@ -69,17 +73,7 @@ Each aggregate root belongs to exactly one bounded context. Complete listing gov
 
 ### 5. Event-Driven Coordination
 
-The following domain events coordinate cross-context operations:
-
-| Event | Producer Context | Consumer Context(s) |
-|-------|-----------------|---------------------|
-| PurchaseCompleted | Billing | Billing (AccessGrant creation) |
-| BookingConfirmed | Scheduling | Execution (Deliverable preparation) |
-| ExecutionRecorded | Execution | Metrics (derivation trigger) |
-| RiskStatusChanged | Risk | Billing, Scheduling (restriction enforcement) |
-| PersonalModeActivated | PersonalMode | Execution (alternative flow) |
-| ChargebackRegistered | Billing | Audit |
-| AccessGrantRevoked | Billing | Scheduling, Execution |
+The canonical catalog of domain events is maintained in ADR-0009 §7. This section references ADR-0009 as the single source of truth for event definitions. ADR-0001 does not maintain a separate event list to avoid drift.
 
 ## Invariants
 
