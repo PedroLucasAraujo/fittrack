@@ -1,4 +1,6 @@
 // ── Aggregates ────────────────────────────────────────────────────────────────
+export { User } from './domain/aggregates/user.js';
+export type { UserProps } from './domain/aggregates/user.js';
 export { ProfessionalProfile } from './domain/aggregates/professional-profile.js';
 export type { ProfessionalProfileProps } from './domain/aggregates/professional-profile.js';
 
@@ -39,20 +41,35 @@ export { RiskStatusChanged } from './domain/events/risk-status-changed.js';
 export type { IUserRepository } from './domain/repositories/user-repository.js';
 export type { IProfessionalProfileRepository } from './domain/repositories/professional-profile-repository.js';
 
+// ── Application — Ports ─────────────────────────────────────────────────────
+export type { IIdentityEventPublisher } from './application/ports/identity-event-publisher-port.js';
+
 // ── Application — Input DTOs ─────────────────────────────────────────────────
 export type { CreateUserInputDTO } from './application/dtos/create-user-input-dto.js';
 export type { CreateProfessionalProfileInputDTO } from './application/dtos/create-professional-profile-input-dto.js';
+export type { ApproveProfessionalProfileInputDTO } from './application/dtos/approve-professional-profile-input-dto.js';
+export type { SuspendProfessionalProfileInputDTO } from './application/dtos/suspend-professional-profile-input-dto.js';
+export type { ReactivateProfessionalProfileInputDTO } from './application/dtos/reactivate-professional-profile-input-dto.js';
 export type { BanProfessionalProfileInputDTO } from './application/dtos/ban-professional-profile-input-dto.js';
+export type { DeactivateProfessionalProfileInputDTO } from './application/dtos/deactivate-professional-profile-input-dto.js';
 export type { CloseProfessionalProfileInputDTO } from './application/dtos/close-professional-profile-input-dto.js';
 
 // ── Application — Output DTOs ────────────────────────────────────────────────
 export type { CreateUserOutputDTO } from './application/dtos/create-user-output-dto.js';
 export type { CreateProfessionalProfileOutputDTO } from './application/dtos/create-professional-profile-output-dto.js';
+export type { ApproveProfessionalProfileOutputDTO } from './application/dtos/approve-professional-profile-output-dto.js';
+export type { SuspendProfessionalProfileOutputDTO } from './application/dtos/suspend-professional-profile-output-dto.js';
+export type { ReactivateProfessionalProfileOutputDTO } from './application/dtos/reactivate-professional-profile-output-dto.js';
 export type { BanProfessionalProfileOutputDTO } from './application/dtos/ban-professional-profile-output-dto.js';
+export type { DeactivateProfessionalProfileOutputDTO } from './application/dtos/deactivate-professional-profile-output-dto.js';
 export type { CloseProfessionalProfileOutputDTO } from './application/dtos/close-professional-profile-output-dto.js';
 
 // ── Application — Use Cases ──────────────────────────────────────────────────
 export { CreateUser } from './application/use-cases/create-user.js';
 export { CreateProfessionalProfile } from './application/use-cases/create-professional-profile.js';
+export { ApproveProfessionalProfile } from './application/use-cases/approve-professional-profile.js';
+export { SuspendProfessionalProfile } from './application/use-cases/suspend-professional-profile.js';
+export { ReactivateProfessionalProfile } from './application/use-cases/reactivate-professional-profile.js';
 export { BanProfessionalProfile } from './application/use-cases/ban-professional-profile.js';
+export { DeactivateProfessionalProfile } from './application/use-cases/deactivate-professional-profile.js';
 export { CloseProfessionalProfile } from './application/use-cases/close-professional-profile.js';

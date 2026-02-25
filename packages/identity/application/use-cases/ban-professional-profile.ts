@@ -2,7 +2,9 @@ import { left, right } from '@fittrack/core';
 import { UniqueEntityId } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { ProfessionalProfileNotFoundError } from '../../domain/errors/professional-profile-not-found-error.js';
+import { ProfessionalProfileBanned } from '../../domain/events/professional-profile-banned.js';
 import type { IProfessionalProfileRepository } from '../../domain/repositories/professional-profile-repository.js';
+import type { IIdentityEventPublisher } from '../ports/identity-event-publisher-port.js';
 import type { BanProfessionalProfileInputDTO } from '../dtos/ban-professional-profile-input-dto.js';
 import type { BanProfessionalProfileOutputDTO } from '../dtos/ban-professional-profile-output-dto.js';
 
@@ -15,7 +17,10 @@ import type { BanProfessionalProfileOutputDTO } from '../dtos/ban-professional-p
  * Returns an Output DTO — never exposes the aggregate.
  */
 export class BanProfessionalProfile {
-  constructor(private readonly profileRepository: IProfessionalProfileRepository) {}
+  constructor(
+    private readonly profileRepository: IProfessionalProfileRepository,
+    private readonly eventPublisher: IIdentityEventPublisher,
+  ) {}
 
   async execute(
     dto: BanProfessionalProfileInputDTO,
@@ -28,10 +33,19 @@ export class BanProfessionalProfile {
       return left(new ProfessionalProfileNotFoundError(dto.professionalProfileId));
     }
 
+    const previousStatus = profile.status;
+
     const banResult = profile.ban(dto.reason);
     if (banResult.isLeft()) return left(banResult.value);
 
     await this.profileRepository.save(profile);
+
+    await this.eventPublisher.publishProfessionalProfileBanned(
+      new ProfessionalProfileBanned(profile.id, profile.id, {
+        reason: dto.reason,
+        previousStatus,
+      }),
+    );
 
     const bannedAtUtc = profile.bannedAtUtc;
     /* v8 ignore next */
