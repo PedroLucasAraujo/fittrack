@@ -1,85 +1,56 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BanProfessionalProfile } from '../../../application/use-cases/ban-professional-profile.js';
+import { SuspendProfessionalProfile } from '../../../application/use-cases/suspend-professional-profile.js';
 import { InMemoryProfessionalProfileRepository } from '../../repositories/in-memory-professional-profile-repository.js';
 import { InMemoryIdentityEventPublisherStub } from '../../stubs/in-memory-identity-event-publisher-stub.js';
 import { makeProfessionalProfile } from '../../factories/make-professional-profile.js';
 import { ProfessionalProfileStatus } from '../../../domain/enums/professional-profile-status.js';
-import { RiskStatus } from '../../../domain/enums/risk-status.js';
 import { IdentityErrorCodes } from '../../../domain/errors/identity-error-codes.js';
 
-describe('BanProfessionalProfile', () => {
+describe('SuspendProfessionalProfile', () => {
   let profileRepository: InMemoryProfessionalProfileRepository;
   let eventPublisher: InMemoryIdentityEventPublisherStub;
-  let sut: BanProfessionalProfile;
+  let sut: SuspendProfessionalProfile;
 
   beforeEach(() => {
     profileRepository = new InMemoryProfessionalProfileRepository();
     eventPublisher = new InMemoryIdentityEventPublisherStub();
-    sut = new BanProfessionalProfile(profileRepository, eventPublisher);
+    sut = new SuspendProfessionalProfile(profileRepository, eventPublisher);
   });
 
-  it('bans an active profile and returns output DTO', async () => {
+  it('suspends an active profile and returns output DTO', async () => {
     const profile = makeProfessionalProfile({
       status: ProfessionalProfileStatus.ACTIVE,
-      riskStatus: RiskStatus.NORMAL,
     });
     profileRepository.items.push(profile);
 
     const result = await sut.execute({
       professionalProfileId: profile.id,
-      reason: 'Confirmed fraud',
     });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       const output = result.value;
       expect(output.profileId).toBe(profile.id);
-      expect(output.status).toBe(ProfessionalProfileStatus.BANNED);
-      expect(output.riskStatus).toBe(RiskStatus.BANNED);
-      expect(output.bannedAtUtc).toBeDefined();
+      expect(output.status).toBe(ProfessionalProfileStatus.SUSPENDED);
+      expect(output.suspendedAtUtc).toBeDefined();
     }
   });
 
-  it('bans a suspended profile successfully', async () => {
-    const profile = makeProfessionalProfile({
-      status: ProfessionalProfileStatus.SUSPENDED,
-    });
-    profileRepository.items.push(profile);
-
-    const result = await sut.execute({
-      professionalProfileId: profile.id,
-      reason: 'Escalation from watchlist',
-    });
-
-    expect(result.isRight()).toBe(true);
-    if (result.isRight()) {
-      expect(result.value.status).toBe(ProfessionalProfileStatus.BANNED);
-    }
-  });
-
-  it('publishes ProfessionalProfileBanned event on success', async () => {
+  it('publishes ProfessionalProfileSuspended event on success', async () => {
     const profile = makeProfessionalProfile({
       status: ProfessionalProfileStatus.ACTIVE,
     });
     profileRepository.items.push(profile);
 
-    await sut.execute({
-      professionalProfileId: profile.id,
-      reason: 'Fraud detected',
-    });
+    await sut.execute({ professionalProfileId: profile.id });
 
-    expect(eventPublisher.publishedBanned).toHaveLength(1);
-    expect(eventPublisher.publishedBanned[0]!.aggregateId).toBe(profile.id);
-    expect(eventPublisher.publishedBanned[0]!.payload.reason).toBe('Fraud detected');
-    expect(eventPublisher.publishedBanned[0]!.payload.previousStatus).toBe(
-      ProfessionalProfileStatus.ACTIVE,
-    );
+    expect(eventPublisher.publishedSuspended).toHaveLength(1);
+    expect(eventPublisher.publishedSuspended[0]!.aggregateId).toBe(profile.id);
   });
 
   it('returns error if profile not found', async () => {
     const result = await sut.execute({
       professionalProfileId: 'a0000000-0000-4000-8000-000000000000',
-      reason: 'No such profile',
     });
 
     expect(result.isLeft()).toBe(true);
@@ -88,34 +59,22 @@ describe('BanProfessionalProfile', () => {
     }
   });
 
-  it('does not publish event when profile not found', async () => {
-    await sut.execute({
-      professionalProfileId: 'a0000000-0000-4000-8000-000000000000',
-      reason: 'No such profile',
-    });
-
-    expect(eventPublisher.publishedBanned).toHaveLength(0);
-  });
-
   it('returns error if profileId is not a valid UUID', async () => {
     const result = await sut.execute({
       professionalProfileId: 'not-a-uuid',
-      reason: 'Invalid id',
     });
 
     expect(result.isLeft()).toBe(true);
   });
 
-  it('returns error if profile is already banned', async () => {
+  it('returns error if profile is not ACTIVE', async () => {
     const profile = makeProfessionalProfile({
-      status: ProfessionalProfileStatus.BANNED,
-      riskStatus: RiskStatus.BANNED,
+      status: ProfessionalProfileStatus.SUSPENDED,
     });
     profileRepository.items.push(profile);
 
     const result = await sut.execute({
       professionalProfileId: profile.id,
-      reason: 'Double ban',
     });
 
     expect(result.isLeft()).toBe(true);
@@ -124,18 +83,40 @@ describe('BanProfessionalProfile', () => {
     }
   });
 
-  it('does not publish event when transition fails', async () => {
+  it('returns error if profile is PENDING_APPROVAL', async () => {
     const profile = makeProfessionalProfile({
-      status: ProfessionalProfileStatus.BANNED,
-      riskStatus: RiskStatus.BANNED,
+      status: ProfessionalProfileStatus.PENDING_APPROVAL,
     });
     profileRepository.items.push(profile);
 
-    await sut.execute({
+    const result = await sut.execute({
       professionalProfileId: profile.id,
-      reason: 'Double ban',
     });
 
-    expect(eventPublisher.publishedBanned).toHaveLength(0);
+    expect(result.isLeft()).toBe(true);
+  });
+
+  it('returns error if profile is banned', async () => {
+    const profile = makeProfessionalProfile({
+      status: ProfessionalProfileStatus.BANNED,
+    });
+    profileRepository.items.push(profile);
+
+    const result = await sut.execute({
+      professionalProfileId: profile.id,
+    });
+
+    expect(result.isLeft()).toBe(true);
+  });
+
+  it('does not publish event when transition fails', async () => {
+    const profile = makeProfessionalProfile({
+      status: ProfessionalProfileStatus.SUSPENDED,
+    });
+    profileRepository.items.push(profile);
+
+    await sut.execute({ professionalProfileId: profile.id });
+
+    expect(eventPublisher.publishedSuspended).toHaveLength(0);
   });
 });
