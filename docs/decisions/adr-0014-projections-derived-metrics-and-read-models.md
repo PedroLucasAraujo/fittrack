@@ -78,7 +78,7 @@ Read model rules:
 ### 5. Metric Immutability Policy
 
 Once a Metric record is persisted:
-- The `derivedFromExecutionId` and `derivationRuleVersion` fields are immutable.
+- The `sourceExecutionIds` (non-empty array; supersedes the deprecated singular `derivedFromExecutionId` field — see ADR-0043 §1 for the canonical field definition) and `derivationRuleVersion` fields are immutable.
 - The computed `value` is immutable.
 - If the derivation rule changes, a **new** Metric record is created with the new `derivationRuleVersion`. The old Metric record is retained.
 - Old Metric records are never overwritten during rule updates.

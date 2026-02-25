@@ -39,9 +39,9 @@ Steps 1–4 must complete in sequence before Step 5 is valid. No shortcut or pre
 | `TRIAL` | Platform-initiated trial grant | Time-bounded AccessGrant; limited scope; no financial transaction required |
 
 Key distinction:
-- **ServicePlans** deliver ongoing services in sessions (training, consultation, assessment). They produce AccessGrants.
-- **One-time Products** (future scope) are discrete purchases (e.g., a single report). They produce a different grant type.
-- These two types must never be confused. A ServicePlan purchase always produces an AccessGrant. A one-time product purchase does not produce an AccessGrant of the same type.
+- **ServicePlans** deliver ongoing services in sessions (training, consultation, assessment). They produce AccessGrants with `source=SUBSCRIPTION`.
+- **One-time Products** are formalized in ADR-0050. They are discrete, non-recurring purchases that produce AccessGrants with `source=PRODUCT_PURCHASE`. `Product`, `ProductVersion`, and `ProductPurchase` are aggregate roots in the Products bounded context. The subscription-first invariant applies: payment confirmation (`Transaction CONFIRMED`) always precedes AccessGrant creation.
+- These two types must never be confused. A ServicePlan purchase always produces an AccessGrant with `source=SUBSCRIPTION`. A one-time product purchase produces an AccessGrant with `source=PRODUCT_PURCHASE` (see ADR-0046 §X and ADR-0050).
 
 ### 3. Purchase Flow — Formal Specification
 

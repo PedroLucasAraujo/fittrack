@@ -100,7 +100,36 @@ Late event handling rules:
 | Risk status enforcement | RiskStatusChanged → AccessGrant suspension. This is the highest-priority event. Target window: ≤ 30 seconds. If the window is exceeded, alert is triggered. |
 | Read model updates | Eventually consistent with write model. Dashboards show data within the read model window. |
 
-### 8. Consistency and Financial Safety
+### 8. Outbox Pattern Implementation
+
+To guarantee at-least-once delivery, domain events are persisted in the `outbox_events` table within the same database transaction as the aggregate mutation. A separate outbox processor worker reads unprocessed events, publishes them to the message broker, and marks them as processed.
+
+**Schema:**
+```sql
+CREATE TABLE outbox_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  aggregate_type VARCHAR(100) NOT NULL,
+  aggregate_id UUID NOT NULL,
+  event_type VARCHAR(150) NOT NULL,
+  payload JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMPTZ NULL,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  INDEX idx_outbox_unprocessed (processed_at) WHERE processed_at IS NULL
+);
+```
+
+**Processing rules:**
+- Worker polls unprocessed events (`processed_at IS NULL`) ordered by `created_at ASC`.
+- On successful publish: set `processed_at = NOW()`.
+- On failure: increment `retry_count`, apply exponential backoff (base 2s, max 5 retries).
+- After max retries: move to Dead-Letter Queue (DLQ). DLQ events require manual investigation and are never silently discarded.
+
+**Cleanup:** Processed events (`processed_at IS NOT NULL`) are retained for 7 days for debugging and auditing, then removed by a scheduled cleanup job.
+
+**Monitoring:** Events with `processed_at IS NULL` and `created_at > 5 minutes ago` trigger operational alerts.
+
+### 9. Consistency and Financial Safety
 
 The following financial invariants hold under eventual consistency:
 1. AccessGrant is never created before PurchaseCompleted is confirmed. The window is in the direction of blocking delivery, not enabling unauthorized delivery.

@@ -63,6 +63,12 @@ interface ProfessionalClientLink {
 
 A client may only access data within the context of an active `ProfessionalClientLink`. Client queries for execution history are scoped by `(clientId, professionalProfileId)`.
 
+The full lifecycle of `ProfessionalClientLink` is formally defined in ADR-0008 §11. Key invariants for multi-tenancy:
+- A client can have `ACTIVE` links with multiple professionals simultaneously.
+- Each link is scoped by the pair `(clientId, professionalProfileId)`.
+- Ending a link (`ENDED` status) does **NOT** revoke existing AccessGrants — they continue until natural expiration.
+- When a professional is `BANNED`, all their `ProfessionalClientLinks` automatically transition to `ENDED`.
+
 ### 6. Admin Cross-Tenant Access
 
 Admin access to cross-tenant data is permitted only:

@@ -112,8 +112,8 @@ Full files: `docs/decisions/adr-0000.md` through `docs/decisions/adr-0047.md`
 
 ### Entity Tier Classification (ADR-0013)
 - **Tier 1 (Permanent)**: Execution, Transaction, AuditLog, AccessGrant — never deleted
-- **Tier 2 (Retained on closure)**: ServicePlan, Booking, UserProfile, ProfessionalProfile
-- **Tier 3 (Soft delete)**: Scheduling entities, Deliverables, SelfLog
+- **Tier 2 (Retained on closure)**: ServicePlan, Booking, UserProfile, ProfessionalProfile, SelfLog (Tier 2 regardless of source — EXECUTION or SELF — because it contains health-related data (LGPD Category A) linked to the professional-client relationship; may serve as evidence of professional follow-up)
+- **Tier 3 (Soft delete)**: Scheduling entities, Deliverables
 - **Tier 4 (Ephemeral)**: OutboxEvent, session tokens, temp exports
 
 ### AccessGrant Validity Check (ADR-0046)

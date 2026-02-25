@@ -21,15 +21,17 @@ An AccessGrant is an authorization record that:
 ```typescript
 interface AccessGrant {
   readonly id: string;                       // UUIDv4; immutable
+  readonly source: 'SUBSCRIPTION' | 'PRODUCT_PURCHASE'; // Origin of this grant; immutable
   readonly clientId: string;                 // The client authorized to receive services
   readonly professionalProfileId: string;    // The tenant; immutable
-  readonly servicePlanId: string;            // The service plan being delivered
-  readonly transactionId: string;            // The payment that created this grant; immutable
+  readonly servicePlanId: string | null;     // Required when source=SUBSCRIPTION; null when source=PRODUCT_PURCHASE
+  readonly productVersionId: string | null;  // Required when source=PRODUCT_PURCHASE; null when source=SUBSCRIPTION
+  readonly transactionId: string;            // The payment that created this grant; immutable; required in both sources
   status: 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'SUSPENDED';
   readonly sessionAllotment: number | null;  // null = unlimited; set at creation
   sessionsConsumed: number;                  // Incremented on each Execution
   readonly validFrom: string;               // ISO 8601 UTC; immutable
-  readonly validUntil: string | null;        // ISO 8601 UTC; null = no time limit
+  readonly validUntil: string | null;        // ISO 8601 UTC; null = no time limit (e.g., NONE expiration policy in Products)
   readonly createdAtUtc: string;
   suspendedAtUtc?: string;
   revokedAtUtc?: string;
@@ -105,6 +107,20 @@ Revocation does not delete or modify historical Execution records created before
 | Effect on historical Executions | None | None |
 | Effect on future Executions | Blocks | Blocks |
 | AuditLog entry | `ACCESS_GRANT_SUSPENDED` | `ACCESS_GRANT_REVOKED` |
+
+### 8. AccessGrant Source Types
+
+AccessGrant supports two grant sources:
+
+| Field | source=SUBSCRIPTION | source=PRODUCT_PURCHASE |
+|-------|---------------------|------------------------|
+| `servicePlanId` | Required | null |
+| `productVersionId` | null | Required |
+| `transactionId` | Required | Required |
+| `validFrom` | Set at creation | Set at creation |
+| `validUntil` | Immutable, set at creation | Immutable, set at creation (may be null for NONE expiration policy per ADR-0050 §3) |
+
+All pre-Execution validations (status ACTIVE, clientId match, tenantId match, time window, session limit) apply identically regardless of source.
 
 ## Invariants
 

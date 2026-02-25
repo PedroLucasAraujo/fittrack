@@ -17,7 +17,7 @@ This ADR defines the formal lifecycle state machine for each major status-bearin
 For every entity carrying a `status` field:
 1. All valid status values must be enumerated explicitly.
 2. All valid state transitions must be enumerated explicitly.
-3. Every valid transition has a corresponding named domain event that the Application layer (UseCase) MAY dispatch. Aggregates do not emit events — see ADR-0009 §1.
+3. Valid status transitions MAY have a corresponding named domain event. The Application layer (UseCase) decides which events to construct and publish based on business relevance (see ADR-0009 for event policy). Not every transition requires an event — only business milestones with cross-context consumers warrant event publication. Aggregates do not emit events — see ADR-0009 §1.
 4. Every invalid transition raises a named domain exception.
 5. No external component may set an entity's status directly. All transitions are performed via domain methods on the aggregate root.
 
@@ -195,9 +195,103 @@ Terminal states: `ARCHIVED`. No transitions out of `ARCHIVED`.
 - `addExercise` and `removeExercise` are only permitted in `DRAFT` status. Attempting these operations on `ACTIVE` or `ARCHIVED` raises `DeliverableNotDraftError`.
 - `contentVersion` is incremented on every `addExercise` or `removeExercise` call. It tracks the business version of the content and starts at 1.
 
+### 9. Session Lifecycle (Scheduling context)
+
+| Status | Description |
+|--------|-------------|
+| `SCHEDULED` | Time slot created and available |
+| `COMPLETED` | Session occurred; triggers Execution recording |
+| `CANCELLED` | Cancelled before occurrence; cascades cancel to associated Bookings |
+| `ARCHIVED` | Removed from active listings; record preserved |
+
+**Valid Transitions:**
+```
+SCHEDULED → COMPLETED  (event: SessionCompleted)
+SCHEDULED → CANCELLED  (event: SessionCancelled)
+COMPLETED → ARCHIVED   (event: SessionArchived)
+CANCELLED → ARCHIVED   (event: SessionArchived)
+```
+
+Terminal states: `ARCHIVED`.
+
+Note: Session represents a time slot offered by the professional. Booking (separate aggregate) represents a client reservation in that slot.
+
+Events: `SessionScheduled`, `SessionCompleted`, `SessionCancelled`, `SessionArchived`.
+
+### 10. WorkingAvailability Lifecycle (Scheduling context)
+
+| Status | Description |
+|--------|-------------|
+| `ACTIVE` | Availability window is active; new bookings permitted |
+| `PAUSED` | Temporarily disabled; blocks new bookings; existing bookings unaffected |
+| `ARCHIVED` | Permanently removed from active configuration |
+
+**Valid Transitions:**
+```
+ACTIVE → PAUSED     (event: WorkingAvailabilityPaused)
+PAUSED → ACTIVE     (event: WorkingAvailabilityResumed)
+ACTIVE → ARCHIVED   (event: WorkingAvailabilityArchived)
+PAUSED → ARCHIVED   (event: WorkingAvailabilityArchived)
+```
+
+Terminal states: `ARCHIVED`.
+
+Events: `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated`, `WorkingAvailabilityPaused`, `WorkingAvailabilityResumed`, `WorkingAvailabilityArchived`.
+
+### 11. ProfessionalClientLink Lifecycle (ProfessionalProfile context)
+
+| Status | Description |
+|--------|-------------|
+| `PENDING_INVITATION` | Invitation sent; awaiting client acceptance |
+| `ACTIVE` | Link accepted; professional-client relationship active |
+| `SUSPENDED` | Temporarily blocked: professional choice, investigation, or WATCHLIST |
+| `ENDED` | Relationship terminated |
+
+**Valid Transitions:**
+```
+PENDING_INVITATION → ACTIVE    (event: ClientLinkAccepted)
+PENDING_INVITATION → ENDED     (event: ClientLinkEnded — invitation rejected or expired)
+ACTIVE → SUSPENDED             (event: ClientLinkSuspended)
+ACTIVE → ENDED                 (event: ClientLinkEnded)
+SUSPENDED → ACTIVE             (event: ClientLinkReactivated)
+SUSPENDED → ENDED              (event: ClientLinkEnded)
+```
+
+Terminal states: `ENDED`.
+
+Events: `ClientLinkInvited`, `ClientLinkAccepted`, `ClientLinkSuspended`, `ClientLinkReactivated`, `ClientLinkEnded`.
+
+**Invariants specific to ProfessionalClientLink:**
+- `PENDING_INVITATION`: No Execution, Scheduling, or Deliverables operations permitted.
+- `SUSPENDED`: Does NOT affect existing AccessGrants (non-destructive, consistent with ADR-0020).
+- `ENDED`: Does NOT revoke existing AccessGrants. AccessGrants continue until natural expiration.
+- Professional `BANNED` → all links automatically transition to `ENDED`.
+- A client can have `ACTIVE` links with multiple professionals simultaneously.
+
+### 12. ProductPurchase Lifecycle (Products context)
+
+| Status | Description |
+|--------|-------------|
+| `COMPLETED` | Purchase confirmed; AccessGrant issued |
+| `REFUNDED` | Full refund processed; associated AccessGrants revoked |
+
+**Valid Transitions:**
+```
+COMPLETED → REFUNDED  (event: ProductPurchaseRefunded)
+```
+
+Terminal states: `REFUNDED`.
+
+Events: `ProductPurchaseCompleted`, `ProductPurchaseRefunded`.
+
+**Invariants specific to ProductPurchase:**
+- Independent aggregate root (not internal entity of Product, per ADR-0003).
+- Refund revokes associated AccessGrants but preserves Executions (non-destructive, per ADR-0020).
+- Owned by Products context. Billing owns Transaction.
+
 ## Invariants
 
-1. Every valid status transition has a corresponding named domain event that the Application layer MAY dispatch (ADR-0009 §1). Aggregates do not emit events directly.
+1. Valid status transitions MAY have a corresponding named domain event. The Application layer (UseCase) decides which events to construct and publish based on business relevance. Not every transition requires an event — only business milestones with cross-context consumers warrant event publication (ADR-0009 §1). Aggregates do not emit events directly.
 2. Every invalid status transition raises a named domain exception (never silently succeeds or produces an error from the persistence layer).
 3. No entity status is set directly by assignment outside its aggregate root's domain methods.
 4. All terminal states have no valid outgoing transitions.

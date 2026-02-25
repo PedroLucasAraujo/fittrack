@@ -22,8 +22,11 @@ PlatformEntitlement governs a professional's operational rights on the platform 
 | `currentPeriodStartUtc` | UTC timestamp | Start of current billing period |
 | `currentPeriodEndUtc` | UTC timestamp | End of current billing period (`activeUntil`) |
 | `gracePeriodUntil` | UTC timestamp (nullable) | Deadline for payment during grace period |
-| `planTier` | string | Platform subscription tier |
+| `entitlements` | `EntitlementType[]` | Active capability grants (MULTI_PROFILE, ADVANCED_ANALYTICS, LONG_TERM_PLANS, ORG_MANAGEMENT, PRIORITY_PAYOUT, API_ACCESS). Snapshot preserved during suspension. No duplicates. |
+| `expiresAt` | UTC timestamp (nullable) | Expiry of the capability grant; null = no expiry |
 | `createdAtUtc` | UTC timestamp | Immutable |
+
+> **Note (amended):** The Subscription lifecycle fields (`currentPeriodStartUtc`, `currentPeriodEndUtc`, `gracePeriodUntil`, `planTier`) previously listed here belong to the `Subscription` aggregate (Billing context, TBD). `PlatformEntitlement` is a **capability grant** (what the professional can do), not a billing lifecycle record (whether they have paid). The domain sees capabilities only; tier configuration is a commercial/infrastructure concern. This decoupling is intentional: adding new capabilities does not require domain tier-model changes, and promotional grants can be issued without subscription changes.
 
 ### 2. Grace Period Policy
 
