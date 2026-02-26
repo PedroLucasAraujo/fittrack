@@ -1,4 +1,4 @@
-import type { PlatformEntitlement } from '../../domain/aggregates/platform-entitlement.js';
+import type { PlatformEntitlement } from '../aggregates/platform-entitlement.js';
 
 /**
  * Repository interface for PlatformEntitlement aggregate (ADR-0047 §7).

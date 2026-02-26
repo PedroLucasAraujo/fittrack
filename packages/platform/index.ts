@@ -20,8 +20,10 @@ export { EntitlementSuspended } from './domain/events/entitlement-suspended.js';
 export { EntitlementReinstated } from './domain/events/entitlement-reinstated.js';
 export { EntitlementExpired } from './domain/events/entitlement-expired.js';
 
+// ── Domain — Repository ───────────────────────────────────────────────────────
+export type { IPlatformEntitlementRepository } from './domain/repositories/platform-entitlement-repository.js';
+
 // ── Application — Ports ───────────────────────────────────────────────────────
-export type { IPlatformEntitlementRepository } from './application/ports/platform-entitlement-repository-port.js';
 export type { IPlatformEntitlementEventPublisher } from './application/ports/platform-entitlement-event-publisher-port.js';
 export type {
   IPlatformEntitlementAuditLog,

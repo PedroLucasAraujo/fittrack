@@ -3,7 +3,7 @@ import type { DomainResult } from '@fittrack/core';
 import { EntitlementCapabilityRemoved } from '../../domain/events/entitlement-capability-removed.js';
 import { EntitlementNotFoundError } from '../../domain/errors/entitlement-not-found-error.js';
 import { InvalidEntitlementTransitionError } from '../../domain/errors/invalid-entitlement-transition-error.js';
-import type { IPlatformEntitlementRepository } from '../ports/platform-entitlement-repository-port.js';
+import type { IPlatformEntitlementRepository } from '../../domain/repositories/platform-entitlement-repository.js';
 import type { IPlatformEntitlementEventPublisher } from '../ports/platform-entitlement-event-publisher-port.js';
 import type { IPlatformEntitlementAuditLog } from '../ports/platform-entitlement-audit-log-port.js';
 import type { RemoveCapabilityInputDTO } from '../dtos/remove-capability-input-dto.js';

@@ -1,14 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { PlatformEntitlement } from '../../../domain/aggregates/platform-entitlement.js';
 import { EntitlementStatus } from '../../../domain/enums/entitlement-status.js';
 import { EntitlementType } from '../../../domain/enums/entitlement-type.js';
 import { PlatformErrorCodes } from '../../../domain/errors/platform-error-codes.js';
 import { SuspendEntitlement } from '../../../application/use-cases/suspend-entitlement.js';
-import type { IPlatformEntitlementRepository } from '../../../application/ports/platform-entitlement-repository-port.js';
-import type { IPlatformEntitlementEventPublisher } from '../../../application/ports/platform-entitlement-event-publisher-port.js';
-import type { IPlatformEntitlementAuditLog } from '../../../application/ports/platform-entitlement-audit-log-port.js';
-import type { EntitlementSuspended } from '../../../domain/events/entitlement-suspended.js';
+import { InMemoryPlatformEntitlementRepository } from '../../repositories/in-memory-platform-entitlement-repository.js';
+import { InMemoryPlatformEntitlementEventPublisherStub } from '../../stubs/in-memory-platform-entitlement-event-publisher-stub.js';
+import { InMemoryPlatformEntitlementAuditLogStub } from '../../stubs/in-memory-platform-entitlement-audit-log-stub.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -28,52 +27,18 @@ function makeEntitlement(
   return e;
 }
 
-function makeRepo(
-  overrides: Partial<IPlatformEntitlementRepository> = {},
-): IPlatformEntitlementRepository {
-  return {
-    findById: vi.fn().mockResolvedValue(null),
-    findByProfessionalProfileId: vi.fn().mockResolvedValue(null),
-    save: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makePublisher(
-  overrides: Partial<IPlatformEntitlementEventPublisher> = {},
-): IPlatformEntitlementEventPublisher {
-  return {
-    publishEntitlementGranted: vi.fn().mockResolvedValue(undefined),
-    publishCapabilityAdded: vi.fn().mockResolvedValue(undefined),
-    publishCapabilityRemoved: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementSuspended: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementReinstated: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementExpired: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeAuditLog(
-  overrides: Partial<IPlatformEntitlementAuditLog> = {},
-): IPlatformEntitlementAuditLog {
-  return {
-    writePlatformEntitlementChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
 // ── SuspendEntitlement ────────────────────────────────────────────────────────
 
 describe('SuspendEntitlement', () => {
-  let repo: IPlatformEntitlementRepository;
-  let publisher: IPlatformEntitlementEventPublisher;
-  let auditLog: IPlatformEntitlementAuditLog;
+  let repo: InMemoryPlatformEntitlementRepository;
+  let publisher: InMemoryPlatformEntitlementEventPublisherStub;
+  let auditLog: InMemoryPlatformEntitlementAuditLogStub;
   let useCase: SuspendEntitlement;
 
   beforeEach(() => {
-    repo = makeRepo();
-    publisher = makePublisher();
-    auditLog = makeAuditLog();
+    repo = new InMemoryPlatformEntitlementRepository();
+    publisher = new InMemoryPlatformEntitlementEventPublisherStub();
+    auditLog = new InMemoryPlatformEntitlementAuditLogStub();
     useCase = new SuspendEntitlement(repo, publisher, auditLog);
   });
 
@@ -82,8 +47,7 @@ describe('SuspendEntitlement', () => {
   it('transitions ACTIVE → SUSPENDED, saves, and publishes EntitlementSuspended', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new SuspendEntitlement(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -95,17 +59,16 @@ describe('SuspendEntitlement', () => {
 
     expect(result.isRight()).toBe(true);
     expect(entitlement.status).toBe(EntitlementStatus.SUSPENDED);
-    expect(repo.save).toHaveBeenCalledOnce();
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledOnce();
-    expect(publisher.publishEntitlementSuspended).toHaveBeenCalledOnce();
+    expect(repo.saveCount).toBe(1);
+    expect(auditLog.written).toHaveLength(1);
+    expect(publisher.publishedEntitlementSuspended).toHaveLength(1);
   });
 
   it('event payload has correct reason and evidenceRef', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId);
     const evidenceRef = 'risk-event-id-abc';
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new SuspendEntitlement(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     await useCase.execute({
       professionalProfileId,
@@ -115,8 +78,8 @@ describe('SuspendEntitlement', () => {
       evidenceRef,
     });
 
-    const published = (publisher.publishEntitlementSuspended as ReturnType<typeof vi.fn>).mock
-      .calls[0]?.[0] as EntitlementSuspended;
+    const published = publisher.publishedEntitlementSuspended[0];
+    expect(published).toBeDefined();
     expect(published.eventType).toBe('EntitlementSuspended');
     expect(published.payload.reason).toBe('Risk BANNED triggered suspension');
     expect(published.payload.evidenceRef).toBe(evidenceRef);
@@ -125,8 +88,7 @@ describe('SuspendEntitlement', () => {
   it('writes AuditLog with actorId=SYSTEM for automated suspension', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new SuspendEntitlement(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     await useCase.execute({
       professionalProfileId,
@@ -135,22 +97,19 @@ describe('SuspendEntitlement', () => {
       actorRole: 'SYSTEM',
     });
 
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledWith(
-      expect.objectContaining({
-        actorId: 'SYSTEM',
-        actorRole: 'SYSTEM',
-        tenantId: professionalProfileId,
-        previousStatus: EntitlementStatus.ACTIVE,
-        newStatus: EntitlementStatus.SUSPENDED,
-      }),
-    );
+    expect(auditLog.written[0]).toMatchObject({
+      actorId: 'SYSTEM',
+      actorRole: 'SYSTEM',
+      tenantId: professionalProfileId,
+      previousStatus: EntitlementStatus.ACTIVE,
+      newStatus: EntitlementStatus.SUSPENDED,
+    });
   });
 
   it('sets evidenceRef to null when not provided', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new SuspendEntitlement(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     await useCase.execute({
       professionalProfileId,
@@ -159,8 +118,7 @@ describe('SuspendEntitlement', () => {
       actorRole: 'ADMIN',
     });
 
-    const published = (publisher.publishEntitlementSuspended as ReturnType<typeof vi.fn>).mock
-      .calls[0]?.[0] as EntitlementSuspended;
+    const published = publisher.publishedEntitlementSuspended[0];
     expect(published.payload.evidenceRef).toBeNull();
   });
 
@@ -169,8 +127,7 @@ describe('SuspendEntitlement', () => {
   it('returns Right(void) without saving when already SUSPENDED (idempotent)', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId, EntitlementStatus.SUSPENDED);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new SuspendEntitlement(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -180,9 +137,9 @@ describe('SuspendEntitlement', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(repo.save).not.toHaveBeenCalled();
-    expect(auditLog.writePlatformEntitlementChanged).not.toHaveBeenCalled();
-    expect(publisher.publishEntitlementSuspended).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
+    expect(auditLog.written).toHaveLength(0);
+    expect(publisher.publishedEntitlementSuspended).toHaveLength(0);
   });
 
   // ── Not found ─────────────────────────────────────────────────────────────
@@ -197,7 +154,7 @@ describe('SuspendEntitlement', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.ENTITLEMENT_NOT_FOUND);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 
   // ── Invalid transitions ───────────────────────────────────────────────────
@@ -205,8 +162,7 @@ describe('SuspendEntitlement', () => {
   it('returns Left when entitlement is EXPIRED', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId, EntitlementStatus.EXPIRED);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new SuspendEntitlement(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -217,7 +173,7 @@ describe('SuspendEntitlement', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -232,8 +188,8 @@ describe('SuspendEntitlement', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
-    expect(repo.save).not.toHaveBeenCalled();
-    expect(auditLog.writePlatformEntitlementChanged).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
+    expect(auditLog.written).toHaveLength(0);
   });
 
   it('returns Left when reason is whitespace only', async () => {
@@ -245,6 +201,6 @@ describe('SuspendEntitlement', () => {
     });
 
     expect(result.isLeft()).toBe(true);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 });

@@ -1,14 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { PlatformEntitlement } from '../../../domain/aggregates/platform-entitlement.js';
 import { EntitlementStatus } from '../../../domain/enums/entitlement-status.js';
 import { EntitlementType } from '../../../domain/enums/entitlement-type.js';
 import { PlatformErrorCodes } from '../../../domain/errors/platform-error-codes.js';
 import { AddCapability } from '../../../application/use-cases/add-capability.js';
-import type { IPlatformEntitlementRepository } from '../../../application/ports/platform-entitlement-repository-port.js';
-import type { IPlatformEntitlementEventPublisher } from '../../../application/ports/platform-entitlement-event-publisher-port.js';
-import type { IPlatformEntitlementAuditLog } from '../../../application/ports/platform-entitlement-audit-log-port.js';
-import type { EntitlementCapabilityAdded } from '../../../domain/events/entitlement-capability-added.js';
+import { InMemoryPlatformEntitlementRepository } from '../../repositories/in-memory-platform-entitlement-repository.js';
+import { InMemoryPlatformEntitlementEventPublisherStub } from '../../stubs/in-memory-platform-entitlement-event-publisher-stub.js';
+import { InMemoryPlatformEntitlementAuditLogStub } from '../../stubs/in-memory-platform-entitlement-audit-log-stub.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -31,52 +30,18 @@ function makeEntitlement(
   return e;
 }
 
-function makeRepo(
-  overrides: Partial<IPlatformEntitlementRepository> = {},
-): IPlatformEntitlementRepository {
-  return {
-    findById: vi.fn().mockResolvedValue(null),
-    findByProfessionalProfileId: vi.fn().mockResolvedValue(null),
-    save: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makePublisher(
-  overrides: Partial<IPlatformEntitlementEventPublisher> = {},
-): IPlatformEntitlementEventPublisher {
-  return {
-    publishEntitlementGranted: vi.fn().mockResolvedValue(undefined),
-    publishCapabilityAdded: vi.fn().mockResolvedValue(undefined),
-    publishCapabilityRemoved: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementSuspended: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementReinstated: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementExpired: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeAuditLog(
-  overrides: Partial<IPlatformEntitlementAuditLog> = {},
-): IPlatformEntitlementAuditLog {
-  return {
-    writePlatformEntitlementChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
 // ── AddCapability ─────────────────────────────────────────────────────────────
 
 describe('AddCapability', () => {
-  let repo: IPlatformEntitlementRepository;
-  let publisher: IPlatformEntitlementEventPublisher;
-  let auditLog: IPlatformEntitlementAuditLog;
+  let repo: InMemoryPlatformEntitlementRepository;
+  let publisher: InMemoryPlatformEntitlementEventPublisherStub;
+  let auditLog: InMemoryPlatformEntitlementAuditLogStub;
   let useCase: AddCapability;
 
   beforeEach(() => {
-    repo = makeRepo();
-    publisher = makePublisher();
-    auditLog = makeAuditLog();
+    repo = new InMemoryPlatformEntitlementRepository();
+    publisher = new InMemoryPlatformEntitlementEventPublisherStub();
+    auditLog = new InMemoryPlatformEntitlementAuditLogStub();
     useCase = new AddCapability(repo, publisher, auditLog);
   });
 
@@ -85,8 +50,7 @@ describe('AddCapability', () => {
   it('adds capability to ACTIVE entitlement and publishes EntitlementCapabilityAdded', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId, [EntitlementType.API_ACCESS]);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new AddCapability(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -96,12 +60,11 @@ describe('AddCapability', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(repo.save).toHaveBeenCalledOnce();
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledOnce();
-    expect(publisher.publishCapabilityAdded).toHaveBeenCalledOnce();
+    expect(repo.saveCount).toBe(1);
+    expect(auditLog.written).toHaveLength(1);
+    expect(publisher.publishedCapabilityAdded).toHaveLength(1);
 
-    const published = (publisher.publishCapabilityAdded as ReturnType<typeof vi.fn>).mock
-      .calls[0]?.[0] as EntitlementCapabilityAdded;
+    const published = publisher.publishedCapabilityAdded[0];
     expect(published.payload.capability).toBe(EntitlementType.MULTI_PROFILE);
     expect(published.payload.reason).toBe('Upgrade requested');
   });
@@ -109,8 +72,7 @@ describe('AddCapability', () => {
   it('audit log has addedCapabilities with the new capability', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId, [EntitlementType.API_ACCESS]);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new AddCapability(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     await useCase.execute({
       professionalProfileId,
@@ -119,14 +81,12 @@ describe('AddCapability', () => {
       ...MOCK_ACTOR,
     });
 
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledWith(
-      expect.objectContaining({
-        actorId: MOCK_ACTOR.actorId,
-        actorRole: MOCK_ACTOR.actorRole,
-        tenantId: professionalProfileId,
-        addedCapabilities: [EntitlementType.MULTI_PROFILE],
-      }),
-    );
+    expect(auditLog.written[0]).toMatchObject({
+      actorId: MOCK_ACTOR.actorId,
+      actorRole: MOCK_ACTOR.actorRole,
+      tenantId: professionalProfileId,
+      addedCapabilities: [EntitlementType.MULTI_PROFILE],
+    });
   });
 
   // ── Idempotency ───────────────────────────────────────────────────────────
@@ -134,8 +94,7 @@ describe('AddCapability', () => {
   it('returns Right(void) without saving when capability already present (idempotent)', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId, [EntitlementType.API_ACCESS]);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new AddCapability(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -145,9 +104,9 @@ describe('AddCapability', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(repo.save).not.toHaveBeenCalled();
-    expect(auditLog.writePlatformEntitlementChanged).not.toHaveBeenCalled();
-    expect(publisher.publishCapabilityAdded).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
+    expect(auditLog.written).toHaveLength(0);
+    expect(publisher.publishedCapabilityAdded).toHaveLength(0);
   });
 
   // ── Not found ─────────────────────────────────────────────────────────────
@@ -162,7 +121,7 @@ describe('AddCapability', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.ENTITLEMENT_NOT_FOUND);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 
   // ── Invalid transitions ───────────────────────────────────────────────────
@@ -170,8 +129,7 @@ describe('AddCapability', () => {
   it('returns Left when entitlement is SUSPENDED', async () => {
     const professionalProfileId = generateId();
     const entitlement = makeEntitlement(professionalProfileId, [], EntitlementStatus.SUSPENDED);
-    repo = makeRepo({ findByProfessionalProfileId: vi.fn().mockResolvedValue(entitlement) });
-    useCase = new AddCapability(repo, publisher, auditLog);
+    repo.items.push(entitlement);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -181,7 +139,7 @@ describe('AddCapability', () => {
     });
 
     expect(result.isLeft()).toBe(true);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -196,6 +154,6 @@ describe('AddCapability', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 });

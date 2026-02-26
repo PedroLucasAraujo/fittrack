@@ -4,7 +4,7 @@ import { EntitlementStatus } from '../../domain/enums/entitlement-status.js';
 import { EntitlementExpired } from '../../domain/events/entitlement-expired.js';
 import { EntitlementNotFoundError } from '../../domain/errors/entitlement-not-found-error.js';
 import { InvalidEntitlementTransitionError } from '../../domain/errors/invalid-entitlement-transition-error.js';
-import type { IPlatformEntitlementRepository } from '../ports/platform-entitlement-repository-port.js';
+import type { IPlatformEntitlementRepository } from '../../domain/repositories/platform-entitlement-repository.js';
 import type { IPlatformEntitlementEventPublisher } from '../ports/platform-entitlement-event-publisher-port.js';
 import type { IPlatformEntitlementAuditLog } from '../ports/platform-entitlement-audit-log-port.js';
 import type { ExpireEntitlementInputDTO } from '../dtos/expire-entitlement-input-dto.js';
@@ -32,7 +32,7 @@ export class ExpireEntitlement {
     // 1. Load aggregate by ID (scheduler provides entitlementId directly)
     const entitlement = await this.repo.findById(dto.entitlementId, dto.professionalProfileId);
     if (entitlement === null) {
-      return left(new EntitlementNotFoundError(dto.entitlementId));
+      return left(new EntitlementNotFoundError(dto.professionalProfileId));
     }
 
     // 2. Idempotency — already EXPIRED

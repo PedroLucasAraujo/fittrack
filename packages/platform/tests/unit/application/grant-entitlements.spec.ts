@@ -1,52 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { PlatformEntitlement } from '../../../domain/aggregates/platform-entitlement.js';
 import { EntitlementStatus } from '../../../domain/enums/entitlement-status.js';
 import { EntitlementType } from '../../../domain/enums/entitlement-type.js';
 import { PlatformErrorCodes } from '../../../domain/errors/platform-error-codes.js';
 import { GrantEntitlements } from '../../../application/use-cases/grant-entitlements.js';
-import type { IPlatformEntitlementRepository } from '../../../application/ports/platform-entitlement-repository-port.js';
-import type { IPlatformEntitlementEventPublisher } from '../../../application/ports/platform-entitlement-event-publisher-port.js';
-import type { IPlatformEntitlementAuditLog } from '../../../application/ports/platform-entitlement-audit-log-port.js';
-import type { EntitlementGranted } from '../../../domain/events/entitlement-granted.js';
+import { InMemoryPlatformEntitlementRepository } from '../../repositories/in-memory-platform-entitlement-repository.js';
+import { InMemoryPlatformEntitlementEventPublisherStub } from '../../stubs/in-memory-platform-entitlement-event-publisher-stub.js';
+import { InMemoryPlatformEntitlementAuditLogStub } from '../../stubs/in-memory-platform-entitlement-audit-log-stub.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const MOCK_ACTOR = { actorId: 'admin-001', actorRole: 'ADMIN' } as const;
-
-function makeRepo(
-  overrides: Partial<IPlatformEntitlementRepository> = {},
-): IPlatformEntitlementRepository {
-  return {
-    findById: vi.fn().mockResolvedValue(null),
-    findByProfessionalProfileId: vi.fn().mockResolvedValue(null),
-    save: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makePublisher(
-  overrides: Partial<IPlatformEntitlementEventPublisher> = {},
-): IPlatformEntitlementEventPublisher {
-  return {
-    publishEntitlementGranted: vi.fn().mockResolvedValue(undefined),
-    publishCapabilityAdded: vi.fn().mockResolvedValue(undefined),
-    publishCapabilityRemoved: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementSuspended: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementReinstated: vi.fn().mockResolvedValue(undefined),
-    publishEntitlementExpired: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeAuditLog(
-  overrides: Partial<IPlatformEntitlementAuditLog> = {},
-): IPlatformEntitlementAuditLog {
-  return {
-    writePlatformEntitlementChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
 
 function makeExistingEntitlement(
   professionalProfileId: string,
@@ -66,15 +31,15 @@ function makeExistingEntitlement(
 // ── GrantEntitlements ─────────────────────────────────────────────────────────
 
 describe('GrantEntitlements', () => {
-  let repo: IPlatformEntitlementRepository;
-  let publisher: IPlatformEntitlementEventPublisher;
-  let auditLog: IPlatformEntitlementAuditLog;
+  let repo: InMemoryPlatformEntitlementRepository;
+  let publisher: InMemoryPlatformEntitlementEventPublisherStub;
+  let auditLog: InMemoryPlatformEntitlementAuditLogStub;
   let useCase: GrantEntitlements;
 
   beforeEach(() => {
-    repo = makeRepo();
-    publisher = makePublisher();
-    auditLog = makeAuditLog();
+    repo = new InMemoryPlatformEntitlementRepository();
+    publisher = new InMemoryPlatformEntitlementEventPublisherStub();
+    auditLog = new InMemoryPlatformEntitlementAuditLogStub();
     useCase = new GrantEntitlements(repo, publisher, auditLog);
   });
 
@@ -90,9 +55,9 @@ describe('GrantEntitlements', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(repo.save).toHaveBeenCalledOnce();
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledOnce();
-    expect(publisher.publishEntitlementGranted).toHaveBeenCalledOnce();
+    expect(repo.saveCount).toBe(1);
+    expect(auditLog.written).toHaveLength(1);
+    expect(publisher.publishedEntitlementGranted).toHaveLength(1);
   });
 
   it('event payload contains granted capabilities and expiresAt', async () => {
@@ -107,9 +72,8 @@ describe('GrantEntitlements', () => {
       ...MOCK_ACTOR,
     });
 
-    const published = (publisher.publishEntitlementGranted as ReturnType<typeof vi.fn>).mock
-      .calls[0]?.[0] as EntitlementGranted;
-
+    const published = publisher.publishedEntitlementGranted[0];
+    expect(published).toBeDefined();
     expect(published.eventType).toBe('EntitlementGranted');
     expect(published.aggregateType).toBe('PlatformEntitlement');
     expect(published.tenantId).toBe(professionalProfileId);
@@ -127,14 +91,12 @@ describe('GrantEntitlements', () => {
       ...MOCK_ACTOR,
     });
 
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledWith(
-      expect.objectContaining({
-        actorId: MOCK_ACTOR.actorId,
-        actorRole: MOCK_ACTOR.actorRole,
-        tenantId: professionalProfileId,
-        addedCapabilities: [EntitlementType.API_ACCESS],
-      }),
-    );
+    expect(auditLog.written[0]).toMatchObject({
+      actorId: MOCK_ACTOR.actorId,
+      actorRole: MOCK_ACTOR.actorRole,
+      tenantId: professionalProfileId,
+      addedCapabilities: [EntitlementType.API_ACCESS],
+    });
   });
 
   // ── Success — re-grant existing entitlement ───────────────────────────────
@@ -142,10 +104,7 @@ describe('GrantEntitlements', () => {
   it('re-grants existing ACTIVE entitlement, replacing capabilities', async () => {
     const professionalProfileId = generateId();
     const existing = makeExistingEntitlement(professionalProfileId);
-    repo = makeRepo({
-      findByProfessionalProfileId: vi.fn().mockResolvedValue(existing),
-    });
-    useCase = new GrantEntitlements(repo, publisher, auditLog);
+    repo.items.push(existing);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -158,16 +117,13 @@ describe('GrantEntitlements', () => {
     expect(existing.status).toBe(EntitlementStatus.ACTIVE);
     expect(existing.entitlements).toContain(EntitlementType.LONG_TERM_PLANS);
     expect(existing.entitlements).not.toContain(EntitlementType.API_ACCESS);
-    expect(repo.save).toHaveBeenCalledOnce();
+    expect(repo.saveCount).toBe(1);
   });
 
   it('re-grants SUSPENDED entitlement, resetting to ACTIVE', async () => {
     const professionalProfileId = generateId();
     const existing = makeExistingEntitlement(professionalProfileId, EntitlementStatus.SUSPENDED);
-    repo = makeRepo({
-      findByProfessionalProfileId: vi.fn().mockResolvedValue(existing),
-    });
-    useCase = new GrantEntitlements(repo, publisher, auditLog);
+    repo.items.push(existing);
 
     const result = await useCase.execute({
       professionalProfileId,
@@ -188,9 +144,7 @@ describe('GrantEntitlements', () => {
       ...MOCK_ACTOR,
     });
 
-    expect(auditLog.writePlatformEntitlementChanged).toHaveBeenCalledWith(
-      expect.objectContaining({ reason: 'Trimmed reason' }),
-    );
+    expect(auditLog.written[0]).toMatchObject({ reason: 'Trimmed reason' });
   });
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -205,8 +159,8 @@ describe('GrantEntitlements', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
-    expect(repo.save).not.toHaveBeenCalled();
-    expect(auditLog.writePlatformEntitlementChanged).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
+    expect(auditLog.written).toHaveLength(0);
   });
 
   it('returns Left when reason exceeds 500 characters', async () => {
@@ -219,7 +173,7 @@ describe('GrantEntitlements', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 
   it('returns Left when entitlements list is empty', async () => {
@@ -232,6 +186,6 @@ describe('GrantEntitlements', () => {
 
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.code).toBe(PlatformErrorCodes.INVALID_TRANSITION);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.saveCount).toBe(0);
   });
 });
