@@ -1,4 +1,4 @@
-import type { IRepository, PageRequest, PaginatedResult } from '@fittrack/core';
+import type { IRepository, PageRequest, PaginatedResult, UniqueEntityId } from '@fittrack/core';
 import type { CatalogItem } from '../aggregates/catalog-item.js';
 import type { CatalogItemStatus } from '../enums/catalog-item-status.js';
 import type { CatalogItemType } from '../enums/catalog-item-type.js';
@@ -36,6 +36,20 @@ import type { CatalogItemType } from '../enums/catalog-item-type.js';
  * provided `professionalProfileId`. Cross-tenant queries are never permitted.
  */
 export interface ICatalogItemRepository extends IRepository<CatalogItem> {
+  /**
+   * @deprecated
+   * This method is NOT tenant-scoped. Do not use it in Catalog use cases.
+   *
+   * - For **read operations** (prescription-time resolution), use `findByIdForProfessional`.
+   * - For **mutation operations** (deprecate, archive, updateContent), use
+   *   `findByIdAndProfessionalProfileId`.
+   *
+   * Calling this method bypasses ADR-0025 tenant isolation and could expose
+   * items belonging to other tenants. It is retained only because it is
+   * inherited from `IRepository<CatalogItem>`.
+   */
+  findById(id: UniqueEntityId): Promise<CatalogItem | null>;
+
   /**
    * Finds a CatalogItem by id, scoped to items that are:
    * - Owned by `professionalProfileId`, OR

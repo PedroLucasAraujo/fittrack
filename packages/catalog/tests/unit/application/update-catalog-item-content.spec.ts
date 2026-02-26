@@ -2,17 +2,20 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { UpdateCatalogItemContent } from '../../../application/use-cases/update-catalog-item-content.js';
 import { InMemoryCatalogItemRepository } from '../../repositories/in-memory-catalog-item-repository.js';
+import { InMemoryCatalogEventPublisherStub } from '../../stubs/in-memory-catalog-event-publisher-stub.js';
 import { CatalogItemStatus } from '../../../domain/enums/catalog-item-status.js';
 import { CatalogErrorCodes } from '../../../domain/errors/catalog-error-codes.js';
 import { makeCatalogItem, makeGlobalCatalogItem } from '../../factories/make-catalog-item.js';
 
 describe('UpdateCatalogItemContent', () => {
   let repository: InMemoryCatalogItemRepository;
+  let eventPublisher: InMemoryCatalogEventPublisherStub;
   let sut: UpdateCatalogItemContent;
 
   beforeEach(() => {
     repository = new InMemoryCatalogItemRepository();
-    sut = new UpdateCatalogItemContent(repository);
+    eventPublisher = new InMemoryCatalogEventPublisherStub();
+    sut = new UpdateCatalogItemContent(repository, eventPublisher);
   });
 
   // ── Happy paths ────────────────────────────────────────────────────────────
@@ -116,6 +119,70 @@ describe('UpdateCatalogItemContent', () => {
 
     expect(repository.items[0]?.name.value).toBe('Cable Row');
     expect(repository.items[0]?.contentVersion).toBe(2);
+  });
+
+  // ── TemplateVersionChanged event dispatch (ADR-0009 §7) ───────────────────
+
+  it('dispatches TemplateVersionChanged with correct previousVersion and newVersion', async () => {
+    const professionalProfileId = generateId();
+    const item = makeCatalogItem({ professionalProfileId, contentVersion: 3 });
+    repository.items.push(item);
+
+    await sut.execute({
+      professionalProfileId,
+      catalogItemId: item.id,
+      name: 'Overhead Press',
+    });
+
+    expect(eventPublisher.publishedTemplateVersionChanged).toHaveLength(1);
+    const event = eventPublisher.publishedTemplateVersionChanged[0]!;
+    expect(event.payload.previousVersion).toBe(3);
+    expect(event.payload.newVersion).toBe(4);
+  });
+
+  it('dispatches TemplateVersionChanged with correct catalogItemId and professionalProfileId', async () => {
+    const professionalProfileId = generateId();
+    const item = makeCatalogItem({ professionalProfileId });
+    repository.items.push(item);
+
+    await sut.execute({
+      professionalProfileId,
+      catalogItemId: item.id,
+      name: 'Lat Pulldown',
+    });
+
+    expect(eventPublisher.publishedTemplateVersionChanged).toHaveLength(1);
+    const event = eventPublisher.publishedTemplateVersionChanged[0]!;
+    expect(event.payload.catalogItemId).toBe(item.id);
+    expect(event.payload.professionalProfileId).toBe(professionalProfileId);
+    expect(event.aggregateId).toBe(item.id);
+    expect(event.tenantId).toBe(professionalProfileId);
+  });
+
+  it('does not dispatch event when item is not found', async () => {
+    const result = await sut.execute({
+      professionalProfileId: generateId(),
+      catalogItemId: generateId(),
+      name: 'Ghost Item',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    expect(eventPublisher.publishedTemplateVersionChanged).toHaveLength(0);
+  });
+
+  it('does not dispatch event when update fails (ARCHIVED guard)', async () => {
+    const professionalProfileId = generateId();
+    const item = makeCatalogItem({ professionalProfileId, status: CatalogItemStatus.ARCHIVED });
+    repository.items.push(item);
+
+    const result = await sut.execute({
+      professionalProfileId,
+      catalogItemId: item.id,
+      name: 'Try to update archived',
+    });
+
+    expect(result.isLeft()).toBe(true);
+    expect(eventPublisher.publishedTemplateVersionChanged).toHaveLength(0);
   });
 
   // ── Authorization: cross-tenant / global items ─────────────────────────────

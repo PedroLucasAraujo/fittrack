@@ -2,7 +2,9 @@ import { left, right, UniqueEntityId } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { CatalogItemName } from '../../domain/value-objects/catalog-item-name.js';
 import { CatalogItemNotFoundError } from '../../domain/errors/catalog-item-not-found-error.js';
+import { TemplateVersionChangedEvent } from '../../domain/events/template-version-changed-event.js';
 import type { ICatalogItemRepository } from '../../domain/repositories/catalog-item-repository.js';
+import type { ICatalogEventPublisher } from '../ports/catalog-event-publisher-port.js';
 import type { UpdateCatalogItemContentInputDTO } from '../dtos/update-catalog-item-content-input-dto.js';
 import type { UpdateCatalogItemContentOutputDTO } from '../dtos/update-catalog-item-content-output-dto.js';
 
@@ -22,14 +24,25 @@ import type { UpdateCatalogItemContentOutputDTO } from '../dtos/update-catalog-i
  * Only future prescriptions will see the updated content.
  * Existing snapshots in Deliverables are permanently unaffected (ADR-0011 §3).
  *
+ * ## Domain event (ADR-0009 §7)
+ *
+ * `TemplateVersionChanged` is published post-save on every successful content
+ * update. The event carries `previousVersion` and `newVersion` to allow
+ * downstream consumers (Deliverable context, analytics) to detect version drift
+ * in active prescriptions.
+ *
  * ## Global items
  *
  * Professionals cannot update global (platform-curated) items.
  * `findByIdAndProfessionalProfileId` returns null for global items,
  * producing a CatalogItemNotFoundError (ADR-0025 — 404 semantics).
+ * Therefore `TemplateVersionChanged` is never emitted for global items.
  */
 export class UpdateCatalogItemContent {
-  constructor(private readonly catalogItemRepository: ICatalogItemRepository) {}
+  constructor(
+    private readonly catalogItemRepository: ICatalogItemRepository,
+    private readonly eventPublisher: ICatalogEventPublisher,
+  ) {}
 
   async execute(
     dto: UpdateCatalogItemContentInputDTO,
@@ -60,7 +73,10 @@ export class UpdateCatalogItemContent {
       return left(new CatalogItemNotFoundError(dto.catalogItemId));
     }
 
-    // 5. Attempt content update (checks ARCHIVED guard, increments contentVersion)
+    // 5. Capture version before mutation for the domain event payload
+    const previousVersion = item.contentVersion;
+
+    // 6. Attempt content update (checks ARCHIVED guard, increments contentVersion)
     const updateResult = item.updateContent({
       name: newName,
       description: dto.description,
@@ -73,6 +89,17 @@ export class UpdateCatalogItemContent {
     if (updateResult.isLeft()) return left(updateResult.value);
 
     await this.catalogItemRepository.save(item);
+
+    // 7. Dispatch TemplateVersionChanged post-save (ADR-0009 §4, §7).
+    // `findByIdAndProfessionalProfileId` guarantees professionalProfileId is non-null.
+    await this.eventPublisher.publishTemplateVersionChanged(
+      new TemplateVersionChangedEvent(item.id, dto.professionalProfileId, {
+        catalogItemId: item.id,
+        professionalProfileId: dto.professionalProfileId,
+        previousVersion,
+        newVersion: item.contentVersion,
+      }),
+    );
 
     return right({
       catalogItemId: item.id,

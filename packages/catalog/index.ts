@@ -17,8 +17,15 @@ export { CatalogItemName } from './domain/value-objects/catalog-item-name.js';
 export { CatalogItem } from './domain/aggregates/catalog-item.js';
 export type { CatalogItemProps } from './domain/aggregates/catalog-item.js';
 
+// ── Domain Events ─────────────────────────────────────────────────────────────
+export { TemplateVersionChangedEvent } from './domain/events/template-version-changed-event.js';
+export type { TemplateVersionChangedPayload } from './domain/events/template-version-changed-event.js';
+
 // ── Repositories ──────────────────────────────────────────────────────────────
 export type { ICatalogItemRepository } from './domain/repositories/catalog-item-repository.js';
+
+// ── Ports ─────────────────────────────────────────────────────────────────────
+export type { ICatalogEventPublisher } from './application/ports/catalog-event-publisher-port.js';
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 export type { CreateCatalogItemInputDTO } from './application/dtos/create-catalog-item-input-dto.js';
