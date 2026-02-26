@@ -15,7 +15,7 @@ import type { CreateDeliverableOutputDTO } from '../dtos/create-deliverable-outp
  * 1. Tenant isolation (ADR-0025): `professionalProfileId` from JWT, validated as UUID.
  * 2. Title validation: 1–120 chars (DeliverableTitle value object).
  * 3. Temporal (ADR-0010): `logicalDay` computed from `createdAtUtc` + `timezoneUsed`.
- * 4. Initial exercises (PROGRAM type): attached during creation if provided.
+ * 4. Initial exercises (TRAINING_PRESCRIPTION type): attached during creation if provided.
  *    Content is mutable until `ActivateDeliverable` is called.
  *
  * ## Snapshot semantics (ADR-0011)

@@ -27,8 +27,8 @@ export interface CreateDeliverableInputDTO {
   /** IANA timezone of the professional at creation time (ADR-0010). */
   timezoneUsed: string;
   /**
-   * Initial exercises (PROGRAM type only).
-   * Ignored for DIET_PLAN and ASSESSMENT_TEMPLATE.
+   * Initial exercises (TRAINING_PRESCRIPTION type only).
+   * Ignored for DIET_PLAN and PHYSIOLOGICAL_ASSESSMENT.
    */
   exercises?: ExerciseAssignmentInputDTO[];
 }
