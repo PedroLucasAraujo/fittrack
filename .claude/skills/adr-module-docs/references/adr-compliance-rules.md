@@ -1,6 +1,10 @@
-# Referência: Regras de Conformidade com ADRs
+# MOVIDO — Regras de Conformidade com ADRs
 
-Este arquivo lista todos os pontos de verificação para auditoria de conformidade.
+> Este arquivo foi movido para o skill `adr-check`.
+> Consulte: `.claude/skills/adr-check/references/adr-compliance-rules.md`
+>
+> O skill `adr-module-docs` não realiza verificação de conformidade.
+> Use o skill `adr-check` para auditar e corrigir código.
 Use durante a Fase 3 do skill.
 
 ---

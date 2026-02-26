@@ -1,48 +1,32 @@
 ---
 name: adr-module-docs
-description: "Analisa módulos do projeto comparando com os ADRs (Architecture Decision Records) e gera documentação humanizada em português com todas as funcionalidades, regras de negócio, casos de uso e modelo de domínio. Use este skill SEMPRE que o usuário pedir para documentar um módulo, gerar documentação de funcionalidades, analisar conformidade com ADRs, atualizar documentação existente, verificar se o código segue os ADRs, ou criar páginas no Notion com a documentação de um módulo. Também usar quando o usuário mencionar documentar o módulo, checar os ADRs, gerar doc do módulo, funcionalidades do módulo, ou qualquer variação disso."
+description: "Gera documentação humanizada em português de um módulo do projeto, descrevendo funcionalidades, regras de negócio, casos de uso, modelo de domínio e eventos. Use este skill SEMPRE que o usuário pedir para documentar um módulo, gerar documentação de funcionalidades, criar ou atualizar documentação existente, ou criar páginas no Notion com a documentação de um módulo. Também usar quando o usuário mencionar documentar o módulo, gerar doc do módulo, funcionalidades do módulo, criar página no Notion, ou qualquer variação disso. NÃO use este skill para verificar conformidade com ADRs ou aplicar correções de código — para isso use o skill adr-check."
 ---
 
 # ADR Module Docs Skill
 
-Gera documentação completa e humanizada em português para cada módulo do projeto,
-comparando o código com os ADRs e publicando no Notion ou em Markdown.
+Gera documentação completa e humanizada em português para cada módulo do projeto.
+Parte do pressuposto de que o módulo já foi auditado (ou usa a análise do código
+diretamente para descrever o que está implementado).
 
 ## Visão Geral do Fluxo
 
 ```
-1. Carregar ADRs  →  2. Analisar Módulo  →  3. Verificar Conformidade
-       ↓
-4. Corrigir Violações  →  5. Gerar Documentação  →  6. Publicar (Notion ou .md)
+1. Carregar ADRs (contexto)  →  2. Analisar Módulo  →  3. Gerar Documentação  →  4. Publicar
 ```
 
 ---
 
-## FASE 1 — Carregar os ADRs
+## FASE 1 — Carregar os ADRs como Contexto de Negócio
 
-Antes de qualquer análise, leia **todos** os arquivos em `docs/adr/`.
-Também leia `.claude/rules.json`, `CLAUDE.md` e `.claude/context.md`.
+Leia **todos** os arquivos em `docs/decisions/` (ou `docs/adr/`).
+Também leia `CLAUDE.md`.
 
-Construa internamente um mapa de regras extraindo:
-
-- Padrões arquiteturais obrigatórios
-- Convenções de nomenclatura
-- Estados válidos e transições de cada agregado
-- Onde eventos de domínio são despachados
-- Como erros de domínio devem ser tratados
-- Limites de bounded context
-- Contratos de integração entre contextos
-
-**ADRs com atenção especial** (sempre relevantes):
-
-- `ADR-0000` — FROZEN, fundacional, nunca modificar
-- `ADR-0009` — Agregados são máquinas de estado puras, SEM eventos, SEM side effects
-- `ADR-0022` — BANNED é estado terminal, sem transição de saída jamais
-- `ADR-0047` — UseCase é o ÚNICO dispatcher de eventos (pós-commit, via Outbox)
-- `ADR-0051` — Domínio usa `DomainResult<T>`, sem `throw` no domain layer
-- `ADR-0050` — Arquitetura de One-Time Products
-
-> Para documentação detalhada do formato de conformidade, veja `references/adr-compliance-rules.md`
+O objetivo aqui **não é verificar conformidade**, mas entender:
+- O que cada agregado representa no negócio
+- Quais invariantes de negócio existem (para explicar o *porquê* de cada regra)
+- Como os bounded contexts se relacionam
+- Quais fluxos envolvem múltiplos módulos
 
 ---
 
@@ -51,116 +35,83 @@ Construa internamente um mapa de regras extraindo:
 Leia recursivamente **todos** os arquivos do módulo alvo:
 
 **Domain layer:**
-
-- Entities, Aggregates, Value Objects
-- Domain Services
-- Domain Events
-- Domain Errors / Result types
+- Aggregates, Entities, Value Objects → para documentar o modelo de domínio
+- Domain Events → para documentar os eventos publicados
+- Domain Errors e error codes → para documentar os erros possíveis
+- Repository interfaces → para entender as operações de leitura/escrita
 
 **Application layer:**
-
-- Use Cases (Commands e Queries)
-- Event Handlers / Subscribers
-- DTOs e validators
-
-**Infrastructure layer:**
-
-- Repositories (implementações)
-- Mappers / Serializers
-- External adapters
-
-**Interface layer (se houver):**
-
-- Controllers / Resolvers
-- Request/Response DTOs
-- Guards e decorators de autorização
+- Use Cases → para documentar cada funcionalidade disponível
+- DTOs de entrada e saída → para documentar a interface de cada use case
+- Port interfaces → para documentar dependências externas
 
 **Testes:**
+- Unit tests → para entender os cenários de comportamento cobertos
+  (os testes revelam as regras de negócio implícitas)
 
-- Unit tests
-- Integration tests
-
----
-
-## FASE 3 — Verificar Conformidade com ADRs
-
-Para cada arquivo analisado, cheque todos os pontos em `references/adr-compliance-rules.md`.
-
-Classifique cada violação encontrada por severidade:
-
-- 🔴 **Crítica** — quebra contrato do ADR, precisa corrigir antes de documentar
-- 🟡 **Moderada** — desvia de convenção, corrigir se possível
-- 🔵 **Informativa** — gap de teste, sugestão de melhoria
-
-Se houver violações **críticas**, corrija-as antes de gerar a documentação.
-Para violações moderadas, aplique as correções e documente o que foi ajustado.
-Para informativas, registre na seção "Gaps & Melhorias" da documentação.
+> **Nota:** Se o usuário informar que rodou o `adr-check` antes, incorpore
+> o relatório de conformidade gerado na seção "Conformidade com ADRs" e
+> na seção "Gaps e Melhorias" da documentação.
 
 ---
 
-## FASE 4 — Gerar a Documentação
+## FASE 3 — Gerar a Documentação
 
-Gere a documentação seguindo o template em `references/doc-template-pt.md`.
+Gere a documentação seguindo **exatamente** o template em `references/doc-template-pt.md`.
 
-**Diretrizes de escrita:**
+### Diretrizes de Escrita
 
 - Escreva para um leitor que **nunca viu o código** mas entende o negócio
 - Use linguagem clara, direta e em português brasileiro
-- Evite jargões técnicos sem explicação
+- Evite jargões técnicos sem explicação (se usar um termo técnico, explique em parênteses)
 - Cada regra de negócio deve ter uma frase que explique o **porquê** dela existir
 - Use exemplos concretos quando a regra for complexa
-- Fluxos complexos ganham diagrama em Mermaid
+- Fluxos com 4+ etapas ganham diagrama em Mermaid
 
-**O que NUNCA omitir:**
+### O que NUNCA omitir
 
-- Toda transição de estado do agregado
+- Toda transição de estado de todo agregado
 - Todo código de erro de domínio e quando ele ocorre
-- Todo use case, mesmo os simples
-- Toda regra de autorização
+- Todo use case, mesmo os simples ("buscar por ID" conta)
 - Toda dependência de outro bounded context
+- Todos os eventos publicados e quando são emitidos
+
+### Seção "Gaps e Melhorias"
+
+Se o usuário **não rodou** o `adr-check` antes:
+- Identifique visualmente gaps óbvios (use case no aggregate sem use case na application, evento sem dispatch, etc.)
+- Liste na seção "Gaps e Melhorias" com severidade 🔵 Informativa
+- **Não tente corrigir código** — esse não é o propósito deste skill
+
+Se o usuário **rodou** o `adr-check` antes:
+- Incorpore os gaps do relatório de conformidade diretamente nesta seção
 
 ---
 
-## FASE 5 — Publicar
+## FASE 4 — Publicar
 
-### Opção A: Notion (via claude.ai)
-
-Se o usuário pedir publicação no Notion, gere o markdown e retorne para o claude.ai
-fazer o push via integração Notion. Salve também em `docs/modules/[MODULO].md`.
-
-### Opção B: Markdown no repositório
+### Opção A: Markdown no repositório (padrão)
 
 Salve em `docs/modules/[NOME_DO_MODULO]-pt.md`.
 
-### Opção C: Atualização (módulo já documentado)
+### Opção B: Notion (via claude.ai)
 
-Se já existir documentação, compare seção por seção e atualize apenas o que mudou.
-Adicione uma linha no topo: `> Última atualização: [data] — [lista resumida do que mudou]`
+Se o usuário pedir publicação no Notion:
+1. Salve primeiro no repositório em `docs/modules/[NOME_DO_MODULO]-pt.md`
+2. Exiba o conteúdo e instrua o usuário a levá-lo ao claude.ai para publicar no Notion
+3. Siga a estrutura de página em `references/notion-page-structure.md`
 
----
+### Opção C: Atualização de documentação existente
 
-## Execução Rápida (uso no Claude Code)
-
-Para rodar o skill em um módulo específico, use este comando no terminal do Claude Code:
-
-```bash
-# Análise e documentação de um módulo
-# Substitua [MODULO] pelo nome da pasta do módulo (ex: billing, users, executions)
-
-MODULO=[MODULO] && \
-echo "Iniciando análise ADR para o módulo: $MODULO" && \
-echo "Lendo ADRs em docs/adr/ ..." && \
-echo "Analisando src/modules/$MODULO/ ..." && \
-echo "Gerando documentação em docs/modules/$MODULO-pt.md ..."
-```
-
-Após rodar, o Claude Code lê os ADRs, analisa o módulo e gera o `.md`.
-Você então cola o conteúdo aqui no claude.ai para publicar no Notion.
+Se já existir `docs/modules/[NOME_DO_MODULO]-pt.md`:
+1. Leia o arquivo existente
+2. Compare seção por seção com o estado atual do código
+3. Atualize apenas o que mudou
+4. Adicione entrada no "Histórico de Atualizações" com a data e o que foi alterado
 
 ---
 
 ## Arquivos de Referência
 
-- `references/adr-compliance-rules.md` — Checklist completo de conformidade com ADRs
-- `references/doc-template-pt.md` — Template da documentação em português
-- `references/notion-page-structure.md` — Como estruturar páginas no Notion
+- `references/doc-template-pt.md` — Template completo da documentação em português
+- `references/notion-page-structure.md` — Como estruturar e publicar páginas no Notion
