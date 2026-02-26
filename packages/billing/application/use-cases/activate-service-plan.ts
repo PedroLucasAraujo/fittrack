@@ -1,12 +1,17 @@
 import { left, right, UniqueEntityId } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
+import { ServicePlanActivated } from '../../domain/events/service-plan-activated.js';
 import { ServicePlanNotFoundError } from '../../domain/errors/service-plan-not-found-error.js';
 import type { IServicePlanRepository } from '../../domain/repositories/service-plan-repository.js';
+import type { IBillingEventPublisher } from '../ports/billing-event-publisher-port.js';
 import type { ActivateServicePlanInputDTO } from '../dtos/activate-service-plan-input-dto.js';
 import type { ActivateServicePlanOutputDTO } from '../dtos/activate-service-plan-output-dto.js';
 
 export class ActivateServicePlan {
-  constructor(private readonly planRepository: IServicePlanRepository) {}
+  constructor(
+    private readonly planRepository: IServicePlanRepository,
+    private readonly eventPublisher: IBillingEventPublisher,
+  ) {}
 
   async execute(
     dto: ActivateServicePlanInputDTO,
@@ -27,6 +32,14 @@ export class ActivateServicePlan {
     const activatedAtUtc = plan.activatedAtUtc;
     /* v8 ignore next */
     if (!activatedAtUtc) throw new Error('Invariant: activatedAtUtc must be set after activate()');
+
+    await this.eventPublisher.publishServicePlanActivated(
+      new ServicePlanActivated(plan.id, plan.professionalProfileId, {
+        name: plan.name,
+        priceCents: plan.price.amount,
+        currency: plan.price.currency,
+      }),
+    );
 
     return right({
       planId: plan.id,

@@ -43,6 +43,9 @@ export type { IServicePlanRepository } from './domain/repositories/service-plan-
 export type { ITransactionRepository } from './domain/repositories/transaction-repository.js';
 export type { IAccessGrantRepository } from './domain/repositories/access-grant-repository.js';
 
+// ── Application — Ports ──────────────────────────────────────────────────────
+export type { IBillingEventPublisher } from './application/ports/billing-event-publisher-port.js';
+
 // ── Application — Input DTOs ─────────────────────────────────────────────────
 export type { CreateServicePlanInputDTO } from './application/dtos/create-service-plan-input-dto.js';
 export type { ActivateServicePlanInputDTO } from './application/dtos/activate-service-plan-input-dto.js';

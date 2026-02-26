@@ -1,11 +1,14 @@
 import { left, right, UniqueEntityId, UTCDateTime } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { AccessGrant } from '../../domain/aggregates/access-grant.js';
+import { PurchaseCompleted } from '../../domain/events/purchase-completed.js';
+import { AccessGrantCreated } from '../../domain/events/access-grant-created.js';
 import { TransactionNotFoundError } from '../../domain/errors/transaction-not-found-error.js';
 import { ServicePlanNotFoundError } from '../../domain/errors/service-plan-not-found-error.js';
 import type { ITransactionRepository } from '../../domain/repositories/transaction-repository.js';
 import type { IServicePlanRepository } from '../../domain/repositories/service-plan-repository.js';
 import type { IAccessGrantRepository } from '../../domain/repositories/access-grant-repository.js';
+import type { IBillingEventPublisher } from '../ports/billing-event-publisher-port.js';
 import type { ConfirmPaymentInputDTO } from '../dtos/confirm-payment-input-dto.js';
 import type { ConfirmPaymentOutputDTO } from '../dtos/confirm-payment-output-dto.js';
 
@@ -18,15 +21,17 @@ import type { ConfirmPaymentOutputDTO } from '../dtos/confirm-payment-output-dto
  *
  * Per ADR-0017: AccessGrant is created only after Transaction is CONFIRMED.
  *
- * TODO: ADR-0047 — This use case modifies Transaction and creates AccessGrant
- * in the same operation (two aggregate roots). Split into two domain transactions
- * via PurchaseCompleted event when outbox infrastructure is available.
+ * NOTE: ADR-0003 — This use case persists Transaction and AccessGrant in the
+ * same operation (two aggregate roots). This is a documented exception while
+ * the outbox/unit-of-work infrastructure is not yet available. Events are
+ * dispatched post-save via IBillingEventPublisher (ADR-0009 §4).
  */
 export class ConfirmPayment {
   constructor(
     private readonly transactionRepository: ITransactionRepository,
     private readonly planRepository: IServicePlanRepository,
     private readonly accessGrantRepository: IAccessGrantRepository,
+    private readonly eventPublisher: IBillingEventPublisher,
   ) {}
 
   async execute(dto: ConfirmPaymentInputDTO): Promise<DomainResult<ConfirmPaymentOutputDTO>> {
@@ -74,6 +79,26 @@ export class ConfirmPayment {
 
     await this.transactionRepository.save(transaction);
     await this.accessGrantRepository.save(grant);
+
+    await this.eventPublisher.publishPurchaseCompleted(
+      new PurchaseCompleted(transaction.id, transaction.professionalProfileId, {
+        clientId: transaction.clientId,
+        servicePlanId: transaction.servicePlanId,
+        amountCents: transaction.amount.amount,
+        currency: transaction.amount.currency,
+      }),
+    );
+
+    await this.eventPublisher.publishAccessGrantCreated(
+      new AccessGrantCreated(grant.id, grant.professionalProfileId, {
+        clientId: grant.clientId,
+        servicePlanId: grant.servicePlanId,
+        transactionId: grant.transactionId,
+        validFrom: grant.validFrom.toISO(),
+        /* v8 ignore next */
+        validUntil: grant.validUntil?.toISO() ?? null,
+      }),
+    );
 
     return right({
       transactionId: transaction.id,

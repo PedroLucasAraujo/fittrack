@@ -1,7 +1,9 @@
 import { left, right, UniqueEntityId } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
+import { AccessGrantSuspended } from '../../domain/events/access-grant-suspended.js';
 import { AccessGrantNotFoundError } from '../../domain/errors/access-grant-not-found-error.js';
 import type { IAccessGrantRepository } from '../../domain/repositories/access-grant-repository.js';
+import type { IBillingEventPublisher } from '../ports/billing-event-publisher-port.js';
 import type { SuspendAccessGrantInputDTO } from '../dtos/suspend-access-grant-input-dto.js';
 import type { SuspendAccessGrantOutputDTO } from '../dtos/suspend-access-grant-output-dto.js';
 
@@ -17,7 +19,10 @@ import type { SuspendAccessGrantOutputDTO } from '../dtos/suspend-access-grant-o
  * NOT_FOUND, never FORBIDDEN.
  */
 export class SuspendAccessGrant {
-  constructor(private readonly accessGrantRepository: IAccessGrantRepository) {}
+  constructor(
+    private readonly accessGrantRepository: IAccessGrantRepository,
+    private readonly eventPublisher: IBillingEventPublisher,
+  ) {}
 
   async execute(
     dto: SuspendAccessGrantInputDTO,
@@ -40,6 +45,12 @@ export class SuspendAccessGrant {
     const suspendedAtUtc = grant.suspendedAtUtc;
     /* v8 ignore next */
     if (!suspendedAtUtc) throw new Error('Invariant: suspendedAtUtc must be set after suspend()');
+
+    await this.eventPublisher.publishAccessGrantSuspended(
+      new AccessGrantSuspended(grant.id, grant.professionalProfileId, {
+        transactionId: grant.transactionId,
+      }),
+    );
 
     return right({
       accessGrantId: grant.id,
