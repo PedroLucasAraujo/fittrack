@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { RefundPayment } from '../../../application/use-cases/refund-payment.js';
 import { InMemoryTransactionRepository } from '../../repositories/in-memory-transaction-repository.js';
+import { InMemoryBillingEventPublisherStub } from '../../stubs/in-memory-billing-event-publisher-stub.js';
 import { makeTransaction } from '../../factories/make-transaction.js';
 import { TransactionStatus } from '../../../domain/enums/transaction-status.js';
 import { BillingErrorCodes } from '../../../domain/errors/billing-error-codes.js';
@@ -9,12 +10,14 @@ import { ErrorCodes } from '@fittrack/core';
 
 describe('RefundPayment', () => {
   let transactionRepository: InMemoryTransactionRepository;
+  let eventPublisher: InMemoryBillingEventPublisherStub;
   let sut: RefundPayment;
   let professionalProfileId: string;
 
   beforeEach(() => {
     transactionRepository = new InMemoryTransactionRepository();
-    sut = new RefundPayment(transactionRepository);
+    eventPublisher = new InMemoryBillingEventPublisherStub();
+    sut = new RefundPayment(transactionRepository, eventPublisher);
     professionalProfileId = generateId();
   });
 
@@ -133,5 +136,36 @@ describe('RefundPayment', () => {
     if (result.isLeft()) {
       expect(result.value.code).toBe(ErrorCodes.INVALID_UUID);
     }
+  });
+
+  it('publishes PaymentRefunded event on success', async () => {
+    const tx = makeTransaction({
+      professionalProfileId,
+      status: TransactionStatus.CONFIRMED,
+    });
+    transactionRepository.items.push(tx);
+
+    await sut.execute({ transactionId: tx.id, professionalProfileId });
+
+    expect(eventPublisher.publishedPaymentRefunded).toHaveLength(1);
+    expect(eventPublisher.publishedPaymentRefunded[0]!.aggregateId).toBe(tx.id);
+  });
+
+  it('does not publish event when transaction is not found', async () => {
+    await sut.execute({ transactionId: generateId(), professionalProfileId });
+
+    expect(eventPublisher.publishedPaymentRefunded).toHaveLength(0);
+  });
+
+  it('does not publish event when transition fails', async () => {
+    const tx = makeTransaction({
+      professionalProfileId,
+      status: TransactionStatus.PENDING,
+    });
+    transactionRepository.items.push(tx);
+
+    await sut.execute({ transactionId: tx.id, professionalProfileId });
+
+    expect(eventPublisher.publishedPaymentRefunded).toHaveLength(0);
   });
 });

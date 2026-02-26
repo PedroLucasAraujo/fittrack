@@ -4,6 +4,7 @@ import { ConfirmPayment } from '../../../application/use-cases/confirm-payment.j
 import { InMemoryTransactionRepository } from '../../repositories/in-memory-transaction-repository.js';
 import { InMemoryServicePlanRepository } from '../../repositories/in-memory-service-plan-repository.js';
 import { InMemoryAccessGrantRepository } from '../../repositories/in-memory-access-grant-repository.js';
+import { InMemoryBillingEventPublisherStub } from '../../stubs/in-memory-billing-event-publisher-stub.js';
 import { makeTransaction } from '../../factories/make-transaction.js';
 import { makeServicePlan } from '../../factories/make-service-plan.js';
 import { TransactionStatus } from '../../../domain/enums/transaction-status.js';
@@ -15,13 +16,20 @@ describe('ConfirmPayment', () => {
   let transactionRepository: InMemoryTransactionRepository;
   let planRepository: InMemoryServicePlanRepository;
   let accessGrantRepository: InMemoryAccessGrantRepository;
+  let eventPublisher: InMemoryBillingEventPublisherStub;
   let sut: ConfirmPayment;
 
   beforeEach(() => {
     transactionRepository = new InMemoryTransactionRepository();
     planRepository = new InMemoryServicePlanRepository();
     accessGrantRepository = new InMemoryAccessGrantRepository();
-    sut = new ConfirmPayment(transactionRepository, planRepository, accessGrantRepository);
+    eventPublisher = new InMemoryBillingEventPublisherStub();
+    sut = new ConfirmPayment(
+      transactionRepository,
+      planRepository,
+      accessGrantRepository,
+      eventPublisher,
+    );
   });
 
   it('confirms payment and creates AccessGrant', async () => {
@@ -163,5 +171,45 @@ describe('ConfirmPayment', () => {
     });
 
     expect(result.isLeft()).toBe(true);
+  });
+
+  it('publishes PurchaseCompleted and AccessGrantCreated events on success', async () => {
+    const plan = makeServicePlan({ status: ServicePlanStatus.ACTIVE });
+    planRepository.items.push(plan);
+
+    const tx = makeTransaction({
+      status: TransactionStatus.PENDING,
+      servicePlanId: plan.id,
+    });
+    transactionRepository.items.push(tx);
+
+    await sut.execute({ transactionId: tx.id, gatewayTransactionId: 'gw-evt' });
+
+    expect(eventPublisher.publishedPurchaseCompleted).toHaveLength(1);
+    expect(eventPublisher.publishedPurchaseCompleted[0]!.aggregateId).toBe(tx.id);
+    expect(eventPublisher.publishedAccessGrantCreated).toHaveLength(1);
+  });
+
+  it('does not publish events when transaction is not found', async () => {
+    await sut.execute({ transactionId: generateId(), gatewayTransactionId: 'gw-err' });
+
+    expect(eventPublisher.publishedPurchaseCompleted).toHaveLength(0);
+    expect(eventPublisher.publishedAccessGrantCreated).toHaveLength(0);
+  });
+
+  it('does not publish events when transaction transition fails', async () => {
+    const plan = makeServicePlan({ status: ServicePlanStatus.ACTIVE });
+    planRepository.items.push(plan);
+
+    const tx = makeTransaction({
+      status: TransactionStatus.CONFIRMED,
+      servicePlanId: plan.id,
+    });
+    transactionRepository.items.push(tx);
+
+    await sut.execute({ transactionId: tx.id, gatewayTransactionId: 'gw-fail' });
+
+    expect(eventPublisher.publishedPurchaseCompleted).toHaveLength(0);
+    expect(eventPublisher.publishedAccessGrantCreated).toHaveLength(0);
   });
 });

@@ -1,7 +1,9 @@
 import { left, right, UniqueEntityId } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
+import { PaymentRefunded } from '../../domain/events/payment-refunded.js';
 import { TransactionNotFoundError } from '../../domain/errors/transaction-not-found-error.js';
 import type { ITransactionRepository } from '../../domain/repositories/transaction-repository.js';
+import type { IBillingEventPublisher } from '../ports/billing-event-publisher-port.js';
 import type { RefundPaymentInputDTO } from '../dtos/refund-payment-input-dto.js';
 import type { RefundPaymentOutputDTO } from '../dtos/refund-payment-output-dto.js';
 
@@ -22,7 +24,10 @@ import type { RefundPaymentOutputDTO } from '../dtos/refund-payment-output-dto.j
  * operator's JWT and must match the transaction's owner.
  */
 export class RefundPayment {
-  constructor(private readonly transactionRepository: ITransactionRepository) {}
+  constructor(
+    private readonly transactionRepository: ITransactionRepository,
+    private readonly eventPublisher: IBillingEventPublisher,
+  ) {}
 
   async execute(dto: RefundPaymentInputDTO): Promise<DomainResult<RefundPaymentOutputDTO>> {
     const txIdResult = UniqueEntityId.create(dto.transactionId);
@@ -43,6 +48,15 @@ export class RefundPayment {
     const refundedAtUtc = transaction.refundedAtUtc;
     /* v8 ignore next */
     if (!refundedAtUtc) throw new Error('Invariant: refundedAtUtc must be set after refund()');
+
+    await this.eventPublisher.publishPaymentRefunded(
+      new PaymentRefunded(transaction.id, transaction.professionalProfileId, {
+        clientId: transaction.clientId,
+        servicePlanId: transaction.servicePlanId,
+        amountCents: transaction.amount.amount,
+        currency: transaction.amount.currency,
+      }),
+    );
 
     return right({
       transactionId: transaction.id,

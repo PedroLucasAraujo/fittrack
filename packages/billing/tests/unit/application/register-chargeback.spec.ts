@@ -3,6 +3,7 @@ import { generateId } from '@fittrack/core';
 import { RegisterChargeback } from '../../../application/use-cases/register-chargeback.js';
 import { InMemoryTransactionRepository } from '../../repositories/in-memory-transaction-repository.js';
 import { InMemoryAccessGrantRepository } from '../../repositories/in-memory-access-grant-repository.js';
+import { InMemoryBillingEventPublisherStub } from '../../stubs/in-memory-billing-event-publisher-stub.js';
 import { makeTransaction } from '../../factories/make-transaction.js';
 import { makeAccessGrant } from '../../factories/make-access-grant.js';
 import { TransactionStatus } from '../../../domain/enums/transaction-status.js';
@@ -12,12 +13,14 @@ import { BillingErrorCodes } from '../../../domain/errors/billing-error-codes.js
 describe('RegisterChargeback', () => {
   let transactionRepository: InMemoryTransactionRepository;
   let accessGrantRepository: InMemoryAccessGrantRepository;
+  let eventPublisher: InMemoryBillingEventPublisherStub;
   let sut: RegisterChargeback;
 
   beforeEach(() => {
     transactionRepository = new InMemoryTransactionRepository();
     accessGrantRepository = new InMemoryAccessGrantRepository();
-    sut = new RegisterChargeback(transactionRepository, accessGrantRepository);
+    eventPublisher = new InMemoryBillingEventPublisherStub();
+    sut = new RegisterChargeback(transactionRepository, accessGrantRepository, eventPublisher);
   });
 
   it('registers chargeback and revokes access grant', async () => {
@@ -92,5 +95,40 @@ describe('RegisterChargeback', () => {
   it('returns error if transactionId is not a valid UUID', async () => {
     const result = await sut.execute({ transactionId: 'not-a-uuid' });
     expect(result.isLeft()).toBe(true);
+  });
+
+  it('publishes ChargebackRegistered and AccessGrantRevoked events on success', async () => {
+    const tx = makeTransaction({ status: TransactionStatus.CONFIRMED });
+    transactionRepository.items.push(tx);
+
+    const grant = makeAccessGrant({
+      transactionId: tx.id,
+      status: AccessGrantStatus.ACTIVE,
+    });
+    accessGrantRepository.items.push(grant);
+
+    await sut.execute({ transactionId: tx.id });
+
+    expect(eventPublisher.publishedChargebackRegistered).toHaveLength(1);
+    expect(eventPublisher.publishedChargebackRegistered[0]!.aggregateId).toBe(tx.id);
+    expect(eventPublisher.publishedAccessGrantRevoked).toHaveLength(1);
+    expect(eventPublisher.publishedAccessGrantRevoked[0]!.aggregateId).toBe(grant.id);
+  });
+
+  it('does not publish events when transaction is not found', async () => {
+    await sut.execute({ transactionId: generateId() });
+
+    expect(eventPublisher.publishedChargebackRegistered).toHaveLength(0);
+    expect(eventPublisher.publishedAccessGrantRevoked).toHaveLength(0);
+  });
+
+  it('does not publish events when transaction transition fails', async () => {
+    const tx = makeTransaction({ status: TransactionStatus.PENDING });
+    transactionRepository.items.push(tx);
+
+    await sut.execute({ transactionId: tx.id });
+
+    expect(eventPublisher.publishedChargebackRegistered).toHaveLength(0);
+    expect(eventPublisher.publishedAccessGrantRevoked).toHaveLength(0);
   });
 });

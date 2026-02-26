@@ -21,6 +21,7 @@ export default defineConfig({
         'index.ts',
         'domain/repositories/**',
         'application/dtos/**',
+        'application/ports/**',
         'domain/events/**',
       ],
       thresholds: {
