@@ -69,7 +69,7 @@ describe('Session', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(SchedulingErrorCodes.INVALID_BOOKING_TRANSITION);
+        expect(result.value.code).toBe(SchedulingErrorCodes.INVALID_SESSION_TRANSITION);
       }
     });
   });

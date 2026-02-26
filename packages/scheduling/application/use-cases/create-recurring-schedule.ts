@@ -14,8 +14,10 @@ import { SessionNotActiveError } from '../../domain/errors/session-not-active-er
 import { ProfessionalBannedError } from '../../domain/errors/professional-banned-error.js';
 import { OperationalLimitExceededError } from '../../domain/errors/operational-limit-exceeded-error.js';
 import { SchedulingErrorCodes } from '../../domain/errors/scheduling-error-codes.js';
+import { RecurringScheduleCreated } from '../../domain/events/recurring-schedule-created.js';
 import type { IRecurringScheduleRepository } from '../../domain/repositories/recurring-schedule-repository.js';
 import type { ISessionRepository } from '../../domain/repositories/session-repository.js';
+import type { ISchedulingEventPublisher } from '../ports/scheduling-event-publisher-port.js';
 import type { CreateRecurringScheduleInputDTO } from '../dtos/create-recurring-schedule-input-dto.js';
 import type { CreateRecurringScheduleOutputDTO } from '../dtos/create-recurring-schedule-output-dto.js';
 
@@ -43,6 +45,7 @@ export class CreateRecurringSchedule {
     private readonly recurringScheduleRepository: IRecurringScheduleRepository,
     private readonly sessionRepository: ISessionRepository,
     private readonly limits: CreateRecurringScheduleLimits,
+    private readonly eventPublisher: ISchedulingEventPublisher,
   ) {}
 
   async execute(
@@ -145,6 +148,15 @@ export class CreateRecurringSchedule {
     }
 
     await this.recurringScheduleRepository.save(schedule);
+
+    await this.eventPublisher.publishRecurringScheduleCreated(
+      new RecurringScheduleCreated(schedule.id, schedule.professionalProfileId, {
+        sessionId: schedule.sessionId,
+        clientId: schedule.clientId,
+        dayOfWeek: schedule.dayOfWeek,
+        sessionCount: schedule.sessionCount,
+      }),
+    );
 
     return right({
       recurringScheduleId: schedule.id,

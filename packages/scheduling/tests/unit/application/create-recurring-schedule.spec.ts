@@ -8,10 +8,12 @@ import { RecurringScheduleNotFoundError } from '../../../domain/errors/recurring
 import { DayOfWeek } from '../../../domain/enums/day-of-week.js';
 import { makeSession } from '../../factories/make-session.js';
 import { SessionStatus } from '../../../domain/enums/session-status.js';
+import { InMemorySchedulingEventPublisherStub } from '../../stubs/in-memory-scheduling-event-publisher-stub.js';
 
 describe('CreateRecurringSchedule', () => {
   let recurringScheduleRepository: InMemoryRecurringScheduleRepository;
   let sessionRepository: InMemorySessionRepository;
+  let eventPublisher: InMemorySchedulingEventPublisherStub;
   let sut: CreateRecurringSchedule;
   let professionalProfileId: string;
   let session: ReturnType<typeof makeSession>;
@@ -19,10 +21,16 @@ describe('CreateRecurringSchedule', () => {
   beforeEach(() => {
     recurringScheduleRepository = new InMemoryRecurringScheduleRepository();
     sessionRepository = new InMemorySessionRepository();
-    sut = new CreateRecurringSchedule(recurringScheduleRepository, sessionRepository, {
-      maxRecurringSessions: 52,
-      watchlistMaxRecurringSessions: 12,
-    });
+    eventPublisher = new InMemorySchedulingEventPublisherStub();
+    sut = new CreateRecurringSchedule(
+      recurringScheduleRepository,
+      sessionRepository,
+      {
+        maxRecurringSessions: 52,
+        watchlistMaxRecurringSessions: 12,
+      },
+      eventPublisher,
+    );
 
     professionalProfileId = generateId();
     session = makeSession({
@@ -299,5 +307,62 @@ describe('CreateRecurringSchedule', () => {
     if (result.isLeft()) {
       expect(result.value.code).toBe(SchedulingErrorCodes.SESSION_NOT_ACTIVE);
     }
+  });
+
+  it('publishes RecurringScheduleCreated event on success', async () => {
+    const clientId = generateId();
+
+    const result = await sut.execute(
+      {
+        professionalProfileId,
+        clientId,
+        sessionId: session.id,
+        dayOfWeek: DayOfWeek.MONDAY,
+        startTime: '09:00',
+        timezoneUsed: 'America/Sao_Paulo',
+        recurrenceCount: 2,
+      },
+      { isBanned: false, isWatchlist: false },
+    );
+
+    expect(result.isRight()).toBe(true);
+    expect(eventPublisher.publishedRecurringScheduleCreated).toHaveLength(1);
+    expect(eventPublisher.publishedRecurringScheduleCreated[0]?.payload.sessionId).toBe(session.id);
+    expect(eventPublisher.publishedRecurringScheduleCreated[0]?.payload.clientId).toBe(clientId);
+    expect(eventPublisher.publishedRecurringScheduleCreated[0]?.payload.sessionCount).toBe(2);
+  });
+
+  it('does not publish event when session not found', async () => {
+    await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: generateId(),
+        dayOfWeek: DayOfWeek.MONDAY,
+        startTime: '09:00',
+        timezoneUsed: 'America/Sao_Paulo',
+        recurrenceCount: 2,
+      },
+      { isBanned: false, isWatchlist: false },
+    );
+
+    expect(eventPublisher.publishedRecurringScheduleCreated).toHaveLength(0);
+  });
+
+  it('does not publish event when professional is banned', async () => {
+    await sut.execute(
+      {
+        professionalProfileId,
+        clientId: generateId(),
+        sessionId: session.id,
+        dayOfWeek: DayOfWeek.MONDAY,
+        startTime: '09:00',
+        timezoneUsed: 'America/Sao_Paulo',
+        recurrenceCount: 2,
+      },
+      { isBanned: true, isWatchlist: false },
+    );
+
+    expect(eventPublisher.publishedRecurringScheduleCreated).toHaveLength(0);
   });
 });
