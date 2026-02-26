@@ -5,15 +5,18 @@ import { InMemoryBookingRepository } from '../../repositories/in-memory-booking-
 import { SchedulingErrorCodes } from '../../../domain/errors/scheduling-error-codes.js';
 import { BookingStatus } from '../../../domain/enums/booking-status.js';
 import { makeBooking } from '../../factories/make-booking.js';
+import { InMemorySchedulingEventPublisherStub } from '../../stubs/in-memory-scheduling-event-publisher-stub.js';
 
 describe('CancelBooking', () => {
   let bookingRepository: InMemoryBookingRepository;
+  let eventPublisher: InMemorySchedulingEventPublisherStub;
   let sut: CancelBooking;
   let professionalProfileId: string;
 
   beforeEach(() => {
     bookingRepository = new InMemoryBookingRepository();
-    sut = new CancelBooking(bookingRepository);
+    eventPublisher = new InMemorySchedulingEventPublisherStub();
+    sut = new CancelBooking(bookingRepository, eventPublisher);
     professionalProfileId = generateId();
   });
 
@@ -144,5 +147,51 @@ describe('CancelBooking', () => {
     });
 
     expect(result.isLeft()).toBe(true);
+  });
+
+  it('publishes BookingCancelled event on success', async () => {
+    const booking = makeBooking({
+      professionalProfileId,
+      status: BookingStatus.PENDING,
+    });
+    bookingRepository.items.push(booking);
+
+    await sut.execute({
+      bookingId: booking.id,
+      professionalProfileId,
+      cancelledBy: 'CLIENT',
+      reason: 'Schedule conflict',
+    });
+
+    expect(eventPublisher.publishedBookingCancelled).toHaveLength(1);
+    expect(eventPublisher.publishedBookingCancelled[0]?.aggregateId).toBe(booking.id);
+  });
+
+  it('does not publish event when booking not found', async () => {
+    await sut.execute({
+      bookingId: generateId(),
+      professionalProfileId,
+      cancelledBy: 'CLIENT',
+      reason: 'Test',
+    });
+
+    expect(eventPublisher.publishedBookingCancelled).toHaveLength(0);
+  });
+
+  it('does not publish event when transition is invalid', async () => {
+    const booking = makeBooking({
+      professionalProfileId,
+      status: BookingStatus.COMPLETED,
+    });
+    bookingRepository.items.push(booking);
+
+    await sut.execute({
+      bookingId: booking.id,
+      professionalProfileId,
+      cancelledBy: 'CLIENT',
+      reason: 'Too late',
+    });
+
+    expect(eventPublisher.publishedBookingCancelled).toHaveLength(0);
   });
 });

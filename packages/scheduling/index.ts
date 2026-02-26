@@ -12,6 +12,7 @@ export { TimeSlot } from './domain/value-objects/time-slot.js';
 export { SchedulingErrorCodes } from './domain/errors/scheduling-error-codes.js';
 export type { SchedulingErrorCode } from './domain/errors/scheduling-error-codes.js';
 export { InvalidBookingTransitionError } from './domain/errors/invalid-booking-transition-error.js';
+export { InvalidSessionTransitionError } from './domain/errors/invalid-session-transition-error.js';
 export { InvalidDurationError } from './domain/errors/invalid-duration-error.js';
 export { InvalidTimeSlotError } from './domain/errors/invalid-time-slot-error.js';
 export { OverlappingTimeSlotError } from './domain/errors/overlapping-time-slot-error.js';
@@ -36,6 +37,9 @@ export { BookingCompleted } from './domain/events/booking-completed.js';
 export { BookingNoShow } from './domain/events/booking-no-show.js';
 export { RecurringScheduleCreated } from './domain/events/recurring-schedule-created.js';
 
+// ── Application — Port Interfaces ────────────────────────────────────────────
+export type { ISchedulingEventPublisher } from './application/ports/scheduling-event-publisher-port.js';
+
 // ── Repository Interfaces ────────────────────────────────────────────────────
 export type { ISessionRepository } from './domain/repositories/session-repository.js';
 export type { IBookingRepository } from './domain/repositories/booking-repository.js';
@@ -49,6 +53,10 @@ export type { UpdateWorkingAvailabilityInputDTO } from './application/dtos/updat
 export type { CreateBookingInputDTO } from './application/dtos/create-booking-input-dto.js';
 export type { AccessGrantValidationDTO } from './application/dtos/access-grant-validation-dto.js';
 export type { CancelBookingInputDTO } from './application/dtos/cancel-booking-input-dto.js';
+export type { ConfirmBookingInputDTO } from './application/dtos/confirm-booking-input-dto.js';
+export type { CompleteBookingInputDTO } from './application/dtos/complete-booking-input-dto.js';
+export type { MarkBookingNoShowInputDTO } from './application/dtos/mark-booking-no-show-input-dto.js';
+export type { CancelBookingBySystemInputDTO } from './application/dtos/cancel-booking-by-system-input-dto.js';
 export type { CreateRecurringScheduleInputDTO } from './application/dtos/create-recurring-schedule-input-dto.js';
 
 // ── Application — Output DTOs ────────────────────────────────────────────────
@@ -57,6 +65,10 @@ export type { CreateWorkingAvailabilityOutputDTO } from './application/dtos/crea
 export type { UpdateWorkingAvailabilityOutputDTO } from './application/dtos/update-working-availability-output-dto.js';
 export type { CreateBookingOutputDTO } from './application/dtos/create-booking-output-dto.js';
 export type { CancelBookingOutputDTO } from './application/dtos/cancel-booking-output-dto.js';
+export type { ConfirmBookingOutputDTO } from './application/dtos/confirm-booking-output-dto.js';
+export type { CompleteBookingOutputDTO } from './application/dtos/complete-booking-output-dto.js';
+export type { MarkBookingNoShowOutputDTO } from './application/dtos/mark-booking-no-show-output-dto.js';
+export type { CancelBookingBySystemOutputDTO } from './application/dtos/cancel-booking-by-system-output-dto.js';
 export type { CreateRecurringScheduleOutputDTO } from './application/dtos/create-recurring-schedule-output-dto.js';
 
 // ── Application — Use Cases ──────────────────────────────────────────────────
@@ -66,5 +78,9 @@ export { UpdateWorkingAvailability } from './application/use-cases/update-workin
 export { CreateBooking } from './application/use-cases/create-booking.js';
 export type { CreateBookingLimits } from './application/use-cases/create-booking.js';
 export { CancelBooking } from './application/use-cases/cancel-booking.js';
+export { ConfirmBooking } from './application/use-cases/confirm-booking.js';
+export { CompleteBooking } from './application/use-cases/complete-booking.js';
+export { MarkBookingNoShow } from './application/use-cases/mark-booking-no-show.js';
+export { CancelBookingBySystem } from './application/use-cases/cancel-booking-by-system.js';
 export { CreateRecurringSchedule } from './application/use-cases/create-recurring-schedule.js';
 export type { CreateRecurringScheduleLimits } from './application/use-cases/create-recurring-schedule.js';

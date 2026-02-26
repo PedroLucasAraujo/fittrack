@@ -3,7 +3,7 @@ import type { DomainResult } from '@fittrack/core';
 import { SessionTitle } from '../value-objects/session-title.js';
 import { DurationMinutes } from '../value-objects/duration-minutes.js';
 import { SessionStatus } from '../enums/session-status.js';
-import { InvalidBookingTransitionError } from '../errors/invalid-booking-transition-error.js';
+import { InvalidSessionTransitionError } from '../errors/invalid-session-transition-error.js';
 
 export interface SessionProps {
   professionalProfileId: string;
@@ -58,7 +58,7 @@ export class Session extends AggregateRoot<SessionProps> {
   /** ACTIVE → ARCHIVED. Prevents new bookings. */
   archive(): DomainResult<void> {
     if (this.props.status !== SessionStatus.ACTIVE) {
-      return left(new InvalidBookingTransitionError(this.props.status, SessionStatus.ARCHIVED));
+      return left(new InvalidSessionTransitionError(this.props.status, SessionStatus.ARCHIVED));
     }
 
     this.props.status = SessionStatus.ARCHIVED;
