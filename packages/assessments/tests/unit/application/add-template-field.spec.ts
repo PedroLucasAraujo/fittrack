@@ -136,6 +136,24 @@ describe('AddTemplateField', () => {
     }
   });
 
+  it('returns AssessmentTemplateNotFoundError when template belongs to a different professional (ADR-0025)', async () => {
+    const template = makeAssessmentTemplate(); // belongs to professionalA
+    repository.items.push(template);
+
+    const result = await sut.execute({
+      professionalProfileId: generateId(), // professionalB
+      assessmentTemplateId: template.id,
+      label: 'Weight',
+      fieldType: TemplateFieldType.NUMBER,
+      required: false,
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(AssessmentErrorCodes.ASSESSMENT_TEMPLATE_NOT_FOUND);
+    }
+  });
+
   it('returns error for an empty label', async () => {
     const template = makeDraftTemplate();
 

@@ -262,4 +262,40 @@ describe('CompareAssessmentResponses', () => {
       expect(result.value.code).toBe(AssessmentErrorCodes.ASSESSMENT_RESPONSE_NOT_FOUND);
     }
   });
+
+  it('returns AssessmentResponseNotFoundError when baseline belongs to a different professional (ADR-0025)', async () => {
+    const professionalA = generateId();
+    const baseline = makeAssessmentResponse({ professionalProfileId: professionalA });
+    const current = makeAssessmentResponse({ professionalProfileId: professionalA });
+    repository.items.push(baseline, current);
+
+    const result = await sut.execute({
+      professionalProfileId: generateId(), // professionalB — neither owner
+      baselineResponseId: baseline.id,
+      currentResponseId: current.id,
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(AssessmentErrorCodes.ASSESSMENT_RESPONSE_NOT_FOUND);
+    }
+  });
+
+  it('returns AssessmentResponseNotFoundError when current belongs to a different professional (ADR-0025)', async () => {
+    const professionalProfileId = generateId();
+    const baseline = makeAssessmentResponse({ professionalProfileId });
+    const current = makeAssessmentResponse(); // different professionalProfileId
+    repository.items.push(baseline, current);
+
+    const result = await sut.execute({
+      professionalProfileId,
+      baselineResponseId: baseline.id,
+      currentResponseId: current.id,
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(AssessmentErrorCodes.ASSESSMENT_RESPONSE_NOT_FOUND);
+    }
+  });
 });

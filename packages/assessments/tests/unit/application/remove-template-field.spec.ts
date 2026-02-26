@@ -69,6 +69,22 @@ describe('RemoveTemplateField', () => {
     }
   });
 
+  it('returns AssessmentTemplateNotFoundError when template belongs to a different professional (ADR-0025)', async () => {
+    const template = makeAssessmentTemplate(); // belongs to professionalA
+    repository.items.push(template);
+
+    const result = await sut.execute({
+      professionalProfileId: generateId(), // professionalB
+      assessmentTemplateId: template.id,
+      fieldId: template.fields[0].id,
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(AssessmentErrorCodes.ASSESSMENT_TEMPLATE_NOT_FOUND);
+    }
+  });
+
   it('returns TemplateFieldNotFoundError when fieldId does not exist', async () => {
     const template = makeAssessmentTemplate();
     repository.items.push(template);

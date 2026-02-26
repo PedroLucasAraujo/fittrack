@@ -188,6 +188,34 @@ describe('RecordAssessmentResponse', () => {
     }
   });
 
+  it('returns ExecutionNotConfirmedError when execution belongs to a different professional (ADR-0025)', async () => {
+    const professionalA = generateId();
+    const fieldId = generateId();
+    const deliverable = makePhysiologicalDeliverable({
+      professionalProfileId: professionalA,
+      fieldId,
+    });
+    const execution = makeConfirmedExecution({
+      professionalProfileId: professionalA,
+      deliverableId: deliverable.id,
+    });
+
+    executionStub.items.push(execution);
+    deliverableStub.items.push(deliverable);
+
+    const result = await sut.execute({
+      professionalProfileId: generateId(), // professionalB
+      executionId: execution.id,
+      createdAtUtc: '2026-02-22T14:00:00.000Z',
+      responses: [{ fieldId, value: numberFieldValue(75) }],
+    });
+
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) {
+      expect(result.value.code).toBe(AssessmentErrorCodes.EXECUTION_NOT_CONFIRMED);
+    }
+  });
+
   it('returns ExecutionNotConfirmedError when execution is PENDING', async () => {
     const professionalProfileId = generateId();
     const execution = makeConfirmedExecution({ professionalProfileId, status: 'PENDING' });
