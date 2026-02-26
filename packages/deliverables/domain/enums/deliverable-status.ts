@@ -2,15 +2,18 @@
  * Deliverable lifecycle states (ADR-0008 pattern, ADR-0044 §2).
  *
  * ```
- * DRAFT → ACTIVE  (event: DeliverableActivated)
- * DRAFT → ARCHIVED (event: DeliverableArchived)
- * ACTIVE → ARCHIVED (event: DeliverableArchived)
+ * DRAFT → ACTIVE
+ * DRAFT → ARCHIVED
+ * ACTIVE → ARCHIVED
  * ```
  *
  * Terminal state: ARCHIVED (no transitions out).
  * Content (exercises, fields) may only be mutated in DRAFT state.
  * Once ACTIVE the content snapshot is locked — changes require archiving
  * and creating a new Deliverable.
+ *
+ * Note: Deliverable emits no domain events (ADR-0047 §2; ADR-0009 §6 prohibits
+ * generic lifecycle events). State transitions are plain mutations within the aggregate.
  */
 export const DeliverableStatus = {
   /** Content is being assembled. Mutable. Not yet assignable. */

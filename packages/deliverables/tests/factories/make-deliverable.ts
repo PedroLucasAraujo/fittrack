@@ -25,7 +25,7 @@ type DeliverableOverrides = Partial<{
 /**
  * Test factory for Deliverable — uses `reconstitute` to allow setting any status.
  *
- * Defaults to a DRAFT PROGRAM Deliverable with no exercises.
+ * Defaults to a DRAFT TRAINING_PRESCRIPTION Deliverable with no exercises.
  */
 export function makeDeliverable(overrides: DeliverableOverrides = {}): Deliverable {
   const titleResult = DeliverableTitle.create(

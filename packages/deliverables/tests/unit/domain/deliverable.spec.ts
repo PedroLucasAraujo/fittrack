@@ -390,7 +390,7 @@ describe('Deliverable', () => {
   // ── activate() (ADR-0008, ADR-0011 §3) ───────────────────────────────────
 
   describe('activate()', () => {
-    it('transitions DRAFT → ACTIVE for PROGRAM with exercises', () => {
+    it('transitions DRAFT → ACTIVE for TRAINING_PRESCRIPTION with exercises', () => {
       const deliverable = makeDeliverable({
         status: DeliverableStatus.DRAFT,
         type: DeliverableType.TRAINING_PRESCRIPTION,
@@ -417,7 +417,7 @@ describe('Deliverable', () => {
       expect(deliverable.status).toBe(DeliverableStatus.ACTIVE);
     });
 
-    it('transitions DRAFT → ACTIVE for ASSESSMENT_TEMPLATE (no exercises required)', () => {
+    it('transitions DRAFT → ACTIVE for PHYSIOLOGICAL_ASSESSMENT (no exercises required)', () => {
       const deliverable = makeDeliverable({
         status: DeliverableStatus.DRAFT,
         type: DeliverableType.PHYSIOLOGICAL_ASSESSMENT,
@@ -439,7 +439,7 @@ describe('Deliverable', () => {
       expect(deliverable.getDomainEvents()).toHaveLength(0);
     });
 
-    it('rejects activation of PROGRAM with no exercises', () => {
+    it('rejects activation of TRAINING_PRESCRIPTION with no exercises', () => {
       const deliverable = makeDeliverable({
         status: DeliverableStatus.DRAFT,
         type: DeliverableType.TRAINING_PRESCRIPTION,

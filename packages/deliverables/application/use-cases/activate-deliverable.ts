@@ -12,7 +12,7 @@ import type { ActivateDeliverableOutputDTO } from '../dtos/activate-deliverable-
  *
  * 1. Tenant isolation (ADR-0025): scoped lookup via `professionalProfileId`.
  * 2. State machine (ADR-0008): only DRAFT → ACTIVE is permitted.
- * 3. PROGRAM invariant: at least one ExerciseAssignment must exist.
+ * 3. TRAINING_PRESCRIPTION invariant: at least one ExerciseAssignment must exist.
  *
  * ## Effect
  *
@@ -36,7 +36,7 @@ export class ActivateDeliverable {
       return left(new DeliverableNotFoundError(dto.deliverableId));
     }
 
-    // 2. State transition (validates DRAFT → ACTIVE and PROGRAM invariant)
+    // 2. State transition (validates DRAFT → ACTIVE and TRAINING_PRESCRIPTION invariant)
     const activateResult = deliverable.activate();
     if (activateResult.isLeft()) return left(activateResult.value);
 
