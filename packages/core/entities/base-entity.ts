@@ -1,5 +1,5 @@
-import { DomainInvariantError } from '../errors/domain-invariant-error';
 import { ErrorCodes } from '../errors/error-codes';
+import { invariant } from '../invariants/invariant';
 
 /**
  * UUIDv4 regex: 8-4-4-4-12 hex groups with version=4 and variant bits 8/9/a/b.
@@ -25,13 +25,12 @@ export abstract class BaseEntity<Props> {
   protected props: Props;
 
   protected constructor(id: string, props: Props) {
-    if (!UUID_V4_REGEX.test(id)) {
-      throw new DomainInvariantError(
-        `Entity id must be a valid UUIDv4. Received: "${id}".`,
-        ErrorCodes.INVALID_UUID,
-        { id },
-      );
-    }
+    invariant(
+      UUID_V4_REGEX.test(id),
+      `Entity id must be a valid UUIDv4. Received: "${id}".`,
+      ErrorCodes.INVALID_UUID,
+      { id },
+    );
     this._id = id;
     this.props = props;
   }

@@ -1,5 +1,3 @@
-import type { UniqueEntityId } from '../entities/unique-entity-id';
-
 /**
  * Minimal base repository interface for all aggregate roots (ADR-0004 §2).
  *
@@ -13,6 +11,9 @@ import type { UniqueEntityId } from '../entities/unique-entity-id';
  *
  * ## Rules (ADR-0004 §4)
  *
+ * - `findById` receives a plain UUIDv4 string — the same type exposed by
+ *   `BaseEntity.id`. Using `string` aligns with all bounded-context repository
+ *   interfaces in the project.
  * - `findById` returns a complete, valid aggregate or `null`. Partial
  *   reconstruction is prohibited.
  * - All required associations are loaded eagerly. Lazy loading is prohibited.
@@ -22,6 +23,6 @@ import type { UniqueEntityId } from '../entities/unique-entity-id';
  * @template T The aggregate root type this repository manages.
  */
 export interface IRepository<T> {
-  findById(id: UniqueEntityId): Promise<T | null>;
+  findById(id: string): Promise<T | null>;
   save(entity: T): Promise<void>;
 }

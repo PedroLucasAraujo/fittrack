@@ -8,19 +8,24 @@ import type { DomainEvent } from '../events/domain-event';
  * its consistency boundary. It:
  *   - Owns a set of subordinate entities and value objects.
  *   - Is loaded and persisted atomically within one transaction (ADR-0003).
- *   - Publishes domain events on behalf of its aggregate (ADR-0009).
  *   - Carries an optimistic locking `version` field (ADR-0006).
  *
- * ## Domain event lifecycle (ADR-0009 §3)
+ * ## Domain event dispatch (ADR-0009 §4)
  *
- * 1. A domain method executes and calls `this.addDomainEvent(event)`.
- * 2. The repository persists the aggregate within the transaction.
- * 3. The transaction commits.
- * 4. The application layer calls `aggregate.getDomainEvents()`.
- * 5. The application layer publishes the events to the event bus.
- * 6. The application layer calls `aggregate.clearDomainEvents()`.
+ * Aggregates are **pure state machines**. They do NOT collect or dispatch
+ * domain events. The Application layer (UseCase) is the sole authority:
  *
- * Events must never be published before step 3 (commit). See ADR-0009 §7.
+ * 1. UseCase validates input and loads the aggregate from the repository.
+ * 2. UseCase calls the aggregate domain method (state transition).
+ * 3. Repository persists the aggregate within a transaction.
+ * 4. Transaction commits.
+ * 5. UseCase constructs domain event(s) for significant business facts.
+ * 6. UseCase publishes event(s) to the event bus.
+ *
+ * `addDomainEvent()`, `getDomainEvents()`, and `clearDomainEvents()` are
+ * reserved for a future event-sourcing adoption path (ADR-0009 §1.2).
+ * They **MUST NOT** be called in current application-layer aggregates.
+ * See ADR-0009 §10 (Prohibited Patterns).
  *
  * ## Optimistic locking (ADR-0006)
  *
@@ -53,11 +58,12 @@ export abstract class AggregateRoot<Props> extends BaseEntity<Props> {
   }
 
   /**
-   * Registers a domain event to be dispatched after the transaction commits.
+   * Registers a domain event in the internal collection.
    *
-   * Call this inside domain methods whenever a valid state transition occurs.
-   * Do not publish events directly from here — the application layer reads and
-   * dispatches all collected events via `getDomainEvents()` (ADR-0009 §3).
+   * **Reserved for event-sourcing adoption (ADR-0009 §1.2).**
+   * MUST NOT be called in current application-layer DDD aggregates.
+   * The Application layer (UseCase) is the sole dispatcher of domain events.
+   * See ADR-0009 §10 (Prohibited Patterns).
    */
   protected addDomainEvent(event: DomainEvent): void {
     this._domainEvents.push(event);
@@ -68,8 +74,9 @@ export abstract class AggregateRoot<Props> extends BaseEntity<Props> {
    * `clearDomainEvents()`. Returns a shallow copy so that external mutations
    * of the returned array cannot corrupt the internal collection.
    *
-   * Called by the application layer after the repository commits the
-   * aggregate, immediately before dispatching to the event bus.
+   * Reserved for event-sourcing adoption (ADR-0009 §1.2). In current
+   * implementations this always returns an empty array since
+   * `addDomainEvent()` must not be called.
    */
   getDomainEvents(): ReadonlyArray<DomainEvent> {
     return [...this._domainEvents];
@@ -78,8 +85,8 @@ export abstract class AggregateRoot<Props> extends BaseEntity<Props> {
   /**
    * Clears the internal domain event collection.
    *
-   * Must be called by the application layer after all events returned by
-   * `getDomainEvents()` have been successfully dispatched (ADR-0009 §3 step 8).
+   * Reserved for event-sourcing adoption (ADR-0009 §1.2). Must be called
+   * after all events returned by `getDomainEvents()` have been dispatched.
    */
   clearDomainEvents(): void {
     this._domainEvents = [];
