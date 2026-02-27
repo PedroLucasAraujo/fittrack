@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateId } from '@fittrack/core';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { generateId, UTCDateTime, LogicalDay } from '@fittrack/core';
 import { ExecutionRecordedEvent } from '@fittrack/execution';
-import { DeriveExecutionMetrics } from '../../../application/use-cases/derive-execution-metrics.js';
+import { Metric } from '../../../domain/aggregates/metric.js';
 import { MetricType } from '../../../domain/enums/metric-type.js';
 import { MetricErrorCodes } from '../../../domain/errors/metric-error-codes.js';
-import type { IMetricRepository } from '../../../domain/repositories/metric-repository.js';
-import type { IMetricsEventPublisher } from '../../../application/ports/metrics-event-publisher-port.js';
-import type { MetricComputedEvent } from '../../../domain/events/metric-computed-event.js';
+import { DeriveExecutionMetrics } from '../../../application/use-cases/derive-execution-metrics.js';
+import { InMemoryMetricRepository } from '../../repositories/in-memory-metric-repository.js';
+import { InMemoryMetricsEventPublisherStub } from '../../stubs/in-memory-metrics-event-publisher-stub.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -22,52 +22,49 @@ function makeExecutionRecordedEvent(
     timezoneUsed: string;
   }> = {},
 ): ExecutionRecordedEvent {
-  return new ExecutionRecordedEvent(
-    overrides.executionId ?? generateId(),
-    overrides.professionalProfileId ?? generateId(),
-    {
-      executionId: overrides.executionId ?? generateId(),
-      clientId: overrides.clientId ?? generateId(),
-      professionalProfileId: overrides.professionalProfileId ?? generateId(),
-      deliverableId: overrides.deliverableId ?? generateId(),
-      logicalDay: overrides.logicalDay ?? '2026-02-22',
-      status: overrides.status ?? 'CONFIRMED',
-      occurredAtUtc: overrides.occurredAtUtc ?? '2026-02-22T10:00:00.000Z',
-      timezoneUsed: overrides.timezoneUsed ?? 'America/Sao_Paulo',
-    },
-  );
+  const executionId = overrides.executionId ?? generateId();
+  const professionalProfileId = overrides.professionalProfileId ?? generateId();
+  return new ExecutionRecordedEvent(executionId, professionalProfileId, {
+    executionId,
+    clientId: overrides.clientId ?? generateId(),
+    professionalProfileId,
+    deliverableId: overrides.deliverableId ?? generateId(),
+    logicalDay: overrides.logicalDay ?? '2026-02-22',
+    status: overrides.status ?? 'CONFIRMED',
+    occurredAtUtc: overrides.occurredAtUtc ?? '2026-02-22T10:00:00.000Z',
+    timezoneUsed: overrides.timezoneUsed ?? 'America/Sao_Paulo',
+  });
 }
 
-function makeMetricRepo(overrides: Partial<IMetricRepository> = {}): IMetricRepository {
-  return {
-    save: vi.fn().mockResolvedValue(undefined),
-    findById: vi.fn().mockResolvedValue(null),
-    findBySourceExecutionIdAndType: vi.fn().mockResolvedValue(null),
-    findByClientAndLogicalDay: vi.fn().mockResolvedValue([]),
-    findByClientAndDateRange: vi.fn().mockResolvedValue([]),
-    ...overrides,
-  };
-}
-
-function makeEventPublisher(
-  overrides: Partial<IMetricsEventPublisher> = {},
-): IMetricsEventPublisher {
-  return {
-    publishMetricComputed: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
+function makeMetric(executionId: string, professionalProfileId: string): Metric {
+  const logicalDayResult = LogicalDay.create('2026-02-22');
+  if (logicalDayResult.isLeft()) throw new Error('test helper: invalid logicalDay');
+  const result = Metric.create({
+    clientId: generateId(),
+    professionalProfileId,
+    metricType: MetricType.EXECUTION_COUNT,
+    value: 1,
+    unit: 'session',
+    derivationRuleVersion: 'v1',
+    sourceExecutionIds: [executionId],
+    computedAtUtc: UTCDateTime.now(),
+    logicalDay: logicalDayResult.value,
+    timezoneUsed: 'America/Sao_Paulo',
+  });
+  if (result.isLeft()) throw new Error('test helper: Metric.create failed');
+  return result.value;
 }
 
 // ── DeriveExecutionMetrics ────────────────────────────────────────────────────
 
 describe('DeriveExecutionMetrics', () => {
-  let metricRepo: IMetricRepository;
-  let eventPublisher: IMetricsEventPublisher;
+  let metricRepo: InMemoryMetricRepository;
+  let eventPublisher: InMemoryMetricsEventPublisherStub;
   let useCase: DeriveExecutionMetrics;
 
   beforeEach(() => {
-    metricRepo = makeMetricRepo();
-    eventPublisher = makeEventPublisher();
+    metricRepo = new InMemoryMetricRepository();
+    eventPublisher = new InMemoryMetricsEventPublisherStub();
     useCase = new DeriveExecutionMetrics(metricRepo, eventPublisher);
   });
 
@@ -87,19 +84,18 @@ describe('DeriveExecutionMetrics', () => {
       const result = await useCase.execute(event);
 
       expect(result.isRight()).toBe(true);
-      expect(metricRepo.save).toHaveBeenCalledOnce();
-      expect(eventPublisher.publishMetricComputed).toHaveBeenCalledOnce();
+      expect(metricRepo.saveCount).toBe(1);
+      expect(eventPublisher.publishedMetricComputed).toHaveLength(1);
 
-      const publishedEvent = (eventPublisher.publishMetricComputed as ReturnType<typeof vi.fn>).mock
-        .calls[0]?.[0] as MetricComputedEvent;
-
-      expect(publishedEvent.eventType).toBe('MetricComputed');
-      expect(publishedEvent.aggregateType).toBe('Metric');
-      expect(publishedEvent.payload.clientId).toBe(clientId);
-      expect(publishedEvent.payload.professionalProfileId).toBe(professionalProfileId);
-      expect(publishedEvent.payload.metricType).toBe(MetricType.EXECUTION_COUNT);
-      expect(publishedEvent.payload.logicalDay).toBe('2026-02-22');
-      expect(publishedEvent.payload.derivationRuleVersion).toBe('v1');
+      const published = eventPublisher.publishedMetricComputed[0];
+      expect(published).toBeDefined();
+      expect(published.eventType).toBe('MetricComputed');
+      expect(published.aggregateType).toBe('Metric');
+      expect(published.payload.clientId).toBe(clientId);
+      expect(published.payload.professionalProfileId).toBe(professionalProfileId);
+      expect(published.payload.metricType).toBe(MetricType.EXECUTION_COUNT);
+      expect(published.payload.logicalDay).toBe('2026-02-22');
+      expect(published.payload.derivationRuleVersion).toBe('v1');
     });
 
     it('creates a Metric with value=1 and unit="session" (EXECUTION_COUNT invariant)', async () => {
@@ -107,9 +103,9 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      const savedMetric = (metricRepo.save as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
-      expect(savedMetric.value).toBe(1);
-      expect(savedMetric.unit).toBe('session');
+      const saved = metricRepo.items[0];
+      expect(saved.value).toBe(1);
+      expect(saved.unit).toBe('session');
     });
 
     it('creates a Metric with sourceExecutionIds containing the execution id', async () => {
@@ -118,8 +114,7 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      const savedMetric = (metricRepo.save as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
-      expect(savedMetric.sourceExecutionIds).toEqual([executionId]);
+      expect(metricRepo.items[0].sourceExecutionIds).toEqual([executionId]);
     });
 
     it('creates a Metric with logicalDay matching the event payload (ADR-0010, ADR-0014)', async () => {
@@ -127,8 +122,7 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      const savedMetric = (metricRepo.save as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
-      expect(savedMetric.logicalDay.value).toBe('2026-01-15');
+      expect(metricRepo.items[0].logicalDay.value).toBe('2026-01-15');
     });
 
     it('creates a Metric with derivationRuleVersion="v1" (ADR-0043)', async () => {
@@ -136,39 +130,40 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      const savedMetric = (metricRepo.save as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
-      expect(savedMetric.derivationRuleVersion).toBe('v1');
+      expect(metricRepo.items[0].derivationRuleVersion).toBe('v1');
     });
 
     // ── Idempotency (ADR-0007) ────────────────────────────────────────────────
 
     it('returns Right(undefined) without saving when an EXECUTION_COUNT metric already exists (idempotency)', async () => {
-      const existingMetric = { id: generateId() }; // minimal stub
-      metricRepo = makeMetricRepo({
-        findBySourceExecutionIdAndType: vi.fn().mockResolvedValue(existingMetric),
-      });
-      useCase = new DeriveExecutionMetrics(metricRepo, eventPublisher);
+      const executionId = generateId();
+      const professionalProfileId = generateId();
+      metricRepo.items.push(makeMetric(executionId, professionalProfileId));
 
-      const event = makeExecutionRecordedEvent();
+      const event = makeExecutionRecordedEvent({ executionId, professionalProfileId });
       const result = await useCase.execute(event);
 
       expect(result.isRight()).toBe(true);
-      expect(metricRepo.save).not.toHaveBeenCalled();
-      expect(eventPublisher.publishMetricComputed).not.toHaveBeenCalled();
+      expect(metricRepo.saveCount).toBe(0);
+      expect(eventPublisher.publishedMetricComputed).toHaveLength(0);
     });
 
-    it('queries the repository for idempotency with the correct executionId and type', async () => {
+    it('idempotency guard is scoped to executionId and professionalProfileId — different tenant creates a new metric', async () => {
       const executionId = generateId();
-      const professionalProfileId = generateId();
-      const event = makeExecutionRecordedEvent({ executionId, professionalProfileId });
+      const tenantA = generateId();
+      const tenantB = generateId();
 
-      await useCase.execute(event);
+      // Pre-populate repo for tenant A
+      metricRepo.items.push(makeMetric(executionId, tenantA));
 
-      expect(metricRepo.findBySourceExecutionIdAndType).toHaveBeenCalledWith(
-        executionId,
-        MetricType.EXECUTION_COUNT,
-        professionalProfileId,
-      );
+      // Execute for tenant B with the same executionId
+      const event = makeExecutionRecordedEvent({ executionId, professionalProfileId: tenantB });
+      const result = await useCase.execute(event);
+
+      // Tenant B should get a new metric — idempotency guard must not cross tenant boundary
+      expect(result.isRight()).toBe(true);
+      expect(metricRepo.saveCount).toBe(1);
+      expect(eventPublisher.publishedMetricComputed).toHaveLength(1);
     });
 
     // ── Invalid temporal fields ───────────────────────────────────────────────
@@ -180,11 +175,11 @@ describe('DeriveExecutionMetrics', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/logicalDay/);
       }
-      expect(metricRepo.save).not.toHaveBeenCalled();
-      expect(eventPublisher.publishMetricComputed).not.toHaveBeenCalled();
+      expect(metricRepo.saveCount).toBe(0);
+      expect(eventPublisher.publishedMetricComputed).toHaveLength(0);
     });
   });
 });

@@ -206,7 +206,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/sourceExecutionIds/);
       }
     });
@@ -218,7 +218,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/invalid UUIDv4/i);
       }
     });
@@ -232,7 +232,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
       }
     });
 
@@ -243,7 +243,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/non-negative/);
       }
     });
@@ -253,7 +253,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
       }
     });
 
@@ -262,7 +262,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
       }
     });
 
@@ -273,7 +273,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/unit/);
       }
     });
@@ -283,7 +283,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
       }
     });
 
@@ -294,7 +294,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/derivationRuleVersion/);
       }
     });
@@ -304,7 +304,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
       }
     });
 
@@ -315,7 +315,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/timezoneUsed/);
       }
     });
@@ -331,7 +331,7 @@ describe('Metric', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(MetricErrorCodes.INVALID_METRIC);
+        expect(result.value.code).toBe(MetricErrorCodes.METRIC_INVALID);
         expect(result.value.message).toMatch(/metricType/);
       }
     });

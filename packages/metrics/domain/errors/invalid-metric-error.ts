@@ -18,6 +18,6 @@ import { MetricErrorCodes } from './metric-error-codes.js';
  */
 export class InvalidMetricError extends DomainError {
   constructor(reason: string, context?: Record<string, unknown>) {
-    super(reason, MetricErrorCodes.INVALID_METRIC as ErrorCode, context);
+    super(reason, MetricErrorCodes.METRIC_INVALID as ErrorCode, context);
   }
 }
