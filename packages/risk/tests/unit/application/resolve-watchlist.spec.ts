@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId, UTCDateTime } from '@fittrack/core';
 import {
   ProfessionalProfile,
@@ -8,10 +8,9 @@ import {
 } from '@fittrack/identity';
 import { ResolveWatchlist } from '../../../application/use-cases/resolve-watchlist.js';
 import { RiskErrorCodes } from '../../../domain/errors/risk-error-codes.js';
-import type { IProfessionalRiskRepository } from '../../../application/ports/professional-risk-repository-port.js';
-import type { IRiskEventPublisher } from '../../../application/ports/risk-event-publisher-port.js';
-import type { IRiskAuditLog } from '../../../application/ports/risk-audit-log-port.js';
-import type { RiskStatusChanged } from '@fittrack/identity';
+import { InMemoryProfessionalRiskRepository } from '../../repositories/in-memory-professional-risk-repository.js';
+import { InMemoryRiskEventPublisherStub } from '../../stubs/in-memory-risk-event-publisher-stub.js';
+import { InMemoryRiskAuditLogStub } from '../../stubs/in-memory-risk-audit-log-stub.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,42 +42,18 @@ function makeProfessionalProfile(
   );
 }
 
-function makeRepo(
-  overrides: Partial<IProfessionalRiskRepository> = {},
-): IProfessionalRiskRepository {
-  return {
-    findById: vi.fn().mockResolvedValue(null),
-    save: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeEventPublisher(overrides: Partial<IRiskEventPublisher> = {}): IRiskEventPublisher {
-  return {
-    publishRiskStatusChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeAuditLog(overrides: Partial<IRiskAuditLog> = {}): IRiskAuditLog {
-  return {
-    writeRiskStatusChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
 // ── ResolveWatchlist ──────────────────────────────────────────────────────────
 
 describe('ResolveWatchlist', () => {
-  let repo: IProfessionalRiskRepository;
-  let eventPublisher: IRiskEventPublisher;
-  let auditLog: IRiskAuditLog;
+  let repo: InMemoryProfessionalRiskRepository;
+  let eventPublisher: InMemoryRiskEventPublisherStub;
+  let auditLog: InMemoryRiskAuditLogStub;
   let useCase: ResolveWatchlist;
 
   beforeEach(() => {
-    repo = makeRepo();
-    eventPublisher = makeEventPublisher();
-    auditLog = makeAuditLog();
+    repo = new InMemoryProfessionalRiskRepository();
+    eventPublisher = new InMemoryRiskEventPublisherStub();
+    auditLog = new InMemoryRiskAuditLogStub();
     useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
   });
 
@@ -87,8 +62,7 @@ describe('ResolveWatchlist', () => {
 
     it('transitions WATCHLIST → NORMAL and publishes RiskStatusChanged', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.WATCHLIST });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
@@ -97,15 +71,14 @@ describe('ResolveWatchlist', () => {
       });
 
       expect(result.isRight()).toBe(true);
-      expect(repo.save).toHaveBeenCalledOnce();
-      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledOnce();
-      expect(eventPublisher.publishRiskStatusChanged).toHaveBeenCalledOnce();
+      expect(repo.saveCount).toBe(1);
+      expect(auditLog.written).toHaveLength(1);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(1);
     });
 
     it('event payload has correct previousStatus=WATCHLIST, newStatus=NORMAL, evidenceRef=null', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.WATCHLIST });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -113,9 +86,7 @@ describe('ResolveWatchlist', () => {
         ...MOCK_ACTOR,
       });
 
-      const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
-        .calls[0]?.[0] as RiskStatusChanged;
-
+      const published = eventPublisher.publishedRiskStatusChanged[0];
       expect(published.eventType).toBe('RiskStatusChanged');
       expect(published.aggregateType).toBe('ProfessionalProfile');
       expect(published.payload.previousStatus).toBe(RiskStatus.WATCHLIST);
@@ -126,8 +97,7 @@ describe('ResolveWatchlist', () => {
 
     it('writes AuditLog with correct actorId, actorRole, targetEntityId, and status transition', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.WATCHLIST });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -135,23 +105,20 @@ describe('ResolveWatchlist', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledWith(
-        expect.objectContaining({
-          actorId: MOCK_ACTOR.actorId,
-          actorRole: MOCK_ACTOR.actorRole,
-          targetEntityId: profile.id,
-          tenantId: profile.id,
-          previousStatus: RiskStatus.WATCHLIST,
-          newStatus: RiskStatus.NORMAL,
-          reason: 'Risk cleared by compliance team',
-        }),
-      );
+      expect(auditLog.written[0]).toMatchObject({
+        actorId: MOCK_ACTOR.actorId,
+        actorRole: MOCK_ACTOR.actorRole,
+        targetEntityId: profile.id,
+        tenantId: profile.id,
+        previousStatus: RiskStatus.WATCHLIST,
+        newStatus: RiskStatus.NORMAL,
+        reason: 'Risk cleared by compliance team',
+      });
     });
 
     it('trims whitespace from reason before validating and publishing', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.WATCHLIST });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -159,9 +126,7 @@ describe('ResolveWatchlist', () => {
         ...MOCK_ACTOR,
       });
 
-      const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
-        .calls[0]?.[0] as RiskStatusChanged;
-      expect(published.payload.reason).toBe('Review complete');
+      expect(eventPublisher.publishedRiskStatusChanged[0].payload.reason).toBe('Review complete');
     });
 
     // ── Validation — reason ───────────────────────────────────────────────────
@@ -175,11 +140,11 @@ describe('ResolveWatchlist', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
+        expect(result.value.code).toBe(RiskErrorCodes.REASON_INVALID);
       }
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
 
     it('returns Left(InvalidRiskReasonError) when reason is whitespace only', async () => {
@@ -191,9 +156,9 @@ describe('ResolveWatchlist', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
+        expect(result.value.code).toBe(RiskErrorCodes.REASON_INVALID);
       }
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
+      expect(auditLog.written).toHaveLength(0);
     });
 
     it('returns Left(InvalidRiskReasonError) when reason exceeds 500 characters', async () => {
@@ -205,18 +170,15 @@ describe('ResolveWatchlist', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
+        expect(result.value.code).toBe(RiskErrorCodes.REASON_INVALID);
       }
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
     });
 
     // ── Repository — not found ────────────────────────────────────────────────
 
     it('returns Left(ProfessionalRiskNotFoundError) when profile does not exist', async () => {
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(null) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
-
       const result = await useCase.execute({
         professionalProfileId: generateId(),
         reason: 'Resolving watchlist',
@@ -227,17 +189,16 @@ describe('ResolveWatchlist', () => {
       if (result.isLeft()) {
         expect(result.value.code).toBe(RiskErrorCodes.PROFESSIONAL_NOT_FOUND);
       }
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
 
     // ── Invalid transitions ───────────────────────────────────────────────────
 
     it('returns Left when profile is NORMAL (not WATCHLIST — invalid transition)', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
@@ -246,9 +207,9 @@ describe('ResolveWatchlist', () => {
       });
 
       expect(result.isLeft()).toBe(true);
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
 
     it('returns Left when profile is BANNED (not WATCHLIST — invalid transition)', async () => {
@@ -256,8 +217,7 @@ describe('ResolveWatchlist', () => {
         riskStatus: RiskStatus.BANNED,
         status: ProfessionalProfileStatus.BANNED,
       });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new ResolveWatchlist(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
@@ -266,9 +226,9 @@ describe('ResolveWatchlist', () => {
       });
 
       expect(result.isLeft()).toBe(true);
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
   });
 });

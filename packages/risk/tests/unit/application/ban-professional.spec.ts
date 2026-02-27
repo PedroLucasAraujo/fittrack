@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId, UTCDateTime } from '@fittrack/core';
 import {
   ProfessionalProfile,
@@ -8,10 +8,9 @@ import {
 } from '@fittrack/identity';
 import { BanProfessional } from '../../../application/use-cases/ban-professional.js';
 import { RiskErrorCodes } from '../../../domain/errors/risk-error-codes.js';
-import type { IProfessionalRiskRepository } from '../../../application/ports/professional-risk-repository-port.js';
-import type { IRiskEventPublisher } from '../../../application/ports/risk-event-publisher-port.js';
-import type { IRiskAuditLog } from '../../../application/ports/risk-audit-log-port.js';
-import type { RiskStatusChanged } from '@fittrack/identity';
+import { InMemoryProfessionalRiskRepository } from '../../repositories/in-memory-professional-risk-repository.js';
+import { InMemoryRiskEventPublisherStub } from '../../stubs/in-memory-risk-event-publisher-stub.js';
+import { InMemoryRiskAuditLogStub } from '../../stubs/in-memory-risk-audit-log-stub.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,42 +42,18 @@ function makeProfessionalProfile(
   );
 }
 
-function makeRepo(
-  overrides: Partial<IProfessionalRiskRepository> = {},
-): IProfessionalRiskRepository {
-  return {
-    findById: vi.fn().mockResolvedValue(null),
-    save: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeEventPublisher(overrides: Partial<IRiskEventPublisher> = {}): IRiskEventPublisher {
-  return {
-    publishRiskStatusChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeAuditLog(overrides: Partial<IRiskAuditLog> = {}): IRiskAuditLog {
-  return {
-    writeRiskStatusChanged: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
 // ── BanProfessional ───────────────────────────────────────────────────────────
 
 describe('BanProfessional', () => {
-  let repo: IProfessionalRiskRepository;
-  let eventPublisher: IRiskEventPublisher;
-  let auditLog: IRiskAuditLog;
+  let repo: InMemoryProfessionalRiskRepository;
+  let eventPublisher: InMemoryRiskEventPublisherStub;
+  let auditLog: InMemoryRiskAuditLogStub;
   let useCase: BanProfessional;
 
   beforeEach(() => {
-    repo = makeRepo();
-    eventPublisher = makeEventPublisher();
-    auditLog = makeAuditLog();
+    repo = new InMemoryProfessionalRiskRepository();
+    eventPublisher = new InMemoryRiskEventPublisherStub();
+    auditLog = new InMemoryRiskAuditLogStub();
     useCase = new BanProfessional(repo, eventPublisher, auditLog);
   });
 
@@ -87,8 +62,7 @@ describe('BanProfessional', () => {
 
     it('transitions NORMAL → BANNED, saves, and publishes RiskStatusChanged', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
@@ -97,15 +71,14 @@ describe('BanProfessional', () => {
       });
 
       expect(result.isRight()).toBe(true);
-      expect(repo.save).toHaveBeenCalledOnce();
-      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledOnce();
-      expect(eventPublisher.publishRiskStatusChanged).toHaveBeenCalledOnce();
+      expect(repo.saveCount).toBe(1);
+      expect(auditLog.written).toHaveLength(1);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(1);
     });
 
     it('transitions WATCHLIST → BANNED; event previousStatus reflects WATCHLIST', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.WATCHLIST });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -113,9 +86,7 @@ describe('BanProfessional', () => {
         ...MOCK_ACTOR,
       });
 
-      const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
-        .calls[0]?.[0] as RiskStatusChanged;
-
+      const published = eventPublisher.publishedRiskStatusChanged[0];
       expect(published.payload.previousStatus).toBe(RiskStatus.WATCHLIST);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
     });
@@ -123,8 +94,7 @@ describe('BanProfessional', () => {
     it('event payload has correct fields including evidenceRef when provided', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
       const evidenceRef = generateId();
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -133,9 +103,7 @@ describe('BanProfessional', () => {
         ...MOCK_ACTOR,
       });
 
-      const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
-        .calls[0]?.[0] as RiskStatusChanged;
-
+      const published = eventPublisher.publishedRiskStatusChanged[0];
       expect(published.eventType).toBe('RiskStatusChanged');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
@@ -145,8 +113,7 @@ describe('BanProfessional', () => {
 
     it('writes AuditLog with actorId=ADMIN, actorRole=ADMIN, previousStatus=NORMAL, newStatus=BANNED', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -154,23 +121,20 @@ describe('BanProfessional', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(auditLog.writeRiskStatusChanged).toHaveBeenCalledWith(
-        expect.objectContaining({
-          actorId: MOCK_ACTOR.actorId,
-          actorRole: MOCK_ACTOR.actorRole,
-          targetEntityId: profile.id,
-          tenantId: profile.id,
-          previousStatus: RiskStatus.NORMAL,
-          newStatus: RiskStatus.BANNED,
-          reason: 'Confirmed fraud',
-        }),
-      );
+      expect(auditLog.written[0]).toMatchObject({
+        actorId: MOCK_ACTOR.actorId,
+        actorRole: MOCK_ACTOR.actorRole,
+        targetEntityId: profile.id,
+        tenantId: profile.id,
+        previousStatus: RiskStatus.NORMAL,
+        newStatus: RiskStatus.BANNED,
+        reason: 'Confirmed fraud',
+      });
     });
 
     it('sets evidenceRef to null when not provided in dto', async () => {
       const profile = makeProfessionalProfile({ riskStatus: RiskStatus.NORMAL });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       await useCase.execute({
         professionalProfileId: profile.id,
@@ -178,10 +142,7 @@ describe('BanProfessional', () => {
         ...MOCK_ACTOR,
       });
 
-      const published = (eventPublisher.publishRiskStatusChanged as ReturnType<typeof vi.fn>).mock
-        .calls[0]?.[0] as RiskStatusChanged;
-
-      expect(published.payload.evidenceRef).toBeNull();
+      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBeNull();
     });
 
     // ── Idempotency — BANNED terminal state ───────────────────────────────────
@@ -191,8 +152,7 @@ describe('BanProfessional', () => {
         riskStatus: RiskStatus.BANNED,
         status: ProfessionalProfileStatus.BANNED,
       });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
@@ -201,9 +161,9 @@ describe('BanProfessional', () => {
       });
 
       expect(result.isRight()).toBe(true);
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
 
     // ── Validation — reason ───────────────────────────────────────────────────
@@ -217,11 +177,11 @@ describe('BanProfessional', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
+        expect(result.value.code).toBe(RiskErrorCodes.REASON_INVALID);
       }
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
 
     it('returns Left(InvalidRiskReasonError) when reason is whitespace only', async () => {
@@ -233,9 +193,9 @@ describe('BanProfessional', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
+        expect(result.value.code).toBe(RiskErrorCodes.REASON_INVALID);
       }
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
+      expect(auditLog.written).toHaveLength(0);
     });
 
     it('returns Left(InvalidRiskReasonError) when reason exceeds 500 characters', async () => {
@@ -247,18 +207,15 @@ describe('BanProfessional', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(RiskErrorCodes.INVALID_REASON);
+        expect(result.value.code).toBe(RiskErrorCodes.REASON_INVALID);
       }
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
     });
 
     // ── Repository — not found ────────────────────────────────────────────────
 
     it('returns Left(ProfessionalRiskNotFoundError) when profile does not exist', async () => {
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(null) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
-
       const result = await useCase.execute({
         professionalProfileId: generateId(),
         reason: 'Profile not found test',
@@ -269,22 +226,19 @@ describe('BanProfessional', () => {
       if (result.isLeft()) {
         expect(result.value.code).toBe(RiskErrorCodes.PROFESSIONAL_NOT_FOUND);
       }
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
 
     // ── Aggregate transition failure ──────────────────────────────────────────
 
     it('returns Left when escalateToBanned fails (DEACTIVATED profile with NORMAL risk)', async () => {
-      // A DEACTIVATED profile can have NORMAL/WATCHLIST riskStatus.
-      // escalateToBanned() calls ban() which rejects non-bannable statuses.
       const profile = makeProfessionalProfile({
         riskStatus: RiskStatus.NORMAL,
         status: ProfessionalProfileStatus.DEACTIVATED,
       });
-      repo = makeRepo({ findById: vi.fn().mockResolvedValue(profile) });
-      useCase = new BanProfessional(repo, eventPublisher, auditLog);
+      repo.items.push(profile);
 
       const result = await useCase.execute({
         professionalProfileId: profile.id,
@@ -293,9 +247,9 @@ describe('BanProfessional', () => {
       });
 
       expect(result.isLeft()).toBe(true);
-      expect(repo.save).not.toHaveBeenCalled();
-      expect(auditLog.writeRiskStatusChanged).not.toHaveBeenCalled();
-      expect(eventPublisher.publishRiskStatusChanged).not.toHaveBeenCalled();
+      expect(repo.saveCount).toBe(0);
+      expect(auditLog.written).toHaveLength(0);
+      expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(0);
     });
   });
 });

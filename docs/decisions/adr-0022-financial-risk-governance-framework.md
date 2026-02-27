@@ -106,6 +106,7 @@ When the Ledger (ADR-0021) is activated:
 - The Risk context owns RiskStatus. No other context may directly modify it.
 - Billing and Scheduling contexts read RiskStatus via application-layer policy; they do not modify it.
 - Risk assessment automation is applied via event handlers consuming Billing domain events. The Risk context does not directly subscribe to Execution events in MVP.
+- **Cross-context repository port placement**: `IProfessionalRiskRepository` is intentionally placed in `application/ports/` rather than `domain/repositories/`. Because it operates on `ProfessionalProfile` (owned by the Identity context), placing it in the domain layer would require importing `@fittrack/identity` from within the Risk domain, violating bounded-context isolation (ADR-0001 §4). The application layer is the correct boundary for cross-context interactions. The infrastructure adapter for this port delegates to the same database schema as the Identity context's repository but is registered as a separate bean (ADR-0047 §7).
 
 ## Consequences
 

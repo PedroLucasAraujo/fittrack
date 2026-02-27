@@ -10,7 +10,7 @@ export class InvalidRiskReasonError extends DomainError {
   constructor(reason: string) {
     super(
       'Risk reason must be a non-empty string with at most 500 characters.',
-      RiskErrorCodes.INVALID_REASON as ErrorCode,
+      RiskErrorCodes.REASON_INVALID as ErrorCode,
       { reasonLength: reason.length },
     );
   }

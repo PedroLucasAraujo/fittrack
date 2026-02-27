@@ -6,7 +6,7 @@
  */
 export const RiskErrorCodes = {
   PROFESSIONAL_NOT_FOUND: 'RISK.PROFESSIONAL_NOT_FOUND',
-  INVALID_REASON: 'RISK.INVALID_REASON',
+  REASON_INVALID: 'RISK.REASON_INVALID',
 } as const;
 
 export type RiskErrorCode = (typeof RiskErrorCodes)[keyof typeof RiskErrorCodes];
