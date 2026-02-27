@@ -2,7 +2,7 @@ import { ValueObject, left, right } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
 import { EntrySourceType } from '../enums/entry-source-type.js';
 import type { EntrySourceType as EntrySourceTypeValue } from '../enums/entry-source-type.js';
-import { InvalidSelfLogEntryError } from '../errors/invalid-self-log-entry-error.js';
+import { InvalidSelfLogSourceError } from '../errors/invalid-self-log-source-error.js';
 
 /** UUIDv4 regex shared with BaseEntity (ADR-0047 §6). */
 const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -51,12 +51,12 @@ export class EntrySource extends ValueObject<EntrySourceProps> {
    *
    * @param executionId UUIDv4 of the source Execution (cross-aggregate ref, ADR-0047).
    * @returns Right<EntrySource> on success.
-   * @returns Left<InvalidSelfLogEntryError> if executionId is not a valid UUIDv4.
+   * @returns Left<InvalidSelfLogSourceError> if executionId is not a valid UUIDv4.
    */
   static execution(executionId: string): DomainResult<EntrySource> {
     if (!UUID_V4_REGEX.test(executionId)) {
       return left(
-        new InvalidSelfLogEntryError(
+        new InvalidSelfLogSourceError(
           `sourceId must be a valid UUIDv4 when sourceType is EXECUTION. Received: "${executionId}"`,
           { executionId },
         ),

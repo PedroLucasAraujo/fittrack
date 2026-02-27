@@ -19,6 +19,7 @@ import type { SelfLogEntry } from '../aggregates/self-log-entry.js';
  * Infrastructure implementations MUST maintain composite indexes on:
  * - (clientId, logicalDay, professionalProfileId) — for day-range queries
  * - (sourceId, professionalProfileId) — for projection idempotency checks
+ * - (clientId, professionalProfileId) — for full client history queries
  */
 export interface ISelfLogEntryRepository {
   /**
@@ -67,4 +68,13 @@ export interface ISelfLogEntryRepository {
     executionId: string,
     professionalProfileId: string,
   ): Promise<SelfLogEntry | null>;
+
+  /**
+   * Returns all SelfLog entries (including anonymized) for a given client,
+   * scoped to the given tenant. Used for LGPD data subject access requests
+   * and audit purposes.
+   *
+   * Returns an empty array if no entries exist.
+   */
+  findAllByClientId(clientId: string, professionalProfileId: string): Promise<SelfLogEntry[]>;
 }

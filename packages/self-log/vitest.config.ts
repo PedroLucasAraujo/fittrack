@@ -5,7 +5,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@fittrack/core': path.resolve(__dirname, '../core/index.ts'),
-      '@fittrack/execution': path.resolve(__dirname, '../execution/index.ts'),
     },
   },
   test: {

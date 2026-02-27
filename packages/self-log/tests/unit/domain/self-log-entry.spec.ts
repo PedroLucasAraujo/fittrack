@@ -249,32 +249,7 @@ describe('SelfLogEntry', () => {
 
     // ── Source invariants ───────────────────────────────────────────────────
 
-    it('returns Left when source=EXECUTION is constructed with null sourceId (invariant 1)', () => {
-      // Directly construct an invalid EntrySource to test the aggregate guard
-      // (EntrySource.execution() itself prevents this, so we test via reconstitute bypass)
-      const fakeSource = EntrySource.self();
-      // Override via Object.defineProperty to simulate a corrupted source
-      // (only testing the aggregate-level guard — normally EntrySource.execution guards this)
-      // Instead, test that the EntrySource.execution() with valid ID + wrong type fails
-      // at the aggregate level by using an EXECUTION-typed source with empty sourceId
-      // Note: the EntrySource factory guards against invalid UUIDs; we test the aggregate
-      // path by using a SELF source with a mocked sourceType EXECUTION value.
-      // In practice, this invariant is belt-and-suspenders for corrupted data.
-
-      // Valid test: source=SELF with sourceId = null is fine (no error)
-      const selfResult = SelfLogEntry.create({
-        clientId,
-        professionalProfileId,
-        source: fakeSource,
-        occurredAtUtc,
-        logicalDay,
-        timezoneUsed: 'UTC',
-        createdAtUtc: UTCDateTime.now(),
-      });
-      expect(selfResult.isRight()).toBe(true);
-    });
-
-    it('returns Left when source=SELF is used (sourceId is always null — no conflict)', () => {
+    it('accepts source=SELF with null sourceId — no aggregate-level invariant violation', () => {
       const result = SelfLogEntry.create({
         clientId,
         professionalProfileId,

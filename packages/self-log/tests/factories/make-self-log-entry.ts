@@ -1,6 +1,7 @@
 import { generateId, UTCDateTime, LogicalDay } from '@fittrack/core';
 import { SelfLogEntry } from '../../domain/aggregates/self-log-entry.js';
 import { EntrySource } from '../../domain/value-objects/entry-source.js';
+import type { SelfLogNote } from '../../domain/value-objects/self-log-note.js';
 import type { SelfLogEntryProps } from '../../domain/aggregates/self-log-entry.js';
 
 type SelfLogEntryOverrides = Partial<{
@@ -9,7 +10,7 @@ type SelfLogEntryOverrides = Partial<{
   professionalProfileId: string;
   source: EntrySource;
   deliverableId: string | null;
-  note: null;
+  note: SelfLogNote | null;
   value: number | null;
   unit: string | null;
   occurredAtUtc: UTCDateTime;

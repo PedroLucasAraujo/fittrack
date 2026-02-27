@@ -66,4 +66,13 @@ export class InMemorySelfLogEntryRepositoryStub implements ISelfLogEntryReposito
       ) ?? null
     );
   }
+
+  async findAllByClientId(
+    clientId: string,
+    professionalProfileId: string,
+  ): Promise<SelfLogEntry[]> {
+    return this.items.filter(
+      (e) => e.clientId === clientId && e.professionalProfileId === professionalProfileId,
+    );
+  }
 }

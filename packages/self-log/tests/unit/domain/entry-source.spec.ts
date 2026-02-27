@@ -48,28 +48,31 @@ describe('EntrySource', () => {
       }
     });
 
-    it('returns Left<InvalidSelfLogEntryError> for an empty string', () => {
+    it('returns Left<InvalidSelfLogSourceError> for an empty string', () => {
       const result = EntrySource.execution('');
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(SelfLogErrorCodes.INVALID_ENTRY);
+        expect(result.value.code).toBe(SelfLogErrorCodes.INVALID_SOURCE);
       }
     });
 
-    it('returns Left<InvalidSelfLogEntryError> for a non-UUID string', () => {
+    it('returns Left<InvalidSelfLogSourceError> for a non-UUID string', () => {
       const result = EntrySource.execution('not-a-uuid');
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
-        expect(result.value.code).toBe(SelfLogErrorCodes.INVALID_ENTRY);
+        expect(result.value.code).toBe(SelfLogErrorCodes.INVALID_SOURCE);
       }
     });
 
-    it('returns Left<InvalidSelfLogEntryError> for a UUIDv1 (wrong version bit)', () => {
+    it('returns Left<InvalidSelfLogSourceError> for a UUIDv1 (wrong version bit)', () => {
       const result = EntrySource.execution('550e8400-e29b-11d4-a716-446655440000');
 
       expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) {
+        expect(result.value.code).toBe(SelfLogErrorCodes.INVALID_SOURCE);
+      }
     });
   });
 

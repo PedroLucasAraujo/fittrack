@@ -1,6 +1,6 @@
 import { UTCDateTime, LogicalDay, left, right } from '@fittrack/core';
 import type { DomainResult } from '@fittrack/core';
-import type { ExecutionRecordedEvent } from '@fittrack/execution';
+import type { ExecutionRecordedPayload } from '../ports/execution-recorded-payload.js';
 import { SelfLogEntry } from '../../domain/aggregates/self-log-entry.js';
 import { EntrySource } from '../../domain/value-objects/entry-source.js';
 import { SelfLogRecordedEvent } from '../../domain/events/self-log-recorded-event.js';
@@ -47,46 +47,46 @@ export class ProjectExecutionToSelfLog {
     private readonly eventPublisher: ISelfLogEventPublisher,
   ) {}
 
-  async execute(event: ExecutionRecordedEvent): Promise<DomainResult<void>> {
+  async execute(dto: ExecutionRecordedPayload): Promise<DomainResult<void>> {
     // 1. Idempotency guard (ADR-0007): skip if already projected
     const existing = await this.selfLogRepo.findBySourceExecutionId(
-      event.payload.executionId,
-      event.payload.professionalProfileId,
+      dto.executionId,
+      dto.professionalProfileId,
     );
     if (existing !== null) return right(undefined);
 
-    // 2. Parse temporal fields from the extended event payload (ADR-0010)
-    const occurredAtUtcResult = UTCDateTime.fromISO(event.payload.occurredAtUtc);
+    // 2. Parse temporal fields from the ACL payload (ADR-0010)
+    const occurredAtUtcResult = UTCDateTime.fromISO(dto.occurredAtUtc);
     if (occurredAtUtcResult.isLeft()) {
       return left(
-        new InvalidSelfLogEntryError('ExecutionRecordedEvent.payload.occurredAtUtc is invalid', {
-          raw: event.payload.occurredAtUtc,
+        new InvalidSelfLogEntryError('ExecutionRecordedPayload.occurredAtUtc is invalid', {
+          raw: dto.occurredAtUtc,
         }),
       );
     }
 
-    const logicalDayResult = LogicalDay.create(event.payload.logicalDay);
+    const logicalDayResult = LogicalDay.create(dto.logicalDay);
     if (logicalDayResult.isLeft()) {
       return left(
-        new InvalidSelfLogEntryError('ExecutionRecordedEvent.payload.logicalDay is invalid', {
-          raw: event.payload.logicalDay,
+        new InvalidSelfLogEntryError('ExecutionRecordedPayload.logicalDay is invalid', {
+          raw: dto.logicalDay,
         }),
       );
     }
 
     // 3. Build EntrySource with the executionId as sourceId (ADR-0047 — ID only)
-    const sourceResult = EntrySource.execution(event.payload.executionId);
+    const sourceResult = EntrySource.execution(dto.executionId);
     if (sourceResult.isLeft()) return left(sourceResult.value);
 
     // 4. Create SelfLogEntry aggregate
     const entryResult = SelfLogEntry.create({
-      clientId: event.payload.clientId,
-      professionalProfileId: event.payload.professionalProfileId,
+      clientId: dto.clientId,
+      professionalProfileId: dto.professionalProfileId,
       source: sourceResult.value,
-      deliverableId: event.payload.deliverableId,
+      deliverableId: dto.deliverableId,
       occurredAtUtc: occurredAtUtcResult.value,
       logicalDay: logicalDayResult.value,
-      timezoneUsed: event.payload.timezoneUsed,
+      timezoneUsed: dto.timezoneUsed,
       createdAtUtc: UTCDateTime.now(),
     });
     /* c8 ignore next — defensive: create() only fails on value/unit/correctedEntryId invariants, none set by this handler */

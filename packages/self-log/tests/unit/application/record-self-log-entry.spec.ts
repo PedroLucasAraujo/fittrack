@@ -183,4 +183,23 @@ describe('RecordSelfLogEntry', () => {
       expect(result.value.code).toBe(SelfLogErrorCodes.INVALID_ENTRY);
     }
   });
+
+  // ── Tenant isolation (ADR-0025) ────────────────────────────────────────────────
+
+  it('findById returns null for a different tenant (cross-tenant isolation — ADR-0025)', async () => {
+    const tenantB = generateId();
+
+    await sut.execute({
+      clientId,
+      professionalProfileId,
+      occurredAtUtc: '2026-02-22T10:00:00.000Z',
+      timezoneUsed: 'UTC',
+    });
+
+    expect(repo.items).toHaveLength(1);
+    const entryId = repo.items[0]!.id;
+
+    const crossTenantResult = await repo.findById(entryId, tenantB);
+    expect(crossTenantResult).toBeNull();
+  });
 });
