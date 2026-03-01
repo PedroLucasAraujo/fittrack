@@ -1,6 +1,6 @@
 # Scheduling — Agendamentos e Disponibilidade
 
-> **Contexto:** Scheduling | **Atualizado em:** 2026-02-26 | **Versão ADR baseline:** ADR-0051
+> **Contexto:** Scheduling | **Atualizado em:** 2026-02-28 | **Versão ADR baseline:** ADR-0051
 
 O módulo Scheduling é responsável por toda a gestão de agendamentos entre profissionais e clientes na plataforma FitTrack. Ele controla a disponibilidade semanal do profissional, os tipos de sessão oferecidos, os agendamentos individuais e os padrões recorrentes. Este módulo não possui dependência direta do contexto de Billing — a autorização de acesso (AccessGrant) é resolvida pela camada externa e passada como parâmetro (padrão ACL).
 
@@ -67,7 +67,7 @@ stateDiagram-v2
 | Operação | O que faz | Quando pode ser chamada | Possíveis erros |
 |----------|-----------|------------------------|-----------------|
 | `Session.create()` | Cria nova session em ACTIVE | Sempre (sujeito a `isBanned`) | — |
-| `session.archive()` | Transiciona ACTIVE → ARCHIVED | Somente se status for ACTIVE | `SCHEDULING.INVALID_BOOKING_TRANSITION` |
+| `session.archive()` | Transiciona ACTIVE → ARCHIVED | Somente se status for ACTIVE | `SCHEDULING.INVALID_SESSION_TRANSITION` |
 
 ---
 
@@ -182,7 +182,8 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 
 | Código | Significado | Quando ocorre |
 |--------|-------------|---------------|
-| `SCHEDULING.INVALID_BOOKING_TRANSITION` | Transição de estado inválida | Tentativa de transicionar Booking ou Session para um estado não permitido a partir do estado atual |
+| `SCHEDULING.INVALID_BOOKING_TRANSITION` | Transição de estado inválida para Booking | Tentativa de transicionar Booking para um estado não permitido a partir do estado atual |
+| `SCHEDULING.INVALID_SESSION_TRANSITION` | Transição de estado inválida para Session | Tentativa de arquivar uma Session que já está ARCHIVED |
 | `SCHEDULING.INVALID_DURATION` | Duração inválida | DurationMinutes fora do intervalo 1–480 ou não inteiro |
 | `SCHEDULING.INVALID_TIME_SLOT` | Slot de horário inválido | Formato HH:mm inválido ou `startTime >= endTime` |
 | `SCHEDULING.OVERLAPPING_TIME_SLOT` | Slots sobrepostos | Dois TimeSlots do mesmo WorkingAvailability se sobrepõem |
@@ -339,13 +340,41 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 
 **Resultado esperado:** DTO com `bookingId`, `professionalProfileId`, `clientId`, `sessionId`, `status: PENDING`, `scheduledAtUtc`, `logicalDay`, `timezoneUsed` e `createdAtUtc`.
 
-**Efeitos colaterais:** O Booking é criado em PENDING — não é publicado `BookingConfirmed` aqui. O evento `BookingConfirmed` será publicado quando a transição PENDING → CONFIRMED ocorrer (use case pendente de implementação — ver Gaps).
+**Efeitos colaterais:** O Booking é criado em PENDING. O evento `BookingConfirmed` é publicado pelo use case `ConfirmBooking` quando o profissional confirmar o agendamento.
 
 > **Nota de arquitetura:** O módulo Scheduling não importa o módulo Billing diretamente (ADR-0029). O `AccessGrant` é resolvido pela camada de API e passado como `AccessGrantValidationDTO`. Este padrão espelha o `isBanned: boolean` para RiskStatus e mantém o isolamento de contexto.
 
 ---
 
-### 5. Cancelar Agendamento
+### 5. Confirmar Agendamento
+
+**O que é:** Confirma um agendamento existente, transitando-o de PENDING para CONFIRMED. Indica que o profissional aceitou o horário e a sessão irá acontecer.
+
+**Quem pode usar:** Profissional autenticado (dono do agendamento).
+
+**Como funciona:**
+
+1. Valida o UUID do `bookingId`.
+2. Busca o booking pelo ID e `professionalProfileId` — tenant isolation (ADR-0025).
+3. Chama `booking.confirm()` → CONFIRMED.
+4. Persiste o booking atualizado.
+5. Publica evento `BookingConfirmed`.
+
+**Regras de negócio:**
+
+- ✅ Tenant isolation: cross-tenant retorna NOT_FOUND, nunca FORBIDDEN (ADR-0025).
+- ✅ Somente bookings em PENDING podem ser confirmados.
+- ❌ UUID inválido → `ErrorCodes.INVALID_UUID`
+- ❌ Booking não encontrado / cross-tenant → `SCHEDULING.BOOKING_NOT_FOUND`
+- ❌ Booking em estado diferente de PENDING → `SCHEDULING.INVALID_BOOKING_TRANSITION`
+
+**Resultado esperado:** DTO com `bookingId` e `status: CONFIRMED`.
+
+**Efeitos colaterais:** Evento `BookingConfirmed` publicado após o save — consumido por Notifications e Analytics.
+
+---
+
+### 6. Cancelar Agendamento
 
 **O que é:** Cancela um booking existente, seja pelo cliente ou pelo profissional. Aplica a transição de estado correspondente.
 
@@ -359,6 +388,7 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 4. Se `cancelledBy === 'PROFESSIONAL'`: chama `booking.cancelByProfessional(reason)` → CANCELLED_BY_PROFESSIONAL.
 5. Valida que a transição é permitida (PENDING ou CONFIRMED podem ser cancelados).
 6. Persiste o booking atualizado.
+7. Publica evento `BookingCancelled`.
 
 **Regras de negócio:**
 
@@ -371,11 +401,97 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 
 **Resultado esperado:** DTO com `bookingId`, `status` (CANCELLED_BY_CLIENT ou CANCELLED_BY_PROFESSIONAL), `cancelledBy`, `cancellationReason` e `cancelledAtUtc`.
 
-**Efeitos colaterais:** Evento `BookingCancelled` está definido e previsto para ser publicado após o save (conforme declarado no código do use case), mas o port `ISchedulingEventPublisher` ainda não foi implementado (ver Gaps).
+**Efeitos colaterais:** Evento `BookingCancelled` publicado após o save — consumido por Notifications e Analytics.
 
 ---
 
-### 6. Criar Schedule Recorrente
+### 7. Completar Agendamento
+
+**O que é:** Registra a conclusão de uma sessão que de fato ocorreu, associando o booking a uma Execution previamente criada pelo módulo `execution`. O booking transiciona de CONFIRMED para COMPLETED.
+
+**Quem pode usar:** Camada de aplicação interna (após a Execution ser registrada pelo módulo `execution`).
+
+**Como funciona:**
+
+1. Valida o UUID do `bookingId`.
+2. Busca o booking pelo ID e `professionalProfileId` — tenant isolation (ADR-0025).
+3. Chama `booking.complete(executionId)` → COMPLETED, associando a referência à Execution por ID.
+4. Persiste o booking atualizado.
+5. Publica evento `BookingCompleted`.
+
+**Regras de negócio:**
+
+- ✅ Tenant isolation: cross-tenant retorna NOT_FOUND, nunca FORBIDDEN (ADR-0025).
+- ✅ Somente bookings em CONFIRMED podem ser completados.
+- ✅ `executionId` é obrigatório — o booking registra a referência cross-context por ID (ADR-0047). O Booking não valida nem acessa a Execution diretamente.
+- ❌ UUID inválido → `ErrorCodes.INVALID_UUID`
+- ❌ Booking não encontrado / cross-tenant → `SCHEDULING.BOOKING_NOT_FOUND`
+- ❌ Booking em estado diferente de CONFIRMED → `SCHEDULING.INVALID_BOOKING_TRANSITION`
+
+**Resultado esperado:** DTO com `bookingId`, `status: COMPLETED` e `executionId`.
+
+**Efeitos colaterais:** Evento `BookingCompleted` publicado após o save — consumido por Execution (confirmação de vínculo) e Metrics.
+
+---
+
+### 8. Registrar No-Show
+
+**O que é:** Registra que um cliente confirmado não compareceu à sessão. O booking transiciona de CONFIRMED para NO_SHOW, preservando o registro histórico do agendamento que não foi honrado.
+
+**Quem pode usar:** Profissional autenticado (dono do agendamento).
+
+**Como funciona:**
+
+1. Valida o UUID do `bookingId`.
+2. Busca o booking pelo ID e `professionalProfileId` — tenant isolation (ADR-0025).
+3. Chama `booking.markNoShow()` → NO_SHOW.
+4. Persiste o booking atualizado.
+5. Publica evento `BookingNoShow`.
+
+**Regras de negócio:**
+
+- ✅ Tenant isolation: cross-tenant retorna NOT_FOUND, nunca FORBIDDEN (ADR-0025).
+- ✅ Somente bookings em CONFIRMED podem ser marcados como no-show — um booking PENDING não pode ter no-show (deve ser confirmado primeiro).
+- ❌ UUID inválido → `ErrorCodes.INVALID_UUID`
+- ❌ Booking não encontrado / cross-tenant → `SCHEDULING.BOOKING_NOT_FOUND`
+- ❌ Booking em estado diferente de CONFIRMED → `SCHEDULING.INVALID_BOOKING_TRANSITION`
+
+**Resultado esperado:** DTO com `bookingId` e `status: NO_SHOW`.
+
+**Efeitos colaterais:** Evento `BookingNoShow` publicado após o save — consumido por Analytics e Risk (para monitoramento de padrão de ausência de clientes).
+
+---
+
+### 9. Cancelar Agendamento pelo Sistema
+
+**O que é:** Cancela automaticamente um booking CONFIRMED em nome da plataforma — por exemplo, quando o AccessGrant do cliente é revogado ou suspenso. Diferente do cancelamento por cliente/profissional, este use case opera como ator `SYSTEM` e não aplica isolamento de tenant na busca (acessa por ID global).
+
+**Quem pode usar:** Plataforma internamente (event handler, job agendado ou qualquer ator SYSTEM autorizado).
+
+**Como funciona:**
+
+1. Valida o UUID do `bookingId`.
+2. Busca o booking por ID global (`findById`) — sem filtro de `professionalProfileId`, pois o ator é SYSTEM.
+3. Chama `booking.cancelBySystem(reason)` → CANCELLED_BY_SYSTEM.
+4. Persiste o booking atualizado.
+5. Publica evento `BookingCancelledBySystem`.
+
+**Regras de negócio:**
+
+- ✅ Somente bookings em CONFIRMED podem ser cancelados pelo sistema (PENDING não se enquadra neste fluxo).
+- ✅ Este use case **não aplica tenant isolation** na busca — o ator é SYSTEM e a chamada é interna e autorizada pela plataforma.
+- ✅ O motivo do cancelamento (`reason`) é obrigatório para rastreabilidade.
+- ❌ UUID inválido → `ErrorCodes.INVALID_UUID`
+- ❌ Booking não encontrado → `SCHEDULING.BOOKING_NOT_FOUND`
+- ❌ Booking em estado diferente de CONFIRMED → `SCHEDULING.INVALID_BOOKING_TRANSITION`
+
+**Resultado esperado:** DTO com `bookingId`, `status: CANCELLED_BY_SYSTEM` e `cancellationReason`.
+
+**Efeitos colaterais:** Evento `BookingCancelledBySystem` publicado após o save — consumido por Notifications e Risk.
+
+---
+
+### 10. Criar Schedule Recorrente
 
 **O que é:** Cria um padrão de sessões semanais entre profissional e cliente para um dia da semana fixo. O sistema gera automaticamente N ocorrências com datas calculadas a partir da próxima ocorrência do dia indicado.
 
@@ -396,6 +512,7 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
    - Computa o `logicalDay` no timezone do profissional.
    - Chama `schedule.addSession()` para criar a `RecurringSession` interna.
 9. Persiste o `RecurringSchedule` com todas as sessões geradas.
+10. Publica evento `RecurringScheduleCreated`.
 
 **Regras de negócio:**
 
@@ -412,7 +529,7 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 
 **Resultado esperado:** DTO com `recurringScheduleId`, `professionalProfileId`, `clientId`, `sessionId`, `dayOfWeek`, `startTime`, `sessionCount` e `createdAtUtc`.
 
-**Efeitos colaterais:** Evento `RecurringScheduleCreated` está definido e previsto para ser publicado, mas o port `ISchedulingEventPublisher` ainda não foi implementado (ver Gaps).
+**Efeitos colaterais:** Evento `RecurringScheduleCreated` publicado após o save — consumido por Analytics.
 
 ---
 
@@ -421,7 +538,7 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 | # | Regra | Onde é aplicada | ADR |
 |---|-------|-----------------|-----|
 | 1 | Profissional BANNED não pode criar nem modificar nenhuma entidade | Todos os use cases | ADR-0022 |
-| 2 | Cross-tenant retorna NOT_FOUND (404), nunca FORBIDDEN (403) | Todos os repositórios e use cases | ADR-0025 |
+| 2 | Cross-tenant retorna NOT_FOUND (404), nunca FORBIDDEN (403) | Todos os repositórios e use cases (exceto CancelBookingBySystem) | ADR-0025 |
 | 3 | `professionalProfileId` é imutável após criação em todos os agregados | Todos os agregados | ADR-0025 |
 | 4 | AccessGrant deve passar verificação de 5 pontos para criar um booking | `CreateBooking` | ADR-0046 §3 |
 | 5 | `logicalDay` é computado no momento da criação e nunca recalculado | `Booking.create()`, `RecurringSchedule.addSession()` | ADR-0010 |
@@ -435,14 +552,14 @@ RecurringSchedule representa um **padrão semanal recorrente** para uma sessão 
 | 13 | Agregados não publicam eventos — apenas UseCases (pós-commit) | Todos os agregados | ADR-0009 |
 | 14 | Cross-context: Scheduling não importa Billing diretamente | `CreateBooking` — usa `AccessGrantValidationDTO` | ADR-0029 |
 | 15 | Limites operacionais são verificados antes de qualquer transação de domínio | `CreateBooking`, `CreateRecurringSchedule` | ADR-0041 |
+| 16 | `CancelBookingBySystem` não aplica tenant isolation — usa `findById` global pois o ator é SYSTEM | `CancelBookingBySystem` | ADR-0025 §exception |
+| 17 | `CompleteBooking` requer `executionId` — referência cross-context por ID; Booking não acessa nem valida a Execution diretamente | `CompleteBooking` | ADR-0047 |
 
 ---
 
 ## Eventos de Domínio
 
 ### Eventos Publicados por este Módulo
-
-> **Status atual:** Todos os eventos estão definidos como classes TypeScript e exportados no `index.ts`. O port `ISchedulingEventPublisher` ainda não foi implementado — os eventos são previstos pelo ADR mas ainda não são despachados em produção (ver Gaps).
 
 | Evento | Quando é publicado | O que contém | Quem consome (previsto) |
 |--------|-------------------|--------------|------------------------|
@@ -486,7 +603,7 @@ Nenhuma integração com serviços externos neste módulo.
 | ADR-0009 (Pureza de Agregados / Dispatch por UseCase) | ✅ Conforme | Nenhum agregado chama `addDomainEvent()`. Nenhum side effect externo em aggregates. Nenhum `throw` no domain layer. |
 | ADR-0010 (Política Temporal) | ✅ Conforme | `logicalDay` calculado no timezone correto e imutável. `scheduledAtUtc` validado como UTC estrito. Disponibilidade usa timezone do profissional. |
 | ADR-0022 (BANNED — estado terminal) | ✅ Conforme | BANNED bloqueia todos os use cases de criação/modificação. Nenhuma transição de saída do BANNED. |
-| ADR-0025 (Isolamento de Tenant) | ✅ Conforme | Todas as queries incluem `professionalProfileId`. Cross-tenant retorna 404. |
+| ADR-0025 (Isolamento de Tenant) | ✅ Conforme | Todas as queries incluem `professionalProfileId`. Cross-tenant retorna 404. `CancelBookingBySystem` documenta explicitamente a exceção intencional para ator SYSTEM. |
 | ADR-0029 (Isolamento de Bounded Context) | ✅ Conforme | Scheduling não importa módulos de Billing ou Identity diretamente. Acesso via parâmetros (ACL pattern). |
 | ADR-0041 (Limites Operacionais) | ✅ Conforme | Limites de bookings abertos e sessões recorrentes configuráveis via constructor. Verificados antes da transação de domínio. |
 | ADR-0046 (AccessGrant Lifecycle) | ✅ Conforme | Verificação dos 5 pontos implementada via `AccessGrantValidationDTO`. |
@@ -500,10 +617,10 @@ Nenhuma integração com serviços externos neste módulo.
 
 | # | Tipo | Descrição | Prioridade |
 |---|------|-----------|------------|
-| 1 | 🟡 Melhoria | **`Session.archive()` usa `InvalidBookingTransitionError`**: o agregado `Session` importa e reutiliza `InvalidBookingTransitionError` para seu próprio método `archive()`. O erro retornado tem código `SCHEDULING.INVALID_BOOKING_TRANSITION`, que semanticamente se refere a transições de **Booking**, não de **Session**. Seria mais preciso ter `InvalidSessionTransitionError` com código `SCHEDULING.INVALID_SESSION_TRANSITION`. Os testes atualmente assertam `INVALID_BOOKING_TRANSITION` para operações de session archive, o que pode causar confusão na leitura. | Baixa |
-| 2 | 🔵 Infra pendente | **`ISchedulingEventPublisher` não implementado**: 6 eventos estão definidos (`BookingConfirmed`, `BookingCancelled`, `BookingCancelledBySystem`, `BookingCompleted`, `BookingNoShow`, `RecurringScheduleCreated`) e exportados no `index.ts`, mas nenhum use case os despacha. Falta criar: port `ISchedulingEventPublisher`, stub de teste `InMemorySchedulingEventPublisherStub`, e injetar dispatch em `CancelBooking` e `CreateRecurringSchedule`. Este é o mesmo gap resolvido para o módulo `billing` na sprint anterior. | Média |
-| 3 | 🔵 Use cases ausentes | **Transições de Booking sem use case**: os métodos `confirm()`, `complete()`, `markNoShow()` e `cancelBySystem()` existem no agregado `Booking` e são cobertos por testes de domínio, mas não há use cases de aplicação correspondentes. Isso significa que nenhum desses estados pode ser atingido via API no momento. Em particular, `BookingConfirmed` nunca pode ser publicado porque não há `ConfirmBooking` use case. | Alta |
-| 4 | 🔵 Informativa | **`throw` defensivo em `CancelBooking`**: na linha 49 do `cancel-booking.ts`, há um `throw new Error(...)` como guarda de invariante após o método `cancelByClient/cancelByProfessional`. Está marcado com `/* v8 ignore next 2 */`. Na prática, nunca deve disparar pois o aggregate garante que esses campos são preenchidos após uma transição de cancelamento bem-sucedida. Não é uma violação real, mas é um ponto de atenção. | Baixa |
+| 1 | ✅ Resolvido | **`Session.archive()` usava `InvalidBookingTransitionError`**: corrigido — `Session.archive()` agora usa `InvalidSessionTransitionError` com código `SCHEDULING.INVALID_SESSION_TRANSITION`. O código semântico agora reflete corretamente que se trata de uma transição de Session, não de Booking. | — |
+| 2 | ✅ Resolvido | **`ISchedulingEventPublisher` não implementado**: port completamente definido com 6 métodos (`publishBookingConfirmed`, `publishBookingCancelled`, `publishBookingCancelledBySystem`, `publishBookingCompleted`, `publishBookingNoShow`, `publishRecurringScheduleCreated`). Stub `InMemorySchedulingEventPublisherStub` criado e todos os use cases injetam e despacham corretamente. | — |
+| 3 | ✅ Resolvido | **Transições de Booking sem use case**: todos os 4 use cases ausentes foram implementados — `ConfirmBooking`, `CompleteBooking`, `MarkBookingNoShow` e `CancelBookingBySystem`. Todo o ciclo de vida do Booking está coberto por use cases de aplicação. | — |
+| 4 | 🔵 Informativa | **`throw` defensivo em múltiplos use cases**: `CancelBooking`, `CompleteBooking` e `CancelBookingBySystem` possuem um `throw new Error(...)` como guarda de invariante após transições bem-sucedidas, marcado com `/* v8 ignore next 2 */`. Na prática, nunca deve disparar pois o aggregate garante que os campos são preenchidos após uma transição bem-sucedida. Não é uma violação real, mas é um padrão que se expande a cada novo use case de ciclo de vida. | Baixa |
 
 ---
 
@@ -511,4 +628,5 @@ Nenhuma integração com serviços externos neste módulo.
 
 | Data | O que mudou |
 |------|-------------|
+| 2026-02-28 | Atualização pós-adr-check: novo código de erro `SCHEDULING.INVALID_SESSION_TRANSITION`; `Session.archive()` corrigido para usar o erro semântico correto; `ISchedulingEventPublisher` implementado com 6 métodos; 4 novos use cases adicionados (`ConfirmBooking`, `CompleteBooking`, `MarkBookingNoShow`, `CancelBookingBySystem`); `CancelBooking` e `CreateRecurringSchedule` agora despacham eventos; total de use cases ampliado de 6 para 10; regras de negócio expandidas de 15 para 17; gaps #1, #2 e #3 marcados como resolvidos |
 | 2026-02-26 | Documentação inicial gerada — análise completa de conformidade com ADRs, modelo de domínio, 6 use cases documentados, 6 eventos identificados, 4 gaps registrados |

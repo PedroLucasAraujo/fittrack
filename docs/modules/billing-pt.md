@@ -1,6 +1,6 @@
 # Billing — Módulo de Faturamento e Controle de Acesso
 
-> **Contexto:** Billing | **Atualizado em:** 2026-02-25 | **Versão ADR baseline:** ADR-0051
+> **Contexto:** Billing | **Atualizado em:** 2026-02-28 | **Versão ADR baseline:** ADR-0051
 
 O módulo Billing é o coração financeiro da plataforma FitTrack. Ele gerencia toda a cadeia comercial entre profissional e cliente: desde a criação de um pacote de serviço até a confirmação do pagamento e a concessão do direito de acesso às sessões de treino. Qualquer operação financeira — compra, reembolso, chargeback ou suspensão de acesso por risco — passa obrigatoriamente por este módulo.
 
@@ -68,6 +68,7 @@ stateDiagram-v2
 - Um plano só pode ser comprado quando está em `ACTIVE` — qualquer outro estado bloqueia a compra
 - Pausar ou arquivar um plano **não revoga** as concessões de acesso já emitidas; clientes com acesso ativo continuam tendo acesso
 - O nome deve ter entre 1 e 120 caracteres (espaços nas pontas são removidos automaticamente)
+- O campo `description` é livre; espaços nas pontas são removidos automaticamente
 - O preço deve ser maior que zero, expresso sempre em centavos inteiros (ex: R$ 99,90 → `9990`)
 - A duração deve ser um número inteiro positivo de dias
 - O número de sessões (`sessionAllotment`), se informado, deve ser um inteiro positivo; `null` significa sessões ilimitadas
@@ -237,7 +238,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 1. Valida que `professionalProfileId` é um UUID válido
 2. Cria o value object `Money` a partir de `priceAmount` + `priceCurrency`
 3. Valida que o `type` é um valor aceito (`RECURRING`, `ONE_TIME` ou `TRIAL`)
-4. Cria o agregado `ServicePlan` validando nome (1–120 chars), preço (> 0), duração (inteiro positivo) e sessões (inteiro positivo ou nulo)
+4. Cria o agregado `ServicePlan` validando nome (1–120 chars), `description` (texto livre, trimmed), preço (> 0), duração (inteiro positivo) e sessões (inteiro positivo ou nulo)
 5. Persiste o plano no repositório
 
 **Regras de negócio aplicadas:**
@@ -249,7 +250,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 - ❌ Preço zero ou negativo → `BILLING.INVALID_SERVICE_PLAN`
 - ❌ Tipo inválido → `BILLING.INVALID_SERVICE_PLAN`
 
-**Resultado esperado:** ID do plano, dados completos e status `DRAFT`.
+**Resultado esperado:** ID do plano, `description`, dados completos e status `DRAFT`.
 
 **Efeitos colaterais:** Nenhum evento de domínio publicado na criação (plano em DRAFT ainda não é relevante para outros contextos).
 
@@ -277,7 +278,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** ID do plano, status `ACTIVE`, `activatedAtUtc`.
 
-**Efeitos colaterais:** Publica o evento `ServicePlanActivated` — o contexto de Notification pode usar isso para avisar o profissional.
+**Efeitos colaterais:** Publica o evento `ServicePlanActivated` via `IBillingEventPublisher` — o contexto de Notification pode usar isso para avisar o profissional.
 
 ---
 
@@ -304,7 +305,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** ID do plano, status `ARCHIVED`, `archivedAtUtc`.
 
-**Efeitos colaterais:** Publica o evento `ServicePlanArchived`.
+**Efeitos colaterais:** Publica o evento `ServicePlanArchived` via `IBillingEventPublisher`.
 
 ---
 
@@ -361,9 +362,9 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** IDs da transação e do AccessGrant, status `CONFIRMED`/`ACTIVE`, período de validade.
 
-**Efeitos colaterais:** Publica `PurchaseCompleted` e `AccessGrantCreated` — o contexto Notification envia confirmação ao cliente e ao profissional.
+**Efeitos colaterais:** Publica `PurchaseCompleted` e `AccessGrantCreated` via `IBillingEventPublisher` — o contexto Notification envia confirmação ao cliente e ao profissional.
 
-> ⚠️ **Nota técnica:** Este use case modifica dois agregados na mesma operação de banco (Transaction + AccessGrant). Há um TODO documentado no código para separar via evento `PurchaseCompleted` + outbox quando a infraestrutura estiver disponível (ADR-0003).
+> ⚠️ **Nota técnica:** Este use case modifica dois agregados na mesma operação de banco (Transaction + AccessGrant). Há um TODO documentado no código para separar via evento `PurchaseCompleted` + outbox quando a infraestrutura estiver disponível (ADR-0003). O despacho atual é síncrono via porta.
 
 ---
 
@@ -390,7 +391,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** ID da transação, status `REFUNDED`, `refundedAtUtc`.
 
-**Efeitos colaterais:** Publica `PaymentRefunded` — Notification pode informar o cliente.
+**Efeitos colaterais:** Publica `PaymentRefunded` via `IBillingEventPublisher` — Notification pode informar o cliente.
 
 ---
 
@@ -418,9 +419,9 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** IDs da transação e do AccessGrant, status `CHARGEBACK`/`REVOKED`, `revokedAtUtc`.
 
-**Efeitos colaterais:** Publica `ChargebackRegistered` e `AccessGrantRevoked` — Notification alerta profissional e equipe de risco.
+**Efeitos colaterais:** Publica `ChargebackRegistered` e `AccessGrantRevoked` via `IBillingEventPublisher` — Notification alerta profissional e equipe de risco.
 
-> ⚠️ **Nota técnica:** Modifica dois agregados na mesma operação. TODO para separar via evento `ChargebackRegistered` + outbox (ADR-0003).
+> ⚠️ **Nota técnica:** Modifica dois agregados na mesma operação. TODO para separar via evento `ChargebackRegistered` + outbox (ADR-0003). O despacho atual é síncrono via porta.
 
 ---
 
@@ -446,7 +447,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** ID do AccessGrant, status `SUSPENDED`, `suspendedAtUtc`.
 
-**Efeitos colaterais:** Publica `AccessGrantSuspended` — Notification pode informar o cliente sobre a interrupção temporária.
+**Efeitos colaterais:** Publica `AccessGrantSuspended` via `IBillingEventPublisher` — Notification pode informar o cliente sobre a interrupção temporária.
 
 ---
 
@@ -472,7 +473,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 **Resultado esperado:** ID do AccessGrant, status `ACTIVE`.
 
-**Efeitos colaterais:** Publica `AccessGrantReinstated` — Notification informa o cliente que o acesso foi restaurado.
+**Efeitos colaterais:** Publica `AccessGrantReinstated` via `IBillingEventPublisher` — Notification informa o cliente que o acesso foi restaurado.
 
 ---
 
@@ -497,7 +498,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 | 13 | `EXPIRED` e `REVOKED` são estados terminais do AccessGrant — sem transição de saída | `AccessGrant` | ADR-0046 |
 | 14 | Validação de 5 pontos antes de criar sessão: ACTIVE, clientId, professionalProfileId, validUntil, sessionAllotment | `IAccessGrantRepository.findActiveBy...()` | ADR-0046 |
 | 15 | Referências cross-agregado sempre por ID string (UUIDv4), nunca por objeto | Todos os agregados | ADR-0047 |
-| 16 | Eventos de domínio despachados somente por use cases, pós-commit, via outbox | Camada de aplicação | ADR-0009 / ADR-0047 |
+| 16 | Eventos de domínio despachados somente por use cases, após a persistência, via porta `IBillingEventPublisher` | Camada de aplicação | ADR-0009 / ADR-0047 |
 | 17 | Todas as operações de domínio retornam `DomainResult<T>` — nenhum `throw` no domain layer | Todos os agregados e value objects | ADR-0051 |
 
 ---
@@ -506,7 +507,7 @@ Todos os erros seguem o padrão `BILLING.[ENTIDADE]_[MOTIVO]` e implementam `Dom
 
 ### Eventos Publicados por este Módulo
 
-Eventos são despachados **exclusivamente** pela camada de aplicação (use cases), **nunca** pelos agregados (ADR-0009). O despacho ocorre pós-commit, via outbox pattern (ADR-0047). Os contratos abaixo já estão implementados em `packages/billing/domain/events/` e exportados pelo `index.ts`.
+Eventos são despachados **exclusivamente** pela camada de aplicação (use cases), **nunca** pelos agregados (ADR-0009). O despacho ocorre após a persistência, via porta `IBillingEventPublisher` (injetada nos use cases via constructor injection). Os contratos de evento estão em `packages/billing/domain/events/`; a porta está em `packages/billing/application/ports/billing-event-publisher-port.ts`. A infraestrutura outbox assíncrona (ADR-0047) ainda não está implementada — o despacho atual é síncrono via adaptador injetado.
 
 | Evento | Quando é publicado | O que contém | Quem consome |
 |--------|--------------------|--------------|--------------|
@@ -584,6 +585,46 @@ Quando implementada, a persistência será:
 
 ---
 
+## Porta da Application Layer
+
+### `IBillingEventPublisher`
+
+Interface de porta para publicação dos eventos de domínio do módulo Billing. Todos os use cases que emitem eventos recebem essa porta via injeção de dependência no construtor. A implementação concreta (adaptador) é responsabilidade da camada de infraestrutura.
+
+```
+// Grupos de métodos por agregado
+publishServicePlanActivated(event: ServicePlanActivated): Promise<void>
+publishServicePlanArchived(event: ServicePlanArchived): Promise<void>
+
+publishPurchaseCompleted(event: PurchaseCompleted): Promise<void>
+publishPaymentFailed(event: PaymentFailed): Promise<void>
+publishPaymentRefunded(event: PaymentRefunded): Promise<void>
+publishChargebackRegistered(event: ChargebackRegistered): Promise<void>
+
+publishAccessGrantCreated(event: AccessGrantCreated): Promise<void>
+publishAccessGrantSuspended(event: AccessGrantSuspended): Promise<void>
+publishAccessGrantReinstated(event: AccessGrantReinstated): Promise<void>
+publishAccessGrantRevoked(event: AccessGrantRevoked): Promise<void>
+```
+
+> **Nota sobre `PaymentFailed`:** O evento está definido no contrato da porta mas nenhum use case do pacote `billing` o despacha diretamente. Seria disparado por um handler de webhook de falha de pagamento, implementado na camada de infraestrutura.
+
+**Use cases que injetam `IBillingEventPublisher`:**
+
+| Use case | Eventos publicados |
+| -------- | ------------------ |
+| `ActivateServicePlan` | `ServicePlanActivated` |
+| `ArchiveServicePlan` | `ServicePlanArchived` |
+| `ConfirmPayment` | `PurchaseCompleted`, `AccessGrantCreated` |
+| `RefundPayment` | `PaymentRefunded` |
+| `RegisterChargeback` | `ChargebackRegistered`, `AccessGrantRevoked` |
+| `SuspendAccessGrant` | `AccessGrantSuspended` |
+| `ReinstateAccessGrant` | `AccessGrantReinstated` |
+| `CreateServicePlan` | *(não publica eventos — plano em DRAFT)* |
+| `InitiatePurchase` | *(não publica eventos — pagamento pendente)* |
+
+---
+
 ## Conformidade com ADRs
 
 | ADR | Requisito | Status | Observações |
@@ -599,7 +640,7 @@ Quando implementada, a persistência será:
 | ADR-0022 | BANNED terminal; suspensão sempre manual | ✅ Conforme | Documentado em `ReinstateAccessGrant`; SuspendAccessGrant é exclusivamente operacional |
 | ADR-0025 | Isolamento de tenant | ✅ Conforme | Cross-tenant retorna NOT_FOUND em todos os use cases com `professionalProfileId` |
 | ADR-0046 | Ciclo de vida do AccessGrant | ✅ Conforme | 4 estados, terminais corretos, `findActiveBy...()` suporta validação 5 pontos |
-| ADR-0047 | Referências cross-agregado por ID | ✅ Conforme | Todos os IDs são `string` (UUIDv4); nenhum agregado referencia outro objeto |
+| ADR-0047 | Referências cross-agregado por ID; eventos despachados por use cases via porta | ✅ Conforme | Todos os IDs são `string` (UUIDv4); `IBillingEventPublisher` injetado nos use cases; despacho pós-save |
 | ADR-0050 | One-Time Products (`source=PRODUCT_PURCHASE`) | 🔵 Pendente | AccessGrant não possui campo `source` nem `productVersionId` — integração com Products não implementada |
 | ADR-0051 | `DomainResult<T>` sem `throw` no domain layer | ✅ Conforme | Todos os métodos de agregados e value objects retornam `Either`; os `throw` existentes estão na camada de aplicação como guards de invariante pós-operação |
 
@@ -609,8 +650,8 @@ Quando implementada, a persistência será:
 
 | # | Tipo | Descrição | Prioridade |
 |---|------|-----------|------------|
-| 1 | ⚠️ Técnico | `ConfirmPayment` e `RegisterChargeback` modificam dois agregados na mesma transação de banco. TODOs estão documentados no código; a separação requer infraestrutura de outbox (ADR-0003). | Alta |
-| 2 | 🔵 Infraestrutura | Os eventos de domínio estão definidos como contratos (`domain/events/`) mas o despacho ativo (outbox) não está implementado. Use cases precisam receber `IEventBus` e despachar após commit. | Alta |
+| 1 | ⚠️ Técnico | `ConfirmPayment` e `RegisterChargeback` modificam dois agregados na mesma transação de banco. TODOs estão documentados no código; a separação requer infraestrutura de outbox (ADR-0003). O despacho de eventos já é feito via `IBillingEventPublisher` pós-save. | Alta |
+| 2 | 🔵 Infraestrutura | O despacho de eventos via `IBillingEventPublisher` é **síncrono** — a infraestrutura outbox assíncrona (persistência do evento em tabela antes do publish) ainda não está implementada (ADR-0047). | Alta |
 | 3 | 🔵 Infraestrutura | Nenhuma implementação de repositório com Prisma existe — somente interfaces e implementações in-memory para testes. | Alta |
 | 4 | 🔵 Infraestrutura | Nenhuma camada de apresentação (controllers/rotas HTTP) implementada. | Média |
 | 5 | 🟡 Nomenclatura | Arquivos de use case seguem o padrão `[nome].ts` (ex: `confirm-payment.ts`), mas a convenção do projeto define `[nome].use-case.ts`. Divergência leve frente às regras de nomenclatura. | Baixa |
@@ -618,6 +659,7 @@ Quando implementada, a persistência será:
 | 7 | 🔵 Produto | Estado `DELETED` existe no enum `ServicePlanStatus` mas não há use case de deleção lógica implementado. Pode ser intencional para cleanup futuro. | Baixa |
 | 8 | 🔵 Produto | Integração com ADR-0050 (One-Time Products) não implementada — AccessGrant não possui campo `source` nem `productVersionId` exigidos pelo fluxo de produtos avulsos. | Média |
 | 9 | 🔵 Consumo de eventos | Não há subscribers implementados para os eventos do contexto Risk (`ProfessionalMovedToWatchlist`). A orquestração de suspensão de grants é feita externamente. | Média |
+| 10 | 🔵 Produto | `PaymentFailed` está na porta `IBillingEventPublisher` mas nenhum use case do pacote o despacha — dependeria de um handler de webhook de falha de pagamento na camada de infraestrutura. | Baixa |
 
 ---
 
@@ -630,17 +672,17 @@ Quando implementada, a persistência será:
 | Domain — Transaction | `transaction.spec.ts` | 30 | 100% |
 | Domain — PlatformFee | `platform-fee.spec.ts` | 9 | 100% |
 | Application — CreateServicePlan | `create-service-plan.spec.ts` | 7 | 100% |
-| Application — ActivateServicePlan | `activate-service-plan.spec.ts` | 4 | 100% |
-| Application — ArchiveServicePlan | `archive-service-plan.spec.ts` | 5 | 100% |
+| Application — ActivateServicePlan | `activate-service-plan.spec.ts` | 7 | 100% |
+| Application — ArchiveServicePlan | `archive-service-plan.spec.ts` | 8 | 100% |
 | Application — InitiatePurchase | `initiate-purchase.spec.ts` | 8 | 100% |
-| Application — ConfirmPayment | `confirm-payment.spec.ts` | 7 | 100% |
-| Application — RefundPayment | `refund-payment.spec.ts` | 7 | 100% |
-| Application — RegisterChargeback | `register-chargeback.spec.ts` | 6 | 100% |
-| Application — SuspendAccessGrant | `suspend-access-grant.spec.ts` | 7 | 100% |
-| Application — ReinstateAccessGrant | `reinstate-access-grant.spec.ts` | 7 | 100% |
-| **Total** | **13 suites** | **188 testes** | **100% linhas, funções, branches, statements** |
+| Application — ConfirmPayment | `confirm-payment.spec.ts` | 10 | 100% |
+| Application — RefundPayment | `refund-payment.spec.ts` | 10 | 100% |
+| Application — RegisterChargeback | `register-chargeback.spec.ts` | 9 | 100% |
+| Application — SuspendAccessGrant | `suspend-access-grant.spec.ts` | 10 | 100% |
+| Application — ReinstateAccessGrant | `reinstate-access-grant.spec.ts` | 10 | 100% |
+| **Total** | **13 suites** | **209 testes** | **100% linhas, funções, branches, statements** |
 
-Os testes cobrem todas as transições de estado, todos os caminhos de erro (`DomainResult.fail`) e todos os casos de limite de negócio. Implementações in-memory dos repositórios substituem Prisma nos testes — nenhum mock de infraestrutura real é necessário.
+Os testes cobrem todas as transições de estado, todos os caminhos de erro (`DomainResult.fail`), todos os casos de limite de negócio e verificação de publicação de eventos (happy path e caminhos de falha). Implementações in-memory dos repositórios e `InMemoryBillingEventPublisherStub` substituem infraestrutura real — nenhum mock externo é necessário.
 
 ---
 
@@ -648,4 +690,5 @@ Os testes cobrem todas as transições de estado, todos os caminhos de erro (`Do
 
 | Data | O que mudou |
 |------|-------------|
+| 2026-02-28 | Atualização pós-adr-check: adicionada seção `IBillingEventPublisher` port; documentado campo `description` do `ServicePlan`; atualizada contagem de testes (188 → 209, +21 testes de publicação de eventos); regra 16 corrigida ("via outbox" → "via porta"); efeitos colaterais de todos os use cases atualizados para referenciar a porta; gaps atualizados (Gap 2 reformulado — porta implementada, outbox assíncrono pendente; Gap 10 adicionado sobre `PaymentFailed`). |
 | 2026-02-25 | Documentação inicial gerada — análise completa contra ADR baseline 0000-0051. 188 testes, 100% de cobertura. Nenhuma violação crítica ou moderada encontrada. |
