@@ -141,6 +141,12 @@ The following events are formally recognized. All events conform to the structur
 | `ServicePlanArchived` | ServicePlan | ServicePlan | servicePlanId |
 | `ProductPurchaseCompleted` | ProductPurchase | Products | productPurchaseId, productVersionId, clientId, professionalProfileId, transactionId |
 | `ProductPurchaseRefunded` | ProductPurchase | Products | productPurchaseId, refundId, revokedAccessGrantIds |
+| `RevenueRecorded` | FinancialLedger | Ledger | ledgerId, executionId, amountCents, currency, logicalDay, balanceAfterCents |
+| `PlatformFeeRecorded` | FinancialLedger | Ledger | ledgerId, executionId, amountCents, currency, logicalDay, balanceAfterCents |
+| `RefundRecorded` | FinancialLedger | Ledger | ledgerId, referenceEntryId, amountCents, currency, balanceAfterCents, reason |
+| `PayoutCompleted` | FinancialLedger | Ledger | ledgerId, amountCents, currency, balanceAfterCents |
+| `LedgerBalanceChanged` | FinancialLedger | Ledger | ledgerId, previousBalanceCents, newBalanceCents, currency, entryType, isInDebt |
+| `LedgerStatusChanged` | FinancialLedger | Ledger | ledgerId, previousStatus, newStatus, reason |
 | `PersonalModeActivated` | PersonalModeProfile | PersonalMode | userId |
 | `EntitlementEnteredGracePeriod` | Subscription *(TBD)* | Billing | entitlementId, gracePeriodUntil |
 | `EntitlementRestored` | Subscription *(TBD)* | Billing | entitlementId |

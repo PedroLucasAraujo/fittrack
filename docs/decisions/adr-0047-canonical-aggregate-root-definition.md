@@ -38,6 +38,7 @@ An Aggregate Root is an entity that:
 | `Metric` | Metrics | — | `MetricComputed` |
 | `Transaction` | Billing | — | `PaymentConfirmed`, `PaymentRefunded`, `ChargebackRegistered` |
 | `AccessGrant` | Billing | — | `AccessGrantCreated`, `AccessGrantRevoked`, `AccessGrantSuspended`, `AccessGrantReinstated` |
+| `FinancialLedger` | Ledger | `LedgerEntry` (append-only) | `RevenueRecorded`, `PlatformFeeRecorded`, `RefundRecorded`, `PayoutCompleted`, `LedgerBalanceChanged`, `LedgerStatusChanged` |
 | `ProfessionalClientLink` | UserProfile | — | `ClientLinked`, `ClientLinkEnded` |
 | `AuditLog` | Audit | — | (append-only; no domain events) |
 | `OutboxEvent` | Infrastructure | — | (infrastructure concern; not a domain aggregate) |
@@ -72,6 +73,7 @@ Examples:
 - `Deliverable` is an aggregate root in the Deliverables bounded context (`@fittrack/deliverables`). It is NOT a subordinate of `ServicePlan`. It has its own `IDeliverableRepository` and lifecycle (DRAFT → ACTIVE → ARCHIVED per ADR-0008 §8). Authorized types: `TRAINING_PRESCRIPTION`, `DIET_PLAN`, `PHYSIOLOGICAL_ASSESSMENT` (ADR-0044 §1).
 - `ExerciseAssignment` is a subordinate entity of `Deliverable` (content snapshot per ADR-0011; mutated only in DRAFT status, locked on activation).
 - `ExecutionCorrection` is a subordinate entity of `Execution` (append-only; owned by `Execution`).
+- `LedgerEntry` is a subordinate entity of `FinancialLedger` (append-only; immutable after creation). One `FinancialLedger` exists per `professionalProfileId`. The repository loads only the header (balance, status, version) for mutations; `_newEntries` tracks entries added during the current operation. See ADR-0021 for full repository optimization contract.
 - A `Money` type (integer cents + currency code) is a value object embedded in `Transaction`.
 
 ### 5. Aggregate Size Guidelines
@@ -101,6 +103,7 @@ interface IDeliverableRepository
 interface ICatalogItemRepository
 interface IServicePlanRepository
 interface ITransactionRepository
+interface IFinancialLedgerRepository
 interface ISessionRepository
 interface IWorkingAvailabilityRepository
 interface IBookingRepository
