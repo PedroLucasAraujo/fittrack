@@ -10,7 +10,10 @@
  * invoking `HandleExecutionCorrectionProjection.execute()`.
  *
  * Fields mirror `ExecutionCorrectionRecordedEvent` (ADR-0009 §7 event catalog).
- * Only fields consumed by `HandleExecutionCorrectionProjection` are required here.
+ * Only fields consumed by `HandleExecutionCorrectionProjection` are included here.
+ * `reason` (present in the source event) is intentionally excluded: it is not needed
+ * by the projection handler and may carry user-authored text that is PII-adjacent
+ * under LGPD (ADR-0037).
  */
 export interface ExecutionCorrectionRecordedPayload {
   /** UUIDv4 of the ExecutionCorrection entity (cross-aggregate ref, ADR-0047). */
