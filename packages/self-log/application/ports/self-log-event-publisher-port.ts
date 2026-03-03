@@ -1,5 +1,6 @@
 import type { SelfLogRecordedEvent } from '../../domain/events/self-log-recorded-event.js';
 import type { SelfLogAnonymizedEvent } from '../../domain/events/self-log-anonymized-event.js';
+import type { SelfLogCorrectionProjectedEvent } from '../../domain/events/self-log-correction-projected-event.js';
 
 /**
  * Port for publishing domain events from the SelfLog bounded context (ADR-0009 §4).
@@ -16,4 +17,5 @@ import type { SelfLogAnonymizedEvent } from '../../domain/events/self-log-anonym
 export interface ISelfLogEventPublisher {
   publishSelfLogRecorded(event: SelfLogRecordedEvent): Promise<void>;
   publishSelfLogAnonymized(event: SelfLogAnonymizedEvent): Promise<void>;
+  publishSelfLogCorrectionProjected(event: SelfLogCorrectionProjectedEvent): Promise<void>;
 }

@@ -301,6 +301,16 @@ export class SelfLogEntry extends AggregateRoot<SelfLogEntryProps> {
     return this.props.source.isSelf;
   }
 
+  /**
+   * True when this entry was created as a correction projection via
+   * `HandleExecutionCorrectionProjection` (source=EXECUTION with a correctedEntryId).
+   * Distinguishes execution-correction projections from manual user corrections
+   * (source=SELF with a correctedEntryId).
+   */
+  get isCorrectionProjection(): boolean {
+    return this.props.source.isExecution && this.props.correctedEntryId !== null;
+  }
+
   // ── Getters ───────────────────────────────────────────────────────────────
 
   get clientId(): string {
