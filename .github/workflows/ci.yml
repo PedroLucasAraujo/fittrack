@@ -295,3 +295,334 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
         working-directory: packages/execution
+
+  test-assessments:
+    name: "Test @fittrack/assessments"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install assessments dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/assessments
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/assessments
+
+  test-catalog:
+    name: "Test @fittrack/catalog"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install catalog dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/catalog
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/catalog
+
+  typecheck-catalog:
+    name: "Typecheck @fittrack/catalog"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install catalog dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/catalog
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/catalog
+
+  test-ledger:
+    name: "Test @fittrack/ledger"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install ledger dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/ledger
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/ledger
+
+  typecheck-ledger:
+    name: "Typecheck @fittrack/ledger"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install ledger dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/ledger
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/ledger
+
+  test-metrics:
+    name: "Test @fittrack/metrics"
+    runs-on: ubuntu-latest
+    needs: [test-core, test-execution]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install execution dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/execution
+
+      - name: Install metrics dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/metrics
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/metrics
+
+  typecheck-metrics:
+    name: "Typecheck @fittrack/metrics"
+    runs-on: ubuntu-latest
+    needs: [typecheck-core, typecheck-execution]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install execution dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/execution
+
+      - name: Install metrics dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/metrics
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/metrics
+
+  test-platform:
+    name: "Test @fittrack/platform"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install platform dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/platform
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/platform
+
+  typecheck-platform:
+    name: "Typecheck @fittrack/platform"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install platform dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/platform
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/platform
+
+  test-risk:
+    name: "Test @fittrack/risk"
+    runs-on: ubuntu-latest
+    needs: [test-core, test-identity, test-billing]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install identity dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/identity
+
+      - name: Install billing dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/billing
+
+      - name: Install risk dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/risk
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/risk
+
+  typecheck-risk:
+    name: "Typecheck @fittrack/risk"
+    runs-on: ubuntu-latest
+    needs: [typecheck-core, typecheck-identity, typecheck-billing]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install identity dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/identity
+
+      - name: Install billing dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/billing
+
+      - name: Install risk dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/risk
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/risk
+
+  test-self-log:
+    name: "Test @fittrack/self-log"
+    runs-on: ubuntu-latest
+    needs: [test-core, test-execution]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install execution dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/execution
+
+      - name: Install self-log dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/self-log
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/self-log
+
+  typecheck-self-log:
+    name: "Typecheck @fittrack/self-log"
+    runs-on: ubuntu-latest
+    needs: [typecheck-core, typecheck-execution]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install execution dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/execution
+
+      - name: Install self-log dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/self-log
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/self-log
