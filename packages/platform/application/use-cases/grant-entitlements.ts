@@ -79,7 +79,7 @@ export class GrantEntitlements {
       actorRole: dto.actorRole,
       targetEntityId: entitlement.id,
       tenantId: dto.professionalProfileId,
-      previousStatus,
+      ...(previousStatus !== undefined ? { previousStatus } : {}),
       newStatus: entitlement.status,
       addedCapabilities: dto.entitlements,
       reason: trimmedReason,

@@ -34,7 +34,7 @@ An Aggregate Root is an entity that:
 | `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted`, `BookingNoShow` |
 | `RecurringSchedule` | Scheduling | RecurringSession | `RecurringScheduleCreated`, `RecurringSessionAdded` |
 | `Execution` | Execution | ExecutionCorrection | `ExecutionRecorded`, `ExecutionCorrectionRecorded` |
-| `SelfLog` | Execution / PersonalMode | — | `SelfLogRecorded` |
+| `SelfLog` | Execution / PersonalMode | — | `SelfLogRecorded`, `SelfLogCorrectionProjected` |
 | `Metric` | Metrics | — | `MetricComputed` |
 | `Transaction` | Billing | — | `PaymentConfirmed`, `PaymentRefunded`, `ChargebackRegistered` |
 | `AccessGrant` | Billing | — | `AccessGrantCreated`, `AccessGrantRevoked`, `AccessGrantSuspended`, `AccessGrantReinstated` |

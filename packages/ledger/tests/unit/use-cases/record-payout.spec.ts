@@ -6,6 +6,8 @@ import { InsufficientBalanceError } from '../../../domain/errors/insufficient-ba
 import { LedgerFrozenError } from '../../../domain/errors/ledger-frozen-error.js';
 import { LedgerNotFoundError } from '../../../domain/errors/ledger-not-found-error.js';
 import { LedgerUnderReviewError } from '../../../domain/errors/ledger-under-review-error.js';
+import { LedgerBalanceChangedEvent } from '../../../domain/events/ledger-balance-changed-event.js';
+import { PayoutCompletedEvent } from '../../../domain/events/payout-completed-event.js';
 import { makeFinancialLedger } from '../../factories/make-financial-ledger.js';
 import { InMemoryFinancialLedgerRepository } from '../../repositories/in-memory-financial-ledger-repository.js';
 import { LedgerEventPublisherStub } from '../../stubs/ledger-event-publisher-stub.js';
@@ -48,6 +50,7 @@ describe('RecordPayout', () => {
     });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.currentBalanceCents).toBe(20000);
   });
 
@@ -123,13 +126,17 @@ describe('RecordPayout', () => {
       description: 'Payout',
     });
 
-    const payoutEvents = eventPublisher.getEventsByType('PayoutCompleted');
-    const balanceEvents = eventPublisher.getEventsByType('LedgerBalanceChanged');
+    const payoutEvents = eventPublisher.getEventsByType<PayoutCompletedEvent>('PayoutCompleted');
+    const balanceEvents =
+      eventPublisher.getEventsByType<LedgerBalanceChangedEvent>('LedgerBalanceChanged');
 
     expect(payoutEvents).toHaveLength(1);
     expect(balanceEvents).toHaveLength(1);
-    expect(payoutEvents[0].payload.amountCents).toBe(20000);
-    expect(balanceEvents[0].payload.newBalanceCents).toBe(30000);
+    const payoutEv0 = payoutEvents[0];
+    const balEv0 = balanceEvents[0];
+    if (!payoutEv0 || !balEv0) throw new Error('expected events');
+    expect(payoutEv0.payload.amountCents).toBe(20000);
+    expect(balEv0.payload.newBalanceCents).toBe(30000);
   });
 
   it('is idempotent with same payoutRequestId', async () => {
@@ -156,6 +163,7 @@ describe('RecordPayout', () => {
 
     expect(first.isRight()).toBe(true);
     expect(second.isRight()).toBe(true);
+    if (!first.isRight() || !second.isRight()) throw new Error('expected Right');
     expect(second.value.entryId).toBe(first.value.entryId);
     expect(second.value.currentBalanceCents).toBe(40000);
   });

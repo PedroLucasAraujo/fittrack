@@ -78,12 +78,12 @@ export class UpdateCatalogItemContent {
 
     // 6. Attempt content update (checks ARCHIVED guard, increments contentVersion)
     const updateResult = item.updateContent({
-      name: newName,
-      description: dto.description,
-      category: dto.category,
-      muscleGroups: dto.muscleGroups,
-      instructions: dto.instructions,
-      mediaUrl: dto.mediaUrl,
+      ...(newName !== undefined ? { name: newName } : {}),
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.category !== undefined ? { category: dto.category } : {}),
+      ...(dto.muscleGroups !== undefined ? { muscleGroups: dto.muscleGroups } : {}),
+      ...(dto.instructions !== undefined ? { instructions: dto.instructions } : {}),
+      ...(dto.mediaUrl !== undefined ? { mediaUrl: dto.mediaUrl } : {}),
     });
 
     if (updateResult.isLeft()) return left(updateResult.value);

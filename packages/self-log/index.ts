@@ -23,6 +23,8 @@ export { SelfLogRecordedEvent } from './domain/events/self-log-recorded-event.js
 export type { SelfLogRecordedPayload } from './domain/events/self-log-recorded-event.js';
 export { SelfLogAnonymizedEvent } from './domain/events/self-log-anonymized-event.js';
 export type { SelfLogAnonymizedPayload } from './domain/events/self-log-anonymized-event.js';
+export { SelfLogCorrectionProjectedEvent } from './domain/events/self-log-correction-projected-event.js';
+export type { SelfLogCorrectionProjectedPayload } from './domain/events/self-log-correction-projected-event.js';
 
 // ── Repositories ──────────────────────────────────────────────────────────────
 export type { ISelfLogEntryRepository } from './domain/repositories/self-log-entry-repository.js';
@@ -30,6 +32,7 @@ export type { ISelfLogEntryRepository } from './domain/repositories/self-log-ent
 // ── Application Ports ─────────────────────────────────────────────────────────
 export type { ISelfLogEventPublisher } from './application/ports/self-log-event-publisher-port.js';
 export type { ExecutionRecordedPayload } from './application/ports/execution-recorded-payload.js';
+export type { ExecutionCorrectionRecordedPayload } from './application/ports/execution-correction-recorded-payload.js';
 
 // ── Use Cases ─────────────────────────────────────────────────────────────────
 export { RecordSelfLogEntry } from './application/use-cases/record-self-log-entry.js';
@@ -40,3 +43,4 @@ export type {
 export { ProjectExecutionToSelfLog } from './application/use-cases/project-execution-to-self-log.js';
 export { AnonymizeSelfLogEntry } from './application/use-cases/anonymize-self-log-entry.js';
 export type { AnonymizeSelfLogEntryInputDTO } from './application/use-cases/anonymize-self-log-entry.js';
+export { HandleExecutionCorrectionProjection } from './application/use-cases/handle-execution-correction-projection.js';

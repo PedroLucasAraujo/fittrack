@@ -72,6 +72,7 @@ describe('FinancialLedger', () => {
       });
 
       expect(result.isRight()).toBe(true);
+      if (!result.isRight()) throw new Error('expected Right');
       expect(ledger.currentBalanceCents).toBe(9000);
       expect(result.value.ledgerEntryType).toBe(LedgerEntryType.REVENUE);
       expect(result.value.balanceAfterCents).toBe(9000);
@@ -109,6 +110,7 @@ describe('FinancialLedger', () => {
 
       expect(first.isRight()).toBe(true);
       expect(second.isRight()).toBe(true);
+      if (!first.isRight() || !second.isRight()) throw new Error('expected Right');
       expect(second.value.id).toBe(first.value.id);
       expect(ledger.currentBalanceCents).toBe(9000); // charged only once
       expect(ledger.getNewEntries()).toHaveLength(1);
@@ -150,6 +152,7 @@ describe('FinancialLedger', () => {
       });
 
       expect(result.isRight()).toBe(true);
+      if (!result.isRight()) throw new Error('expected Right');
       expect(ledger.currentBalanceCents).toBe(8000);
       expect(result.value.ledgerEntryType).toBe(LedgerEntryType.PLATFORM_FEE);
     });
@@ -209,6 +212,7 @@ describe('FinancialLedger', () => {
       });
 
       expect(result.isRight()).toBe(true);
+      if (!result.isRight()) throw new Error('expected Right');
       expect(ledger.currentBalanceCents).toBe(0);
       expect(result.value.ledgerEntryType).toBe(LedgerEntryType.REFUND);
     });
@@ -253,7 +257,10 @@ describe('FinancialLedger', () => {
 
       expect(ledger.currentBalanceCents).toBe(0);
       expect(ledger.getNewEntries()).toHaveLength(1);
-      expect(second.value.id).toBe(ledger.getNewEntries()[0].id);
+      if (!second.isRight()) throw new Error('expected Right');
+      const newEntry0 = ledger.getNewEntries()[0];
+      if (!newEntry0) throw new Error('expected entry');
+      expect(second.value.id).toBe(newEntry0.id);
     });
   });
 
@@ -270,6 +277,7 @@ describe('FinancialLedger', () => {
       });
 
       expect(result.isRight()).toBe(true);
+      if (!result.isRight()) throw new Error('expected Right');
       expect(ledger.currentBalanceCents).toBe(20000);
       expect(result.value.ledgerEntryType).toBe(LedgerEntryType.PAYOUT);
     });
@@ -369,6 +377,7 @@ describe('FinancialLedger', () => {
       });
 
       expect(result.isRight()).toBe(true);
+      if (!result.isRight()) throw new Error('expected Right');
       expect(ledger.currentBalanceCents).toBe(7000);
       expect(result.value.ledgerEntryType).toBe(LedgerEntryType.ADJUSTMENT);
     });
@@ -550,6 +559,7 @@ describe('FinancialLedger', () => {
         description: 'Fee',
       });
 
+      if (!r1.isRight() || !r2.isRight()) throw new Error('expected Right');
       expect(r1.value.balanceAfterCents).toBe(9000);
       expect(r2.value.balanceAfterCents).toBe(8000);
     });

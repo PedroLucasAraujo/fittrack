@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { RecordAdjustment } from '../../../application/use-cases/record-adjustment.js';
 import { LedgerEntryType } from '../../../domain/enums/ledger-entry-type.js';
 import { LedgerNotFoundError } from '../../../domain/errors/ledger-not-found-error.js';
+import { LedgerBalanceChangedEvent } from '../../../domain/events/ledger-balance-changed-event.js';
 import { makeFinancialLedger } from '../../factories/make-financial-ledger.js';
 import { InMemoryFinancialLedgerRepository } from '../../repositories/in-memory-financial-ledger-repository.js';
 import { LedgerEventPublisherStub } from '../../stubs/ledger-event-publisher-stub.js';
@@ -55,6 +56,7 @@ describe('RecordAdjustment', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.currentBalanceCents).toBe(6000); // 1000 + 5000
     expect(result.value.isInDebt).toBe(false);
   });
@@ -69,6 +71,7 @@ describe('RecordAdjustment', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.currentBalanceCents).toBe(7000); // 10000 - 3000
   });
 
@@ -82,6 +85,7 @@ describe('RecordAdjustment', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.currentBalanceCents).toBe(-2000);
     expect(result.value.isInDebt).toBe(true);
   });
@@ -99,6 +103,7 @@ describe('RecordAdjustment', () => {
 
     expect(first.isRight()).toBe(true);
     expect(second.isRight()).toBe(true);
+    if (!first.isRight() || !second.isRight()) throw new Error('expected Right');
     expect(second.value.entryId).toBe(first.value.entryId);
     expect(second.value.currentBalanceCents).toBe(first.value.currentBalanceCents);
   });
@@ -110,9 +115,12 @@ describe('RecordAdjustment', () => {
 
     await useCase.execute(makeDto(professionalProfileId));
 
-    const events = eventPublisher.getEventsByType('LedgerBalanceChanged');
+    const events =
+      eventPublisher.getEventsByType<LedgerBalanceChangedEvent>('LedgerBalanceChanged');
     expect(events).toHaveLength(1);
-    expect(events[0].payload.entryType).toBe(LedgerEntryType.ADJUSTMENT);
+    const ev0 = events[0];
+    if (!ev0) throw new Error('expected event');
+    expect(ev0.payload.entryType).toBe(LedgerEntryType.ADJUSTMENT);
   });
 
   it('returns Left for invalid currency', async () => {

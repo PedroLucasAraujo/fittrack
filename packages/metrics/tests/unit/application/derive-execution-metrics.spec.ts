@@ -89,6 +89,7 @@ describe('DeriveExecutionMetrics', () => {
 
       const published = eventPublisher.publishedMetricComputed[0];
       expect(published).toBeDefined();
+      if (!published) throw new Error('expected published event');
       expect(published.eventType).toBe('MetricComputed');
       expect(published.aggregateType).toBe('Metric');
       expect(published.payload.clientId).toBe(clientId);
@@ -104,6 +105,7 @@ describe('DeriveExecutionMetrics', () => {
       await useCase.execute(event);
 
       const saved = metricRepo.items[0];
+      if (!saved) throw new Error('expected saved metric');
       expect(saved.value).toBe(1);
       expect(saved.unit).toBe('session');
     });
@@ -114,7 +116,9 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      expect(metricRepo.items[0].sourceExecutionIds).toEqual([executionId]);
+      const item0 = metricRepo.items[0];
+      if (!item0) throw new Error('expected metric');
+      expect(item0.sourceExecutionIds).toEqual([executionId]);
     });
 
     it('creates a Metric with logicalDay matching the event payload (ADR-0010, ADR-0014)', async () => {
@@ -122,7 +126,9 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      expect(metricRepo.items[0].logicalDay.value).toBe('2026-01-15');
+      const item0b = metricRepo.items[0];
+      if (!item0b) throw new Error('expected metric');
+      expect(item0b.logicalDay.value).toBe('2026-01-15');
     });
 
     it('creates a Metric with derivationRuleVersion="v1" (ADR-0043)', async () => {
@@ -130,7 +136,9 @@ describe('DeriveExecutionMetrics', () => {
 
       await useCase.execute(event);
 
-      expect(metricRepo.items[0].derivationRuleVersion).toBe('v1');
+      const item0c = metricRepo.items[0];
+      if (!item0c) throw new Error('expected metric');
+      expect(item0c.derivationRuleVersion).toBe('v1');
     });
 
     // ── Idempotency (ADR-0007) ────────────────────────────────────────────────

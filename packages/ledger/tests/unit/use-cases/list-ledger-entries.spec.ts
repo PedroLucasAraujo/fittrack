@@ -42,6 +42,7 @@ describe('ListLedgerEntries', () => {
     });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.items).toHaveLength(0);
   });
 
@@ -70,9 +71,13 @@ describe('ListLedgerEntries', () => {
     });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.items).toHaveLength(2);
-    expect(result.value.items[0].ledgerEntryType).toBe(LedgerEntryType.REVENUE);
-    expect(result.value.items[1].ledgerEntryType).toBe(LedgerEntryType.PLATFORM_FEE);
+    const item0 = result.value.items[0];
+    const item1 = result.value.items[1];
+    if (!item0 || !item1) throw new Error('expected 2 items');
+    expect(item0.ledgerEntryType).toBe(LedgerEntryType.REVENUE);
+    expect(item1.ledgerEntryType).toBe(LedgerEntryType.PLATFORM_FEE);
   });
 
   it('filters by entryType when specified', async () => {
@@ -101,9 +106,12 @@ describe('ListLedgerEntries', () => {
     });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.items).toHaveLength(1);
-    expect(result.value.items[0].ledgerEntryType).toBe(LedgerEntryType.REVENUE);
-    expect(result.value.items[0].amountCents).toBe(9000);
+    const filteredItem0 = result.value.items[0];
+    if (!filteredItem0) throw new Error('expected item');
+    expect(filteredItem0.ledgerEntryType).toBe(LedgerEntryType.REVENUE);
+    expect(filteredItem0.amountCents).toBe(9000);
   });
 
   it('maps entry fields correctly to DTO', async () => {
@@ -126,7 +134,9 @@ describe('ListLedgerEntries', () => {
     });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     const entry = result.value.items[0];
+    if (!entry) throw new Error('expected entry');
 
     expect(entry.transactionId).toBe(transactionId);
     expect(entry.amountCents).toBe(5000);

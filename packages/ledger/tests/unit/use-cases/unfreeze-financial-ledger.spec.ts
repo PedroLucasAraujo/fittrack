@@ -2,6 +2,7 @@ import { generateId } from '@fittrack/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { UnfreezeFinancialLedger } from '../../../application/use-cases/unfreeze-financial-ledger.js';
 import { LedgerStatus } from '../../../domain/enums/ledger-status.js';
+import { LedgerStatusChangedEvent } from '../../../domain/events/ledger-status-changed-event.js';
 import { InvalidLedgerStatusTransitionError } from '../../../domain/errors/invalid-ledger-status-transition-error.js';
 import { LedgerNotFoundError } from '../../../domain/errors/ledger-not-found-error.js';
 import { makeFinancialLedger } from '../../factories/make-financial-ledger.js';
@@ -34,6 +35,7 @@ describe('UnfreezeFinancialLedger', () => {
     const result = await useCase.execute({ professionalProfileId, reason: 'Risk resolved' });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.previousStatus).toBe(LedgerStatus.FROZEN);
     expect(result.value.newStatus).toBe(LedgerStatus.ACTIVE);
   });
@@ -56,10 +58,12 @@ describe('UnfreezeFinancialLedger', () => {
 
     await useCase.execute({ professionalProfileId, reason: 'Risk resolved' });
 
-    const events = eventPublisher.getEventsByType('LedgerStatusChanged');
+    const events = eventPublisher.getEventsByType<LedgerStatusChangedEvent>('LedgerStatusChanged');
     expect(events).toHaveLength(1);
-    expect(events[0].payload.newStatus).toBe(LedgerStatus.ACTIVE);
-    expect(events[0].payload.previousStatus).toBe(LedgerStatus.FROZEN);
-    expect(events[0].payload.reason).toBe('Risk resolved');
+    const ev0 = events[0];
+    if (!ev0) throw new Error('expected event');
+    expect(ev0.payload.newStatus).toBe(LedgerStatus.ACTIVE);
+    expect(ev0.payload.previousStatus).toBe(LedgerStatus.FROZEN);
+    expect(ev0.payload.reason).toBe('Risk resolved');
   });
 });

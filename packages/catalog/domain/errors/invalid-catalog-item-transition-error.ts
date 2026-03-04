@@ -1,4 +1,5 @@
 import { DomainError } from '@fittrack/core';
+import type { ErrorCode } from '@fittrack/core';
 import { CatalogErrorCodes } from './catalog-error-codes.js';
 import type { CatalogItemStatus } from '../enums/catalog-item-status.js';
 
@@ -15,7 +16,7 @@ export class InvalidCatalogItemTransitionError extends DomainError {
   constructor(from: CatalogItemStatus, to: CatalogItemStatus) {
     super(
       `CatalogItem cannot transition from ${from} to ${to}.`,
-      CatalogErrorCodes.INVALID_CATALOG_ITEM_TRANSITION,
+      CatalogErrorCodes.INVALID_CATALOG_ITEM_TRANSITION as ErrorCode,
       { from, to },
     );
   }

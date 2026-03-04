@@ -87,6 +87,7 @@ describe('BanProfessional', () => {
       });
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.WATCHLIST);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
     });
@@ -104,6 +105,7 @@ describe('BanProfessional', () => {
       });
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.eventType).toBe('RiskStatusChanged');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
@@ -142,7 +144,9 @@ describe('BanProfessional', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBeNull();
+      const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
+      expect(published.payload.evidenceRef).toBeNull();
     });
 
     // ── Idempotency — BANNED terminal state ───────────────────────────────────

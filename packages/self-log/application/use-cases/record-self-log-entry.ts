@@ -77,7 +77,7 @@ export class RecordSelfLogEntry {
     }
 
     // 3a. Build note value object if provided
-    let note: InstanceType<typeof SelfLogNote> | null = null;
+    let note: SelfLogNote | null = null;
     if (dto.note !== undefined) {
       const noteResult = SelfLogNote.create(dto.note);
       if (noteResult.isLeft()) return left(noteResult.value);

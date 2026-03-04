@@ -30,7 +30,7 @@ export class FreezeFinancialLedger {
     const previousStatus = ledger.status;
 
     const result = ledger.freeze();
-    if (result.isLeft()) return result;
+    if (result.isLeft()) return left(result.value);
 
     await this.ledgerRepository.save(ledger);
 

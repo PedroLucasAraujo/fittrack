@@ -87,6 +87,7 @@ describe('ResolveWatchlist', () => {
       });
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.eventType).toBe('RiskStatusChanged');
       expect(published.aggregateType).toBe('ProfessionalProfile');
       expect(published.payload.previousStatus).toBe(RiskStatus.WATCHLIST);
@@ -126,7 +127,9 @@ describe('ResolveWatchlist', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.reason).toBe('Review complete');
+      const ev0 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev0) throw new Error('expected published event');
+      expect(ev0.payload.reason).toBe('Review complete');
     });
 
     // ── Validation — reason ───────────────────────────────────────────────────

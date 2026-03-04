@@ -1,4 +1,5 @@
 import { DomainError } from '@fittrack/core';
+import type { ErrorCode } from '@fittrack/core';
 import { CatalogErrorCodes } from './catalog-error-codes.js';
 
 /**
@@ -8,6 +9,6 @@ import { CatalogErrorCodes } from './catalog-error-codes.js';
  */
 export class InvalidCatalogItemError extends DomainError {
   constructor(message: string) {
-    super(message, CatalogErrorCodes.INVALID_CATALOG_ITEM);
+    super(message, CatalogErrorCodes.INVALID_CATALOG_ITEM as ErrorCode);
   }
 }
