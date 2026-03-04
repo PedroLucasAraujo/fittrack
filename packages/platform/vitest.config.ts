@@ -13,15 +13,22 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
-      include: ['domain/**/*.ts', 'application/**/*.ts'],
+      include: ['domain/**/*.ts', 'application/**/*.ts', 'jobs/**/*.ts', 'shared/jobs/**/*.ts'],
       exclude: [
         '**/tests/**',
         'vitest.config.ts',
         'dist/**',
         'index.ts',
+        'jobs/index.ts',
+        'shared/jobs/index.ts',
+        'shared/jobs/IScheduledJob.ts',
         'application/dtos/**',
         'application/ports/**',
         'domain/events/**',
+        // Repository interfaces contain no executable code — only type declarations.
+        // Infrastructure implementations live outside this package (ADR-0002).
+        // If a concrete implementation is ever added here, remove this exclusion.
+        'domain/repositories/**',
       ],
       thresholds: {
         lines: 100,

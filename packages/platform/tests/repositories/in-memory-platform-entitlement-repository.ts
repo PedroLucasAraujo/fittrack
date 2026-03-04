@@ -1,5 +1,6 @@
 import type { IPlatformEntitlementRepository } from '../../domain/repositories/platform-entitlement-repository.js';
 import type { PlatformEntitlement } from '../../domain/aggregates/platform-entitlement.js';
+import { EntitlementStatus } from '../../domain/enums/entitlement-status.js';
 
 export class InMemoryPlatformEntitlementRepository implements IPlatformEntitlementRepository {
   items: PlatformEntitlement[] = [];
@@ -26,5 +27,11 @@ export class InMemoryPlatformEntitlementRepository implements IPlatformEntitleme
     } else {
       this.items.push(entitlement);
     }
+  }
+
+  async findExpiredEntitlements(asOfUtc: string): Promise<PlatformEntitlement[]> {
+    return this.items.filter(
+      (e) => e.status === EntitlementStatus.ACTIVE && e.expiresAt !== null && e.expiresAt < asOfUtc,
+    );
   }
 }

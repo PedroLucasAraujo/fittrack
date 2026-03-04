@@ -45,3 +45,8 @@ export { RemoveCapability } from './application/use-cases/remove-capability.js';
 export { SuspendEntitlement } from './application/use-cases/suspend-entitlement.js';
 export { ReinstateEntitlement } from './application/use-cases/reinstate-entitlement.js';
 export { ExpireEntitlement } from './application/use-cases/expire-entitlement.js';
+
+// ── Jobs ──────────────────────────────────────────────────────────────────────
+export { ExpirePlatformEntitlementsJob } from './jobs/index.js';
+export type { IScheduledJob } from './shared/jobs/index.js';
+export { JobResult } from './shared/jobs/index.js';
