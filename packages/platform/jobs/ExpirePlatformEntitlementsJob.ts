@@ -3,7 +3,8 @@ import { JobResult } from '../shared/jobs/JobResult.js';
 import type { IPlatformEntitlementRepository } from '../domain/repositories/platform-entitlement-repository.js';
 import type { ExpireEntitlement } from '../application/use-cases/expire-entitlement.js';
 import type { PlatformEntitlement } from '../domain/aggregates/platform-entitlement.js';
-import type { DomainResult } from '@fittrack/core';
+import type { DomainResult, DomainError } from '@fittrack/core';
+import type { Left } from '@fittrack/core';
 
 type ExpireOutcome = PromiseSettledResult<DomainResult<void>>;
 
@@ -14,13 +15,14 @@ interface FailureDetail {
 
 function extractFailureMessage(result: ExpireOutcome): string {
   if (result.status === 'rejected') return String(result.reason);
-  return (result as PromiseFulfilledResult<DomainResult<void>>).value.value.message;
+  const left = (result as PromiseFulfilledResult<Left<DomainError, void>>).value;
+  return left.value.message;
 }
 
 function extractErrorCode(result: ExpireOutcome): string {
   if (result.status === 'rejected') return 'INFRASTRUCTURE_ERROR';
-  const domainError = (result as PromiseFulfilledResult<DomainResult<void>>).value.value;
-  return String((domainError as { code?: unknown }).code ?? 'DOMAIN_ERROR');
+  const left = (result as PromiseFulfilledResult<Left<DomainError, void>>).value;
+  return String((left.value as { code?: unknown }).code ?? 'DOMAIN_ERROR');
 }
 
 /**
