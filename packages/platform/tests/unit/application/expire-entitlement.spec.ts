@@ -93,6 +93,7 @@ describe('ExpireEntitlement', () => {
 
     const published = publisher.publishedEntitlementExpired[0];
     expect(published).toBeDefined();
+    if (!published) throw new Error('expected published event');
     expect(published.eventType).toBe('EntitlementExpired');
     expect(published.payload.expiredAt).toBeTruthy();
   });

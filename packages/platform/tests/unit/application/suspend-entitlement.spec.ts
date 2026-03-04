@@ -80,6 +80,7 @@ describe('SuspendEntitlement', () => {
 
     const published = publisher.publishedEntitlementSuspended[0];
     expect(published).toBeDefined();
+    if (!published) throw new Error('expected published event');
     expect(published.eventType).toBe('EntitlementSuspended');
     expect(published.payload.reason).toBe('Risk BANNED triggered suspension');
     expect(published.payload.evidenceRef).toBe(evidenceRef);
@@ -119,6 +120,7 @@ describe('SuspendEntitlement', () => {
     });
 
     const published = publisher.publishedEntitlementSuspended[0];
+    if (!published) throw new Error('expected published event');
     expect(published.payload.evidenceRef).toBeNull();
   });
 

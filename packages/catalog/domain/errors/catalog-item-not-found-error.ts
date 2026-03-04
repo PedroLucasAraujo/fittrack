@@ -1,4 +1,5 @@
 import { DomainError } from '@fittrack/core';
+import type { ErrorCode } from '@fittrack/core';
 import { CatalogErrorCodes } from './catalog-error-codes.js';
 
 /**
@@ -12,7 +13,7 @@ export class CatalogItemNotFoundError extends DomainError {
   constructor(catalogItemId: string) {
     super(
       `CatalogItem with id "${catalogItemId}" was not found.`,
-      CatalogErrorCodes.CATALOG_ITEM_NOT_FOUND,
+      CatalogErrorCodes.CATALOG_ITEM_NOT_FOUND as ErrorCode,
       { catalogItemId },
     );
   }

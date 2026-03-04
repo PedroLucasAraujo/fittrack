@@ -98,7 +98,7 @@ export class HandleHighCancellationRateAssessment {
       previousStatus,
       newStatus: profile.riskStatus,
       reason,
-      occurredAtUtc: UTCDateTime.now().value,
+      occurredAtUtc: UTCDateTime.now().toISO(),
     });
 
     // 10. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)

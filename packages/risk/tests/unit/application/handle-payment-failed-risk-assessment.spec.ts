@@ -133,6 +133,7 @@ describe('HandlePaymentFailedRiskAssessment', () => {
       expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(1);
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.WATCHLIST);
     });
@@ -167,7 +168,9 @@ describe('HandlePaymentFailedRiskAssessment', () => {
         windowDays: 30,
       });
 
-      const reason = eventPublisher.publishedRiskStatusChanged[0].payload.reason as string;
+      const ev0 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev0) throw new Error('expected published event');
+      const reason = ev0.payload.reason as string;
       expect(reason).toContain('3');
       expect(reason).toContain('30');
     });
@@ -184,7 +187,9 @@ describe('HandlePaymentFailedRiskAssessment', () => {
         evidenceRef,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBe(evidenceRef);
+      const ev1 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev1) throw new Error('expected published event');
+      expect(ev1.payload.evidenceRef).toBe(evidenceRef);
     });
 
     it('sets evidenceRef to null when not provided in dto', async () => {
@@ -197,7 +202,9 @@ describe('HandlePaymentFailedRiskAssessment', () => {
         windowDays: 30,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBeNull();
+      const ev2 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev2) throw new Error('expected published event');
+      expect(ev2.payload.evidenceRef).toBeNull();
     });
 
     // ── Idempotency — WATCHLIST already ──────────────────────────────────────

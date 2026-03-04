@@ -95,7 +95,7 @@ export class HandleChargebackRiskAssessment {
       previousStatus,
       newStatus: profile.riskStatus,
       reason: `Chargeback registered: transactionId=${event.aggregateId}`,
-      occurredAtUtc: UTCDateTime.now().value,
+      occurredAtUtc: UTCDateTime.now().toISO(),
     });
 
     // 7. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)

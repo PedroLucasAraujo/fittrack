@@ -98,6 +98,7 @@ describe('HandleChargebackRiskAssessment', () => {
       expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(1);
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.WATCHLIST);
     });
@@ -136,7 +137,9 @@ describe('HandleChargebackRiskAssessment', () => {
 
       await useCase.execute(event);
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBe(transactionId);
+      const ev0 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev0) throw new Error('expected published event');
+      expect(ev0.payload.evidenceRef).toBe(transactionId);
     });
 
     it('reason contains transactionId reference on NORMAL → WATCHLIST', async () => {
@@ -151,7 +154,9 @@ describe('HandleChargebackRiskAssessment', () => {
 
       await useCase.execute(event);
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.reason).toContain(transactionId);
+      const ev1 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev1) throw new Error('expected published event');
+      expect(ev1.payload.reason).toContain(transactionId);
     });
 
     // ── WATCHLIST → BANNED (repeated chargeback) ──────────────────────────────
@@ -173,6 +178,7 @@ describe('HandleChargebackRiskAssessment', () => {
       expect(auditLog.written).toHaveLength(1);
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.WATCHLIST);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
     });
@@ -189,7 +195,9 @@ describe('HandleChargebackRiskAssessment', () => {
 
       await useCase.execute(event);
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBe(transactionId);
+      const ev2 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev2) throw new Error('expected published event');
+      expect(ev2.payload.evidenceRef).toBe(transactionId);
     });
 
     // ── Idempotency — BANNED terminal state ───────────────────────────────────

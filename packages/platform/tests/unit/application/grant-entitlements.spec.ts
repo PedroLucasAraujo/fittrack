@@ -74,6 +74,7 @@ describe('GrantEntitlements', () => {
 
     const published = publisher.publishedEntitlementGranted[0];
     expect(published).toBeDefined();
+    if (!published) throw new Error('expected published event');
     expect(published.eventType).toBe('EntitlementGranted');
     expect(published.aggregateType).toBe('PlatformEntitlement');
     expect(published.tenantId).toBe(professionalProfileId);

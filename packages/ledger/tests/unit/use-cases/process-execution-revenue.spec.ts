@@ -2,6 +2,9 @@ import { generateId } from '@fittrack/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ProcessExecutionRevenue } from '../../../application/use-cases/process-execution-revenue.js';
 import { LedgerEntryType } from '../../../domain/enums/ledger-entry-type.js';
+import { LedgerBalanceChangedEvent } from '../../../domain/events/ledger-balance-changed-event.js';
+import { RevenueRecordedEvent } from '../../../domain/events/revenue-recorded-event.js';
+import { PlatformFeeRecordedEvent } from '../../../domain/events/platform-fee-recorded-event.js';
 import { InMemoryFinancialLedgerRepository } from '../../repositories/in-memory-financial-ledger-repository.js';
 import { LedgerEventPublisherStub } from '../../stubs/ledger-event-publisher-stub.js';
 import { makeFinancialLedger } from '../../factories/make-financial-ledger.js';
@@ -45,6 +48,7 @@ describe('ProcessExecutionRevenue', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     const output = result.value;
 
     expect(output.professionalAmountCents).toBe(9000);
@@ -71,6 +75,7 @@ describe('ProcessExecutionRevenue', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.currentBalanceCents).toBe(13000); // 5000 + 9000 − 1000
     expect(repository.count()).toBe(1); // no new ledger created
   });
@@ -85,6 +90,7 @@ describe('ProcessExecutionRevenue', () => {
 
     expect(first.isRight()).toBe(true);
     expect(second.isRight()).toBe(true);
+    if (!first.isRight() || !second.isRight()) throw new Error('expected Right');
     expect(second.value.revenueEntryId).toBe(first.value.revenueEntryId);
     expect(second.value.platformFeeEntryId).toBe(first.value.platformFeeEntryId);
     expect(second.value.currentBalanceCents).toBe(8000); // not doubled
@@ -95,23 +101,30 @@ describe('ProcessExecutionRevenue', () => {
 
     await useCase.execute(dto);
 
-    const revenueEvents = eventPublisher.getEventsByType('RevenueRecorded');
-    const feeEvents = eventPublisher.getEventsByType('PlatformFeeRecorded');
-    const balanceEvents = eventPublisher.getEventsByType('LedgerBalanceChanged');
+    const revenueEvents = eventPublisher.getEventsByType<RevenueRecordedEvent>('RevenueRecorded');
+    const feeEvents =
+      eventPublisher.getEventsByType<PlatformFeeRecordedEvent>('PlatformFeeRecorded');
+    const balanceEvents =
+      eventPublisher.getEventsByType<LedgerBalanceChangedEvent>('LedgerBalanceChanged');
 
     expect(revenueEvents).toHaveLength(1);
     expect(feeEvents).toHaveLength(1);
     expect(balanceEvents).toHaveLength(1);
 
-    expect(revenueEvents[0].payload.executionId).toBe(dto.executionId);
-    expect(revenueEvents[0].payload.amountCents).toBe(9000);
-    expect(feeEvents[0].payload.executionId).toBe(dto.executionId);
-    expect(feeEvents[0].payload.amountCents).toBe(1000);
+    const revEv0 = revenueEvents[0];
+    const feeEv0 = feeEvents[0];
+    const balEv0 = balanceEvents[0];
+    if (!revEv0 || !feeEv0 || !balEv0) throw new Error('expected events');
 
-    expect(balanceEvents[0].payload.entryType).toBe(LedgerEntryType.REVENUE);
-    expect(balanceEvents[0].payload.previousBalanceCents).toBe(0);
-    expect(balanceEvents[0].payload.newBalanceCents).toBe(8000);
-    expect(balanceEvents[0].payload.isInDebt).toBe(false);
+    expect(revEv0.payload.executionId).toBe(dto.executionId);
+    expect(revEv0.payload.amountCents).toBe(9000);
+    expect(feeEv0.payload.executionId).toBe(dto.executionId);
+    expect(feeEv0.payload.amountCents).toBe(1000);
+
+    expect(balEv0.payload.entryType).toBe(LedgerEntryType.REVENUE);
+    expect(balEv0.payload.previousBalanceCents).toBe(0);
+    expect(balEv0.payload.newBalanceCents).toBe(8000);
+    expect(balEv0.payload.isInDebt).toBe(false);
   });
 
   it('returns Left for invalid amount (negative cents rejected by Money)', async () => {
@@ -145,11 +158,15 @@ describe('ProcessExecutionRevenue', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.currentBalanceCents).toBe(-1000);
     expect(result.value.isInDebt).toBe(true);
 
-    const balanceEvents = eventPublisher.getEventsByType('LedgerBalanceChanged');
-    expect(balanceEvents[0].payload.isInDebt).toBe(true);
+    const balanceEvents =
+      eventPublisher.getEventsByType<LedgerBalanceChangedEvent>('LedgerBalanceChanged');
+    const balEv0b = balanceEvents[0];
+    if (!balEv0b) throw new Error('expected event');
+    expect(balEv0b.payload.isInDebt).toBe(true);
   });
 
   it('returns Left for invalid platform fee currency', async () => {

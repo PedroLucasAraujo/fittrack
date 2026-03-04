@@ -162,6 +162,7 @@ describe('ProcessAdministrativeRiskReport', () => {
       expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(1);
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.WATCHLIST);
     });
@@ -244,6 +245,7 @@ describe('ProcessAdministrativeRiskReport', () => {
       expect(eventPublisher.publishedRiskStatusChanged).toHaveLength(1);
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
     });
@@ -260,6 +262,7 @@ describe('ProcessAdministrativeRiskReport', () => {
       });
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.payload.previousStatus).toBe(RiskStatus.WATCHLIST);
       expect(published.payload.newStatus).toBe(RiskStatus.BANNED);
     });
@@ -319,7 +322,9 @@ describe('ProcessAdministrativeRiskReport', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBe(evidenceRef);
+      const ev0 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev0) throw new Error('expected published event');
+      expect(ev0.payload.evidenceRef).toBe(evidenceRef);
     });
 
     it('sets evidenceRef to null when not provided', async () => {
@@ -333,7 +338,9 @@ describe('ProcessAdministrativeRiskReport', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBeNull();
+      const ev1 = eventPublisher.publishedRiskStatusChanged[0];
+      if (!ev1) throw new Error('expected published event');
+      expect(ev1.payload.evidenceRef).toBeNull();
     });
   });
 });

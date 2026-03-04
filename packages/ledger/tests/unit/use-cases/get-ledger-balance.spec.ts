@@ -35,6 +35,7 @@ describe('GetLedgerBalance', () => {
     const result = await useCase.execute({ professionalProfileId });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     const output = result.value;
 
     expect(output.currentBalanceCents).toBe(42000);
@@ -55,6 +56,7 @@ describe('GetLedgerBalance', () => {
     const result = await useCase.execute({ professionalProfileId });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.isInDebt).toBe(true);
     expect(result.value.currentBalanceCents).toBe(-5000);
   });
@@ -67,6 +69,7 @@ describe('GetLedgerBalance', () => {
     const result = await useCase.execute({ professionalProfileId });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.lastReconciledAtUtc).toBeNull();
   });
 
@@ -79,6 +82,7 @@ describe('GetLedgerBalance', () => {
     const result = await useCase.execute({ professionalProfileId });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.lastReconciledAtUtc).not.toBeNull();
     expect(result.value.lastReconciledAtUtc).toMatch(/Z$/);
   });

@@ -93,7 +93,7 @@ export class ProcessAdministrativeRiskReport {
       previousStatus,
       newStatus: profile.riskStatus,
       reason: trimmedReason,
-      occurredAtUtc: UTCDateTime.now().value,
+      occurredAtUtc: UTCDateTime.now().toISO(),
     });
 
     // 8. Publish RiskStatusChanged v2 post-commit (ADR-0009 §4)

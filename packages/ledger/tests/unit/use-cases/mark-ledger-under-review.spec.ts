@@ -2,6 +2,7 @@ import { generateId } from '@fittrack/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MarkLedgerUnderReview } from '../../../application/use-cases/mark-ledger-under-review.js';
 import { LedgerStatus } from '../../../domain/enums/ledger-status.js';
+import { LedgerStatusChangedEvent } from '../../../domain/events/ledger-status-changed-event.js';
 import { InvalidLedgerStatusTransitionError } from '../../../domain/errors/invalid-ledger-status-transition-error.js';
 import { LedgerNotFoundError } from '../../../domain/errors/ledger-not-found-error.js';
 import { makeFinancialLedger } from '../../factories/make-financial-ledger.js';
@@ -34,6 +35,7 @@ describe('MarkLedgerUnderReview', () => {
     const result = await useCase.execute({ professionalProfileId, reason: 'Negative balance' });
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     expect(result.value.previousStatus).toBe(LedgerStatus.ACTIVE);
     expect(result.value.newStatus).toBe(LedgerStatus.UNDER_REVIEW);
   });
@@ -59,10 +61,12 @@ describe('MarkLedgerUnderReview', () => {
 
     await useCase.execute({ professionalProfileId, reason: 'Negative balance escalation' });
 
-    const events = eventPublisher.getEventsByType('LedgerStatusChanged');
+    const events = eventPublisher.getEventsByType<LedgerStatusChangedEvent>('LedgerStatusChanged');
     expect(events).toHaveLength(1);
-    expect(events[0].payload.newStatus).toBe(LedgerStatus.UNDER_REVIEW);
-    expect(events[0].payload.previousStatus).toBe(LedgerStatus.ACTIVE);
-    expect(events[0].payload.reason).toBe('Negative balance escalation');
+    const ev0 = events[0];
+    if (!ev0) throw new Error('expected event');
+    expect(ev0.payload.newStatus).toBe(LedgerStatus.UNDER_REVIEW);
+    expect(ev0.payload.previousStatus).toBe(LedgerStatus.ACTIVE);
+    expect(ev0.payload.reason).toBe('Negative balance escalation');
   });
 });

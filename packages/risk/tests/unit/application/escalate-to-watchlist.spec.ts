@@ -87,6 +87,7 @@ describe('EscalateToWatchlist', () => {
       });
 
       const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
       expect(published.eventType).toBe('RiskStatusChanged');
       expect(published.aggregateType).toBe('ProfessionalProfile');
       expect(published.payload.previousStatus).toBe(RiskStatus.NORMAL);
@@ -128,7 +129,9 @@ describe('EscalateToWatchlist', () => {
         ...MOCK_ACTOR,
       });
 
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.evidenceRef).toBe(evidenceRef);
+      const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
+      expect(published.payload.evidenceRef).toBe(evidenceRef);
     });
 
     it('trims whitespace from reason before validating and publishing', async () => {
@@ -142,9 +145,9 @@ describe('EscalateToWatchlist', () => {
       });
 
       expect(result.isRight()).toBe(true);
-      expect(eventPublisher.publishedRiskStatusChanged[0].payload.reason).toBe(
-        'Valid reason after trim',
-      );
+      const published = eventPublisher.publishedRiskStatusChanged[0];
+      if (!published) throw new Error('expected published event');
+      expect(published.payload.reason).toBe('Valid reason after trim');
     });
 
     // ── Validation — reason ───────────────────────────────────────────────────

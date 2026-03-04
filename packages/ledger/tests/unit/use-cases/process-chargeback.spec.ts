@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { ProcessChargeback } from '../../../application/use-cases/process-chargeback.js';
 import { LedgerEntryType } from '../../../domain/enums/ledger-entry-type.js';
 import { LedgerNotFoundError } from '../../../domain/errors/ledger-not-found-error.js';
+import { LedgerBalanceChangedEvent } from '../../../domain/events/ledger-balance-changed-event.js';
+import { RefundRecordedEvent } from '../../../domain/events/refund-recorded-event.js';
 import { makeFinancialLedger } from '../../factories/make-financial-ledger.js';
 import { InMemoryFinancialLedgerRepository } from '../../repositories/in-memory-financial-ledger-repository.js';
 import { LedgerEventPublisherStub } from '../../stubs/ledger-event-publisher-stub.js';
@@ -65,6 +67,7 @@ describe('ProcessChargeback', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     const output = result.value;
 
     // Revenue reversal (−9000) + fee reversal (+1000) = net −8000
@@ -86,6 +89,7 @@ describe('ProcessChargeback', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
+    if (!result.isRight()) throw new Error('expected Right');
     // Revenue reversal −9000, fee reversal +1000 → net −8000
     expect(result.value.currentBalanceCents).toBe(-8000);
     expect(result.value.isInDebt).toBe(true);
@@ -100,12 +104,15 @@ describe('ProcessChargeback', () => {
 
     await useCase.execute(dto);
 
-    const refundEvents = eventPublisher.getEventsByType('RefundRecorded');
-    const balanceEvents = eventPublisher.getEventsByType('LedgerBalanceChanged');
+    const refundEvents = eventPublisher.getEventsByType<RefundRecordedEvent>('RefundRecorded');
+    const balanceEvents =
+      eventPublisher.getEventsByType<LedgerBalanceChangedEvent>('LedgerBalanceChanged');
 
     expect(refundEvents).toHaveLength(2);
     expect(balanceEvents).toHaveLength(1);
-    expect(balanceEvents[0].payload.entryType).toBe(LedgerEntryType.REFUND);
+    const balanceEv0 = balanceEvents[0];
+    if (!balanceEv0) throw new Error('expected event');
+    expect(balanceEv0.payload.entryType).toBe(LedgerEntryType.REFUND);
   });
 
   it('is idempotent: same chargebackId returns same entries', async () => {
@@ -127,6 +134,7 @@ describe('ProcessChargeback', () => {
 
     expect(first.isRight()).toBe(true);
     expect(second.isRight()).toBe(true);
+    if (!first.isRight() || !second.isRight()) throw new Error('expected Right');
     expect(second.value.revenueRefundEntryId).toBe(first.value.revenueRefundEntryId);
     expect(second.value.currentBalanceCents).toBe(first.value.currentBalanceCents);
   });
@@ -154,8 +162,11 @@ describe('ProcessChargeback', () => {
     const result = await useCase.execute(dto);
 
     expect(result.isRight()).toBe(true);
-    const refundEvents = eventPublisher.getEventsByType('RefundRecorded');
-    expect(refundEvents[0].payload.referenceEntryId).toBe(revenueEntryId);
-    expect(refundEvents[1].payload.referenceEntryId).toBe(platformFeeEntryId);
+    const refundEvents = eventPublisher.getEventsByType<RefundRecordedEvent>('RefundRecorded');
+    const refundEv0 = refundEvents[0];
+    const refundEv1 = refundEvents[1];
+    if (!refundEv0 || !refundEv1) throw new Error('expected 2 refund events');
+    expect(refundEv0.payload.referenceEntryId).toBe(revenueEntryId);
+    expect(refundEv1.payload.referenceEntryId).toBe(platformFeeEntryId);
   });
 });

@@ -17,7 +17,7 @@ type LedgerOverrides = Partial<{
  */
 export function makeNewFinancialLedger(overrides: LedgerOverrides = {}): FinancialLedger {
   const result = FinancialLedger.create({
-    id: overrides.id,
+    ...(overrides.id !== undefined ? { id: overrides.id } : {}),
     professionalProfileId: overrides.professionalProfileId ?? generateId(),
     currency: overrides.currency ?? 'BRL',
   });

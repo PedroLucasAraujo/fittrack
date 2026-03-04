@@ -65,6 +65,7 @@ describe('AddCapability', () => {
     expect(publisher.publishedCapabilityAdded).toHaveLength(1);
 
     const published = publisher.publishedCapabilityAdded[0];
+    if (!published) throw new Error('expected published event');
     expect(published.payload.capability).toBe(EntitlementType.MULTI_PROFILE);
     expect(published.payload.reason).toBe('Upgrade requested');
   });

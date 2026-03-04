@@ -73,10 +73,16 @@ export class InMemoryCatalogItemRepository implements ICatalogItemRepository {
     }
 
     const total = filtered.length;
-    const offset = (page.page - 1) * page.pageSize;
-    const data = filtered.slice(offset, offset + page.pageSize);
+    const offset = (page.page - 1) * page.limit;
+    const data = filtered.slice(offset, offset + page.limit);
 
-    return { data, total, page: page.page, pageSize: page.pageSize };
+    return {
+      items: data,
+      total,
+      page: page.page,
+      limit: page.limit,
+      hasNextPage: page.page * page.limit < total,
+    };
   }
 
   async findManyByProfessionalProfileId(
@@ -96,9 +102,15 @@ export class InMemoryCatalogItemRepository implements ICatalogItemRepository {
     }
 
     const total = filtered.length;
-    const offset = (page.page - 1) * page.pageSize;
-    const data = filtered.slice(offset, offset + page.pageSize);
+    const offset = (page.page - 1) * page.limit;
+    const data = filtered.slice(offset, offset + page.limit);
 
-    return { data, total, page: page.page, pageSize: page.pageSize };
+    return {
+      items: data,
+      total,
+      page: page.page,
+      limit: page.limit,
+      hasNextPage: page.page * page.limit < total,
+    };
   }
 }

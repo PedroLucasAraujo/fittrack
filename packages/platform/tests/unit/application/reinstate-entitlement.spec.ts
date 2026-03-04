@@ -77,6 +77,7 @@ describe('ReinstateEntitlement', () => {
 
     const published = publisher.publishedEntitlementReinstated[0];
     expect(published).toBeDefined();
+    if (!published) throw new Error('expected published event');
     expect(published.eventType).toBe('EntitlementReinstated');
     expect(published.payload.reason).toBe('Payment restored');
   });

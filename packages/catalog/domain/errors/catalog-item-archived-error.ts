@@ -1,4 +1,5 @@
 import { DomainError } from '@fittrack/core';
+import type { ErrorCode } from '@fittrack/core';
 import { CatalogErrorCodes } from './catalog-error-codes.js';
 
 /**
@@ -11,7 +12,7 @@ export class CatalogItemArchivedError extends DomainError {
   constructor(catalogItemId: string) {
     super(
       `CatalogItem "${catalogItemId}" is ARCHIVED and cannot be modified.`,
-      CatalogErrorCodes.CATALOG_ITEM_ARCHIVED,
+      CatalogErrorCodes.CATALOG_ITEM_ARCHIVED as ErrorCode,
       { catalogItemId },
     );
   }

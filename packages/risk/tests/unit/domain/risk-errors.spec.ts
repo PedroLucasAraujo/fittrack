@@ -27,7 +27,7 @@ describe('InvalidRiskReasonError', () => {
   it('context reasonLength reflects the original (untrimmed) reason length', () => {
     const reason = '   '; // whitespace-only, length 3
     const error = new InvalidRiskReasonError(reason);
-    expect(error.context?.reasonLength).toBe(3);
+    expect(error.context?.['reasonLength']).toBe(3);
   });
 
   it('is an instance of Error', () => {
