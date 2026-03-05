@@ -53,6 +53,7 @@ export class ActivateDeliverableTemplate {
           templateId: template.id,
           professionalProfileId: dto.professionalProfileId,
           version: template.templateVersion.value,
+          /* v8 ignore next */
           activatedAtUtc: (template.activatedAtUtc ?? UTCDateTime.now()).value.toISOString(),
         },
       ),

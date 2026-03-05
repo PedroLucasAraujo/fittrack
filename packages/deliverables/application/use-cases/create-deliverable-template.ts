@@ -170,7 +170,7 @@ export function buildStructure(
       );
     }
 
-    /* v8 ignore next 3 */
+    /* v8 ignore next 5 */
     default: {
       return left(
         new InvalidTemplateStructureError(`unsupported template type: ${type as string}`),

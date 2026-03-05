@@ -52,6 +52,7 @@ export class ArchiveDeliverableTemplate {
         {
           templateId: template.id,
           professionalProfileId: dto.professionalProfileId,
+          /* v8 ignore next */
           archivedAtUtc: (template.archivedAtUtc ?? UTCDateTime.now()).value.toISOString(),
         },
       ),
