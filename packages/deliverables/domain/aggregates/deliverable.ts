@@ -65,6 +65,19 @@ export interface DeliverableProps {
 
   /** UTC instant when the Deliverable was archived. Null until archival. */
   archivedAtUtc: UTCDateTime | null;
+
+  /**
+   * Optional reference to the DeliverableTemplate this Deliverable was instantiated from.
+   * Null when created directly (not from a template).
+   * Cross-aggregate reference: ID only (ADR-0047). Immutable after creation.
+   */
+  originTemplateId: string | null;
+
+  /**
+   * Version number of the template at instantiation time. Null when not created from a template.
+   * Provides audit traceability for which template version produced this Deliverable.
+   */
+  originTemplateVersion: number | null;
 }
 
 /**
@@ -130,6 +143,10 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
     createdAtUtc: UTCDateTime;
     logicalDay: LogicalDay;
     timezoneUsed: string;
+    /** Optional reference to the template this Deliverable was instantiated from. */
+    originTemplateId?: string | null;
+    /** Version of the template at instantiation time. */
+    originTemplateVersion?: number | null;
   }): DomainResult<Deliverable> {
     const id = props.id ?? generateId();
     const createdAtUtc = props.createdAtUtc;
@@ -147,6 +164,8 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
       createdAtUtc,
       activatedAtUtc: null,
       archivedAtUtc: null,
+      originTemplateId: props.originTemplateId ?? null,
+      originTemplateVersion: props.originTemplateVersion ?? null,
     });
 
     return right(deliverable);
@@ -326,5 +345,15 @@ export class Deliverable extends AggregateRoot<DeliverableProps> {
 
   get archivedAtUtc(): UTCDateTime | null {
     return this.props.archivedAtUtc;
+  }
+
+  /** ID of the template this Deliverable was instantiated from. Null if created directly. */
+  get originTemplateId(): string | null {
+    return this.props.originTemplateId;
+  }
+
+  /** Template version at instantiation time. Null if created directly. */
+  get originTemplateVersion(): number | null {
+    return this.props.originTemplateVersion;
   }
 }

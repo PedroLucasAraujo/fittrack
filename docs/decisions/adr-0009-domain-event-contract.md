@@ -159,6 +159,11 @@ The following events are formally recognized. All events conform to the structur
 | `EntitlementReinstated` | PlatformEntitlement | Platform | entitlementId, reason |
 | `EntitlementExpired` | PlatformEntitlement | Platform | entitlementId, expiredAt |
 | `TemplateVersionChanged` | CatalogItem | Catalog | catalogItemId, professionalProfileId, previousVersion, newVersion |
+| `DeliverableTemplateCreated` | DeliverableTemplate | Deliverables | templateId, professionalProfileId, name, type, version |
+| `DeliverableTemplateActivated` | DeliverableTemplate | Deliverables | templateId, professionalProfileId, version, activatedAtUtc |
+| `DeliverableTemplateArchived` | DeliverableTemplate | Deliverables | templateId, professionalProfileId, archivedAtUtc |
+| `DeliverableTemplateVersioned` | DeliverableTemplate | Deliverables | newTemplateId, previousTemplateId, professionalProfileId, newVersion |
+| `DeliverableTemplateInstantiated` | DeliverableTemplate | Deliverables | templateId, templateVersion, deliverableId, professionalProfileId, occurredAtUtc |
 
 ### §8. Event Versioning Policy
 

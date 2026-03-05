@@ -29,6 +29,7 @@ An Aggregate Root is an entity that:
 | `ServicePlan` | ServicePlan / Catalog | — | `ServicePlanCreated`, `ServicePlanActivated`, `ServicePlanDeleted` |
 | `CatalogItem` | Catalog | — | `TemplateVersionChanged` (cache invalidation per ADR-0030) |
 | `Deliverable` | Deliverables | ExerciseAssignment | — (no domain events emitted at current implementation scope; ADR-0009 §1) |
+| `DeliverableTemplate` | Deliverables | — | `DeliverableTemplateCreated`, `DeliverableTemplateActivated`, `DeliverableTemplateArchived`, `DeliverableTemplateVersioned`, `DeliverableTemplateInstantiated` |
 | `Session` | Scheduling | — | `SessionCreated`, `SessionArchived` |
 | `WorkingAvailability` | Scheduling | — | `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated` |
 | `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted`, `BookingNoShow` |
@@ -100,6 +101,7 @@ Each aggregate root has exactly one repository interface following the naming co
 interface IExecutionRepository
 interface IAccessGrantRepository
 interface IDeliverableRepository
+interface IDeliverableTemplateRepository
 interface ICatalogItemRepository
 interface IServicePlanRepository
 interface ITransactionRepository

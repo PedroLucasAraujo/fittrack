@@ -22,6 +22,8 @@ export default defineConfig({
         'domain/repositories/**',
         'application/dtos/**',
         'domain/events/**',
+        'domain/value-objects/template-structure/i-template-structure.ts',
+        'application/ports/**',
       ],
       thresholds: {
         lines: 100,

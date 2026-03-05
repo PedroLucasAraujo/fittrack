@@ -57,6 +57,8 @@ export function makeDeliverable(overrides: DeliverableOverrides = {}): Deliverab
     createdAtUtc: UTCDateTime.now(),
     activatedAtUtc: overrides.activatedAtUtc !== undefined ? overrides.activatedAtUtc : null,
     archivedAtUtc: overrides.archivedAtUtc !== undefined ? overrides.archivedAtUtc : null,
+    originTemplateId: null,
+    originTemplateVersion: null,
   };
 
   return Deliverable.reconstitute(overrides.id ?? generateId(), props, overrides.version ?? 0);
