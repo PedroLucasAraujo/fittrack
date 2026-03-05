@@ -129,10 +129,7 @@ export class ComputeWeeklyVolumeMetricsJob implements IScheduledJob {
         ),
       );
 
-      const succeeded = results.filter(
-        (r): r is PromiseFulfilledResult<DomainResult<unknown>> =>
-          r.status === 'fulfilled' && r.value.isRight(),
-      ).length;
+      const succeeded = results.filter((r) => r.status === 'fulfilled' && r.value.isRight()).length;
 
       const failed = results.length - succeeded;
 
