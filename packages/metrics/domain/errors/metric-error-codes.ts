@@ -1,5 +1,9 @@
 export const MetricErrorCodes = {
   METRIC_INVALID: 'METRICS.METRIC_INVALID',
+  METRIC_NOT_FOUND: 'METRICS.METRIC_NOT_FOUND',
+  COMPUTATION_FAILED: 'METRICS.COMPUTATION_FAILED',
+  INVALID_WEEK_START_DATE: 'METRICS.INVALID_WEEK_START_DATE',
+  INVALID_USER_ID: 'METRICS.INVALID_USER_ID',
 } as const;
 
 export type MetricErrorCode = (typeof MetricErrorCodes)[keyof typeof MetricErrorCodes];
