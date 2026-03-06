@@ -1,0 +1,22 @@
+{
+  "name": "@fittrack/achievements",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@fittrack/core": "file:../core"
+  },
+  "devDependencies": {
+    "@types/node": "25.2.3",
+    "@vitest/coverage-v8": "2.1.9",
+    "typescript": "5.9.3",
+    "vitest": "2.1.9"
+  }
+}
