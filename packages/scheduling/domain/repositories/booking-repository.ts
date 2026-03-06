@@ -1,5 +1,4 @@
-import type { IRepository } from '@fittrack/core';
-import type { UniqueEntityId } from '@fittrack/core';
+import type { IRepository, UniqueEntityId, UTCDateTime } from '@fittrack/core';
 import type { Booking } from '../aggregates/booking.js';
 
 /**
@@ -35,4 +34,21 @@ export interface IBookingRepository extends IRepository<Booking> {
     id: UniqueEntityId,
     professionalProfileId: string,
   ): Promise<Booking | null>;
+
+  /**
+   * Returns open bookings (PENDING | CONFIRMED) for a professional whose
+   * `scheduledAtUtc` falls within the half-open interval [startUtc, endUtc).
+   *
+   * Used by `IAvailabilityQueryService` implementations to detect schedule
+   * conflicts before rescheduling (ADR-0025 — always scoped to tenant).
+   *
+   * @param excludeBookingId — ID of the booking being rescheduled; excluded
+   *   from results to avoid self-collision detection.
+   */
+  findConflictingBookings(
+    professionalProfileId: string,
+    startUtc: UTCDateTime,
+    endUtc: UTCDateTime,
+    excludeBookingId?: string,
+  ): Promise<Booking[]>;
 }

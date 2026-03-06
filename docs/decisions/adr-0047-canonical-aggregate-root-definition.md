@@ -32,7 +32,7 @@ An Aggregate Root is an entity that:
 | `DeliverableTemplate` | Deliverables | — | `DeliverableTemplateCreated`, `DeliverableTemplateActivated`, `DeliverableTemplateArchived`, `DeliverableTemplateVersioned`, `DeliverableTemplateInstantiated` |
 | `Session` | Scheduling | — | `SessionCreated`, `SessionArchived` |
 | `WorkingAvailability` | Scheduling | — | `WorkingAvailabilityCreated`, `WorkingAvailabilityUpdated` |
-| `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted`, `BookingNoShow` |
+| `Booking` | Scheduling | — | `BookingCreated`, `BookingConfirmed`, `BookingCancelled`, `BookingCompleted`, `BookingNoShow`, `BookingRescheduled` |
 | `RecurringSchedule` | Scheduling | RecurringSession | `RecurringScheduleCreated`, `RecurringSessionAdded` |
 | `Execution` | Execution | ExecutionCorrection | `ExecutionRecorded`, `ExecutionCorrectionRecorded` |
 | `SelfLog` | Execution / PersonalMode | — | `SelfLogRecorded`, `SelfLogCorrectionProjected` |

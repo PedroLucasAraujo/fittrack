@@ -1,4 +1,4 @@
-import type { UniqueEntityId } from '@fittrack/core';
+import type { UniqueEntityId, UTCDateTime } from '@fittrack/core';
 import type { IBookingRepository } from '../../domain/repositories/booking-repository.js';
 import type { Booking } from '../../domain/aggregates/booking.js';
 import { BookingStatus } from '../../domain/enums/booking-status.js';
@@ -51,5 +51,25 @@ export class InMemoryBookingRepository implements IBookingRepository {
         (b) => b.id === id.value && b.professionalProfileId === professionalProfileId,
       ) ?? null
     );
+  }
+
+  async findConflictingBookings(
+    professionalProfileId: string,
+    startUtc: UTCDateTime,
+    endUtc: UTCDateTime,
+    excludeBookingId?: string,
+  ): Promise<Booking[]> {
+    const startMs = startUtc.value.getTime();
+    const endMs = endUtc.value.getTime();
+
+    return this.items.filter((b) => {
+      if (b.professionalProfileId !== professionalProfileId) return false;
+      if (excludeBookingId && b.id === excludeBookingId) return false;
+      if (b.status !== BookingStatus.PENDING && b.status !== BookingStatus.CONFIRMED) return false;
+
+      // Check if booking start falls within [startMs, endMs)
+      const bookingStartMs = b.scheduledAtUtc.value.getTime();
+      return bookingStartMs >= startMs && bookingStartMs < endMs;
+    });
   }
 }

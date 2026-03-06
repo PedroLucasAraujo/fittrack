@@ -20,6 +20,7 @@ export default defineConfig({
         'dist/**',
         'index.ts',
         'domain/repositories/**',
+        'domain/services/**',
         'application/dtos/**',
         'application/ports/**',
         'domain/events/**',

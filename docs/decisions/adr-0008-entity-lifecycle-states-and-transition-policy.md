@@ -69,6 +69,16 @@ CONFIRMED → COMPLETED (event: BookingCompleted)
 CONFIRMED → NO_SHOW (event: BookingNoShow)
 ```
 
+**Rescheduling (PENDING | CONFIRMED):**
+```
+PENDING → PENDING (event: BookingRescheduled — status unchanged; scheduledAtUtc and logicalDay updated)
+CONFIRMED → CONFIRMED (event: BookingRescheduled — status unchanged; scheduledAtUtc and logicalDay updated)
+```
+
+Rescheduling is not a status transition. It updates `scheduledAtUtc` and `logicalDay` in place and records
+`rescheduleCount` and `lastRescheduledAtUtc`. Only bookings in open states (PENDING, CONFIRMED) may be
+rescheduled. Terminal states are ineligible (ADR-0022).
+
 Terminal states: All `CANCELLED_*`, `COMPLETED`, `NO_SHOW`.
 
 ### 4. AccessGrant Lifecycle

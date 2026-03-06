@@ -16,6 +16,8 @@ type BookingOverrides = Partial<{
   cancelledAtUtc: UTCDateTime | null;
   completedAtUtc: UTCDateTime | null;
   executionId: string | null;
+  rescheduleCount: number;
+  lastRescheduledAtUtc: UTCDateTime | null;
   version: number;
 }>;
 
@@ -38,6 +40,8 @@ export function makeBooking(overrides: BookingOverrides = {}): Booking {
       completedAtUtc: overrides.completedAtUtc ?? null,
       executionId: overrides.executionId ?? null,
       createdAtUtc: UTCDateTime.now(),
+      rescheduleCount: overrides.rescheduleCount ?? 0,
+      lastRescheduledAtUtc: overrides.lastRescheduledAtUtc ?? null,
     },
     overrides.version ?? 0,
   );

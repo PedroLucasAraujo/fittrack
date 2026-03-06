@@ -4,6 +4,7 @@ import type { BookingCancelledBySystem } from '../../domain/events/booking-cance
 import type { BookingCompleted } from '../../domain/events/booking-completed.js';
 import type { BookingConfirmed } from '../../domain/events/booking-confirmed.js';
 import type { BookingNoShow } from '../../domain/events/booking-no-show.js';
+import type { BookingRescheduled } from '../../domain/events/booking-rescheduled.js';
 import type { RecurringScheduleCreated } from '../../domain/events/recurring-schedule-created.js';
 
 export class InMemorySchedulingEventPublisherStub implements ISchedulingEventPublisher {
@@ -12,6 +13,7 @@ export class InMemorySchedulingEventPublisherStub implements ISchedulingEventPub
   public publishedBookingCancelledBySystem: BookingCancelledBySystem[] = [];
   public publishedBookingCompleted: BookingCompleted[] = [];
   public publishedBookingNoShow: BookingNoShow[] = [];
+  public publishedBookingRescheduled: BookingRescheduled[] = [];
   public publishedRecurringScheduleCreated: RecurringScheduleCreated[] = [];
 
   async publishBookingConfirmed(event: BookingConfirmed): Promise<void> {
@@ -32,6 +34,10 @@ export class InMemorySchedulingEventPublisherStub implements ISchedulingEventPub
 
   async publishBookingNoShow(event: BookingNoShow): Promise<void> {
     this.publishedBookingNoShow.push(event);
+  }
+
+  async publishBookingRescheduled(event: BookingRescheduled): Promise<void> {
+    this.publishedBookingRescheduled.push(event);
   }
 
   async publishRecurringScheduleCreated(event: RecurringScheduleCreated): Promise<void> {

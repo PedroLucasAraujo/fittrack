@@ -3,6 +3,7 @@ import type { BookingCancelledBySystem } from '../../domain/events/booking-cance
 import type { BookingCompleted } from '../../domain/events/booking-completed.js';
 import type { BookingConfirmed } from '../../domain/events/booking-confirmed.js';
 import type { BookingNoShow } from '../../domain/events/booking-no-show.js';
+import type { BookingRescheduled } from '../../domain/events/booking-rescheduled.js';
 import type { RecurringScheduleCreated } from '../../domain/events/recurring-schedule-created.js';
 
 /**
@@ -20,6 +21,7 @@ export interface ISchedulingEventPublisher {
   publishBookingCancelledBySystem(event: BookingCancelledBySystem): Promise<void>;
   publishBookingCompleted(event: BookingCompleted): Promise<void>;
   publishBookingNoShow(event: BookingNoShow): Promise<void>;
+  publishBookingRescheduled(event: BookingRescheduled): Promise<void>;
 
   // ── RecurringSchedule events ────────────────────────────────────────────
   publishRecurringScheduleCreated(event: RecurringScheduleCreated): Promise<void>;
