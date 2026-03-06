@@ -51,6 +51,11 @@ describe('CreateAchievementDefinition', () => {
     useCase = new CreateAchievementDefinition(definitionRepo, eventPublisher);
   });
 
+  it('creates a definition with an explicit timeWindow', async () => {
+    const result = await useCase.execute(makeDTO({ timeWindow: 'monthly' }));
+    expect(result.isRight()).toBe(true);
+  });
+
   it('creates a definition and publishes AchievementDefinitionCreatedEvent', async () => {
     const result = await useCase.execute(makeDTO());
 
