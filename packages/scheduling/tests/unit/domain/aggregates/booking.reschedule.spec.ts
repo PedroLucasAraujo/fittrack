@@ -13,7 +13,9 @@ function hoursFromNow(hours: number): UTCDateTime {
 
 /** Returns the LogicalDay for a UTCDateTime in the booking factory's default timezone. */
 function logicalDayFor(dt: UTCDateTime): LogicalDay {
-  return LogicalDay.fromDate(dt.value, 'America/Sao_Paulo');
+  const result = LogicalDay.fromDate(dt.value, 'America/Sao_Paulo');
+  if (result.isLeft()) throw new Error('logicalDayFor: invalid timezone in test helper');
+  return result.value;
 }
 
 describe('Booking.canBeRescheduled()', () => {

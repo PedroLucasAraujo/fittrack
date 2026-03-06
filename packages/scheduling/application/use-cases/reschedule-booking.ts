@@ -99,8 +99,10 @@ export class RescheduleBooking {
     // 9. Apply rescheduling (status unchanged — ADR-0022)
     // Recompute logicalDay in the booking's timezone so the calendar date
     // reflects the new appointment date, not the original creation date.
-    const newLogicalDay = LogicalDay.fromDate(newScheduledAtUtc.value, booking.timezoneUsed);
-    const rescheduleResult = booking.reschedule(newScheduledAtUtc, newLogicalDay);
+    const logicalDayResult = LogicalDay.fromDate(newScheduledAtUtc.value, booking.timezoneUsed);
+    /* v8 ignore next — invariant: timezoneUsed was validated at booking creation */
+    if (logicalDayResult.isLeft()) return left(logicalDayResult.value);
+    const rescheduleResult = booking.reschedule(newScheduledAtUtc, logicalDayResult.value);
     /* v8 ignore next */
     if (rescheduleResult.isLeft()) return left(rescheduleResult.value);
 

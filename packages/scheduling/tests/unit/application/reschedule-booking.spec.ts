@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generateId, UTCDateTime, ErrorCodes, DomainError } from '@fittrack/core';
-import type { ErrorCode } from '@fittrack/core';
+import { generateId, UTCDateTime, ErrorCodes } from '@fittrack/core';
+import { ScheduleConflictError } from '../../../domain/errors/schedule-conflict-error.js';
 import { RescheduleBooking } from '../../../application/use-cases/reschedule-booking.js';
 import { InMemoryBookingRepository } from '../../repositories/in-memory-booking-repository.js';
 import { InMemorySchedulingEventPublisherStub } from '../../stubs/in-memory-scheduling-event-publisher-stub.js';
@@ -463,10 +463,7 @@ describe('RescheduleBooking', () => {
   });
 
   it('propagates error when availability service returns Left (infrastructure error)', async () => {
-    const serviceError = new DomainError(
-      'Availability service unavailable',
-      'SCHEDULING.SCHEDULE_CONFLICT' as ErrorCode,
-    );
+    const serviceError = new ScheduleConflictError('Availability service unavailable');
     availabilityService.errorToThrow = serviceError;
 
     const booking = makeBooking({
