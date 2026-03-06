@@ -67,7 +67,7 @@ export class CreateAchievementDefinition {
       metric: dto.metricType,
       operator: dto.operator,
       targetValue: dto.targetValue,
-      timeWindow: dto.timeWindow,
+      ...(dto.timeWindow !== undefined ? { timeWindow: dto.timeWindow } : {}),
     });
     if (criteriaResult.isLeft()) return left(criteriaResult.value);
 

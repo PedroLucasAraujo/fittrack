@@ -15,7 +15,8 @@ class RepoError extends CoreDomainError {
   }
 }
 
-const repoError = () => left(new RepoError() as DomainError);
+const repoError = <T>(): Either<DomainError, T> =>
+  left(new RepoError() as DomainError) as Either<DomainError, T>;
 
 export class FailingAchievementDefinitionRepository implements IAchievementDefinitionRepository {
   async save(_: AchievementDefinition): Promise<Either<DomainError, void>> {

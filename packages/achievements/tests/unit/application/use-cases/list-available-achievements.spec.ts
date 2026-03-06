@@ -76,6 +76,8 @@ describe('ListAvailableAchievements', () => {
       userId,
       achievementDefinitionId: d1.id,
       achievementCode: 'FIRST_WORKOUT',
+      achievementTier: d1.tier.value,
+      achievementCategory: d1.category.value,
       currentValue: current.value,
       targetValue: target.value,
     });
@@ -141,6 +143,8 @@ describe('ListAvailableAchievements', () => {
       userId,
       achievementDefinitionId: d1.id,
       achievementCode: 'FIRST_WORKOUT',
+      achievementTier: d1.tier.value,
+      achievementCategory: d1.category.value,
       currentValue: c1.value,
       targetValue: t1.value,
     });
@@ -155,6 +159,8 @@ describe('ListAvailableAchievements', () => {
       userId,
       achievementDefinitionId: d2.id,
       achievementCode: 'TEN_WORKOUTS',
+      achievementTier: d2.tier.value,
+      achievementCategory: d2.category.value,
       currentValue: c2.value,
       targetValue: t2.value,
     });

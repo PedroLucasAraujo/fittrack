@@ -1,7 +1,6 @@
 export { AchievementDefinitionId } from './achievement-definition-id.js';
 export { UserAchievementProgressId } from './user-achievement-progress-id.js';
-export { AchievementCode, VALID_ACHIEVEMENT_CODES } from './achievement-code.js';
-export type { AchievementCodeValue } from './achievement-code.js';
+export { AchievementCode } from './achievement-code.js';
 export { MetricType, AchievementMetricType } from './achievement-metric-type.js';
 export type { AchievementMetricTypeValue } from './achievement-metric-type.js';
 export { CriteriaOperator, CriteriaOperatorType } from './criteria-operator.js';

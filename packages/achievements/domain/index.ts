@@ -14,8 +14,7 @@ export { InvalidAchievementDefinitionError } from './errors/invalid-achievement-
 // ── Value Objects ─────────────────────────────────────────────────────────────
 export { AchievementDefinitionId } from './value-objects/achievement-definition-id.js';
 export { UserAchievementProgressId } from './value-objects/user-achievement-progress-id.js';
-export { AchievementCode, VALID_ACHIEVEMENT_CODES } from './value-objects/achievement-code.js';
-export type { AchievementCodeValue } from './value-objects/achievement-code.js';
+export { AchievementCode } from './value-objects/achievement-code.js';
 export { MetricType, AchievementMetricType } from './value-objects/achievement-metric-type.js';
 export type { AchievementMetricTypeValue } from './value-objects/achievement-metric-type.js';
 export { CriteriaOperator, CriteriaOperatorType } from './value-objects/criteria-operator.js';
