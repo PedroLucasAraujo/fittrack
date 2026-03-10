@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: "Analisa o diff completo do pull request em aberto contra todos os ADRs (ADR-0000 a ADR-0051) e convenções do projeto FitTrack, gerando um relatório de revisão estruturado com violações classificadas por severidade (🔴 Blocker / 🟡 Warning / 🔵 Suggestion) e um veredicto de aprovação. Use quando quiser revisar a conformidade arquitetural de um PR antes do merge. NÃO aplica correções no código — apenas analisa e reporta."
+description: "Analisa o diff completo do pull request em aberto contra todos os ADRs (ADR-0000 a ADR-0051) e convenções do projeto FitTrack, gerando um relatório de revisão estruturado com violações classificadas por severidade (🔴 Blocker / 🟡 Warning / 🔵 Suggestion) e um veredicto de aprovação. Inclui verificação de documentação inline (JSDoc/comentários) contra os ADRs — verifica adequação, ausência de comentários desnecessários e rastreabilidade cruzada entre decisões. Use quando quiser revisar a conformidade arquitetural de um PR antes do merge. NÃO aplica correções no código — apenas analisa e reporta."
 ---
 
 # PR Review — ADR & Code Quality
@@ -11,7 +11,7 @@ produzindo um relatório estruturado **sem modificar o código**.
 ## Visão Geral do Fluxo
 
 ```
-1. Obter Diff  →  2. Carregar ADRs  →  3. Analisar Diff  →  4. Gerar Relatório
+1. Obter Diff  →  2. Carregar ADRs  →  3. Analisar Diff + Docs  →  4. Gerar Relatório
 ```
 
 ---
@@ -59,10 +59,48 @@ Também leia `.claude/rules.json` e `CLAUDE.md`.
 
 ---
 
-## FASE 3 — Analisar o Diff
+## FASE 3 — Analisar o Diff e Documentação Inline
 
 Para **cada arquivo modificado**, execute todos os itens do checklist em
 `references/pr-review-checklist.md` contra as linhas alteradas e o contexto do arquivo.
+
+### 3a. Verificação de Documentação Inline (JSDoc / Comentários)
+
+Para cada arquivo TypeScript modificado, verifique:
+
+**Adequação — comentários devem existir onde agregam valor:**
+- Agregados e suas invariantes de negócio **devem** ter JSDoc explicando o invariante
+  e a referência ao ADR correspondente (ex: `* @see ADR-0009`).
+- Métodos que implementam regras de negócio não óbvias **devem** ter comentário
+  explicando o **porquê**, não o **o quê** (código já descreve o o quê).
+- Interfaces de repositório e ports **devem** ter JSDoc descrevendo o contrato.
+- Construtores privados de VOs/Aggregates e getters simples **não precisam** de JSDoc.
+
+**Ausência de comentários desnecessários:**
+- Comentários que apenas repetem o nome do método ou o tipo do parâmetro são ruído
+  → flag como 🔵 Suggestion para remoção.
+- Comentários `// TODO` sem issue tracker vinculado → 🟡 Warning.
+- Comentários `// FIXME` ou `// HACK` → 🟡 Warning obrigatório.
+- Código comentado (dead code) → 🟡 Warning.
+
+**Rastreabilidade cruzada com ADRs:**
+- Decisões não-óbvias implementadas no código **devem** citar o ADR que as justifica.
+  Exemplos onde a citação é obrigatória:
+  - Método que deliberadamente não dispara evento (ex: `// ADR-0009 §4 — evento publicado pelo UseCase`)
+  - Guard de idempotência (`// ADR-0066 §4 — deduplication invariant`)
+  - Timestamp usando `AtUtc` suffix (`// ADR-0010`)
+  - Estado terminal sem transição de saída (`// ADR-0022 — terminal state`)
+- Se a implementação tomar uma decisão que diverge do comportamento esperado mas
+  está coberta por um ADR, o comentário deve referenciar explicitamente o ADR.
+- Decisões de design sem ADR correspondente mas com trade-off significativo
+  → 🔵 Suggestion para criar ADR ou ao menos comentário explicativo.
+
+**Cross-referência de informações:**
+- Verifique se comentários em arquivos diferentes que descrevem a mesma regra são
+  **consistentes entre si** (ex: dois arquivos descrevendo o mesmo invariante de
+  forma contraditória → 🟡 Warning de inconsistência).
+- Se um comentário referencia um ADR que foi revogado ou consolidado em outro
+  (ex: referência a ADR-0022 antigo após consolidação), → 🟡 Warning de referência obsoleta.
 
 Classifique cada problema encontrado:
 

@@ -168,6 +168,41 @@ Use durante a Fase 3 do skill `pr-review`.
 
 ---
 
+## 15. Documentação Inline — Adequação e Rastreabilidade ADR
+
+### Comentários obrigatórios (ausência → 🟡 Warning)
+
+- [ ] Aggregate root tem JSDoc descrevendo invariante de negócio principal com `@see ADR-XXXX`
+- [ ] Métodos de transição de estado (`start`, `end`, `cancel`, etc.) têm comentário explicando
+      regra de negócio **não óbvia** (ex: por que idempotência, o que acontece em gap, etc.)
+- [ ] Interfaces de repositório (`I[Nome]Repository`) têm JSDoc no nível da interface
+- [ ] Ports de evento (`I[Modulo]EventPublisher`) têm JSDoc descrevendo o contrato
+- [ ] Decisões que divergem do comportamento intuitivo citam o ADR correspondente
+      (ex: `// ADR-0009 §4 — aggregate não dispara evento; UseCase é o único dispatcher`)
+
+### Comentários proibidos ou problemáticos
+
+- [ ] Nenhum JSDoc que apenas repete o nome do método/parâmetro (ruído) → 🔵 Suggestion
+- [ ] Nenhum `// TODO` sem referência a issue tracker → 🟡 Warning
+- [ ] Nenhum `// FIXME` ou `// HACK` → 🟡 Warning obrigatório
+- [ ] Nenhum bloco de código comentado (dead code) → 🟡 Warning
+- [ ] Construtores privados de VOs/Aggregates e getters triviais sem JSDoc desnecessário → OK
+
+### Rastreabilidade cruzada ADR ↔ Código
+
+- [ ] Implementações de invariantes críticas citam o ADR que as justifica:
+  - Estado terminal sem saída → `// ADR-0022 — terminal state`
+  - Timestamps com sufixo `AtUtc` → referência a ADR-0010 no JSDoc do aggregate
+  - Evento publicado pós-save → `// ADR-0047 §4` no use case
+  - Deduplicação / idempotência → comentário com regra de negócio e ADR
+  - Anti-corruption layer / query service → `// ADR-0005 — bounded context isolation`
+- [ ] Comentários em arquivos distintos que descrevem o mesmo invariante são consistentes
+      (sem contradições entre módulos) → inconsistência → 🟡 Warning
+- [ ] Referências a ADRs nos comentários apontam para a versão canônica atual
+      (não para ADRs revogados ou consolidados) → referência obsoleta → 🟡 Warning
+
+---
+
 ## Referência Rápida: Tabela de Severidade
 
 | Tipo de Violação | Severidade | Impacto no PR |
