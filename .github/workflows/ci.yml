@@ -672,3 +672,164 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
         working-directory: packages/achievements
+
+  typecheck-assessments:
+    name: "Typecheck @fittrack/assessments"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install assessments dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/assessments
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/assessments
+
+  test-challenges:
+    name: "Test @fittrack/challenges"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install challenges dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/challenges
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/challenges
+
+  typecheck-challenges:
+    name: "Typecheck @fittrack/challenges"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install challenges dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/challenges
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/challenges
+
+  test-gamification:
+    name: "Test @fittrack/gamification"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install gamification dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/gamification
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/gamification
+
+  typecheck-gamification:
+    name: "Typecheck @fittrack/gamification"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install gamification dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/gamification
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/gamification
+
+  test-reviews:
+    name: "Test @fittrack/reviews"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install reviews dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/reviews
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/reviews
+
+  typecheck-reviews:
+    name: "Typecheck @fittrack/reviews"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install reviews dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/reviews
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/reviews
