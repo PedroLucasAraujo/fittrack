@@ -217,8 +217,8 @@ describe('AssessmentTemplate.addField', () => {
     addNumberField(template, 'Weight');
     addNumberField(template, 'Height');
 
-    expect(template.fields[0].orderIndex).toBe(0);
-    expect(template.fields[1].orderIndex).toBe(1);
+    expect(template.fields[0]!.orderIndex).toBe(0);
+    expect(template.fields[1]!.orderIndex).toBe(1);
   });
 
   it('uses the provided fieldId when given', () => {
@@ -226,7 +226,7 @@ describe('AssessmentTemplate.addField', () => {
     const result = addNumberField(template, 'Weight', fieldId);
 
     expect(result.isRight()).toBe(true);
-    expect(template.fields[0].id).toBe(fieldId);
+    expect(template.fields[0]!.id).toBe(fieldId);
   });
 
   it('adds a SELECT field with options', () => {
@@ -289,13 +289,13 @@ describe('AssessmentTemplate.removeField', () => {
     addNumberField(template, 'A'); // orderIndex 0
     addNumberField(template, 'B'); // orderIndex 1
     addNumberField(template, 'C'); // orderIndex 2
-    const firstId = template.fields[0].id;
+    const firstId = template.fields[0]!.id;
 
     template.removeField(firstId);
 
     expect(template.fields.length).toBe(2);
-    expect(template.fields[0].orderIndex).toBe(0);
-    expect(template.fields[1].orderIndex).toBe(1);
+    expect(template.fields[0]!.orderIndex).toBe(0);
+    expect(template.fields[1]!.orderIndex).toBe(1);
   });
 
   it('returns TemplateFieldNotFoundError for an unknown fieldId', () => {
@@ -311,7 +311,7 @@ describe('AssessmentTemplate.removeField', () => {
 
   it('returns AssessmentTemplateNotDraftError when template is ACTIVE', () => {
     const activeTemplate = makeActiveAssessmentTemplate();
-    const fieldId = activeTemplate.fields[0].id;
+    const fieldId = activeTemplate.fields[0]!.id;
 
     const result = activeTemplate.removeField(fieldId);
 

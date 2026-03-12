@@ -22,7 +22,7 @@ describe('RemoveTemplateField', () => {
   it('removes an existing field and returns the correct output', async () => {
     const template = makeAssessmentTemplate(); // has 1 field
     repository.items.push(template);
-    const fieldId = template.fields[0].id;
+    const fieldId = template.fields[0]!.id;
 
     const result = await sut.execute({
       professionalProfileId: template.professionalProfileId,
@@ -42,7 +42,7 @@ describe('RemoveTemplateField', () => {
   it('persists the updated template', async () => {
     const template = makeAssessmentTemplate();
     repository.items.push(template);
-    const fieldId = template.fields[0].id;
+    const fieldId = template.fields[0]!.id;
 
     await sut.execute({
       professionalProfileId: template.professionalProfileId,
@@ -76,7 +76,7 @@ describe('RemoveTemplateField', () => {
     const result = await sut.execute({
       professionalProfileId: generateId(), // professionalB
       assessmentTemplateId: template.id,
-      fieldId: template.fields[0].id,
+      fieldId: template.fields[0]!.id,
     });
 
     expect(result.isLeft()).toBe(true);
@@ -104,7 +104,7 @@ describe('RemoveTemplateField', () => {
   it('returns AssessmentTemplateNotDraftError when template is ACTIVE', async () => {
     const template = makeActiveAssessmentTemplate();
     repository.items.push(template);
-    const fieldId = template.fields[0].id;
+    const fieldId = template.fields[0]!.id;
 
     const result = await sut.execute({
       professionalProfileId: template.professionalProfileId,

@@ -98,7 +98,7 @@ describe('RecordAssessmentResponse', () => {
       expect(out.logicalDay).toBe('2026-02-22');
       expect(out.timezoneUsed).toBe('America/Sao_Paulo');
       expect(out.responseCount).toBe(1);
-      expect(out.responses[0].fieldId).toBe(fieldId);
+      expect(out.responses[0]!.fieldId).toBe(fieldId);
     }
   });
 

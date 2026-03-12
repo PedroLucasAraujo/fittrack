@@ -78,7 +78,7 @@ describe('ListAssessmentResponses', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.total).toBe(1);
-      expect(result.value.responses[0].deliverableId).toBe(deliverableId);
+      expect(result.value.responses[0]!.deliverableId).toBe(deliverableId);
     }
   });
 
@@ -108,7 +108,7 @@ describe('ListAssessmentResponses', () => {
     const result = await sut.execute({ professionalProfileId, clientId });
 
     if (result.isRight()) {
-      const summary = result.value.responses[0];
+      const summary = result.value.responses[0]!;
       expect(summary.assessmentResponseId).toBe(response.id);
       expect(summary.executionId).toBe(response.executionId);
       expect(summary.deliverableId).toBe(response.deliverableId);

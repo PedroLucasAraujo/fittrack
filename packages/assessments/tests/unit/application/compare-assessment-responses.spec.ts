@@ -77,7 +77,7 @@ describe('CompareAssessmentResponses', () => {
       expect(out.currentLogicalDay).toBe('2026-02-01');
       expect(out.fieldComparisons).toHaveLength(1);
 
-      const comparison = out.fieldComparisons[0];
+      const comparison = out.fieldComparisons[0]!;
       expect(comparison.fieldId).toBe(sharedFieldId);
       expect(comparison.baseline).toEqual(numberFieldValue(70));
       expect(comparison.current).toEqual(numberFieldValue(75));
@@ -108,8 +108,8 @@ describe('CompareAssessmentResponses', () => {
     });
 
     if (result.isRight()) {
-      expect(result.value.fieldComparisons[0].changed).toBe(false);
-      expect(result.value.fieldComparisons[0].numericDelta).toBe(0);
+      expect(result.value.fieldComparisons[0]!.changed).toBe(false);
+      expect(result.value.fieldComparisons[0]!.numericDelta).toBe(0);
     }
   });
 
@@ -135,8 +135,8 @@ describe('CompareAssessmentResponses', () => {
     });
 
     if (result.isRight()) {
-      expect(result.value.fieldComparisons[0].numericDelta).toBeNull();
-      expect(result.value.fieldComparisons[0].changed).toBe(true);
+      expect(result.value.fieldComparisons[0]!.numericDelta).toBeNull();
+      expect(result.value.fieldComparisons[0]!.changed).toBe(true);
     }
   });
 
@@ -149,7 +149,7 @@ describe('CompareAssessmentResponses', () => {
       { professionalProfileId, clientId: generateId(), logicalDay: '2026-02-01' },
       [
         // include baseline's field too
-        { fieldId: baseline.responses[0].fieldId, value: numberFieldValue(70) },
+        { fieldId: baseline.responses[0]!.fieldId, value: numberFieldValue(70) },
         { fieldId: newFieldId, value: booleanFieldValue(true) },
       ],
     );
