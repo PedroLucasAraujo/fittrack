@@ -73,7 +73,7 @@ describe('HideProfessionalReview', () => {
     await sut.execute({ reviewId: review.id, hiddenBy: 'admin-001', isAdmin: true });
 
     expect(eventPublisher.hiddenEvents).toHaveLength(1);
-    expect(eventPublisher.hiddenEvents[0].payload.hiddenBy).toBe('admin-001');
+    expect(eventPublisher.hiddenEvents[0]!.payload.hiddenBy).toBe('admin-001');
   });
 
   it('returns Left<UnauthorizedReviewActionError> when not admin', async () => {
@@ -87,7 +87,7 @@ describe('HideProfessionalReview', () => {
     if (result.isLeft()) {
       expect(result.value.code).toBe(ReviewErrorCodes.UNAUTHORIZED_REVIEW_ACTION);
     }
-    expect(reviewRepo.items[0].isVisible()).toBe(true);
+    expect(reviewRepo.items[0]!.isVisible()).toBe(true);
   });
 
   it('returns Left<ReviewNotFoundError> for unknown reviewId', async () => {

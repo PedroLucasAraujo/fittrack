@@ -11,7 +11,7 @@ describe('Challenge', () => {
       const challenge = makeChallenge({ startedAtUtc: null, canceledAtUtc: null });
       const result = challenge.start();
       expect(result.isRight()).toBe(true);
-      expect(result.value).toHaveProperty('type', 'started');
+      expect(result.value as { type: string }).toHaveProperty('type', 'started');
       expect(challenge.startedAtUtc).not.toBeNull();
     });
 
@@ -27,14 +27,14 @@ describe('Challenge', () => {
       const challenge = makeChallenge({ startedAtUtc: new Date() });
       const result = challenge.start();
       expect(result.isLeft()).toBe(true);
-      expect(result.value.message).toContain('already');
+      expect((result.value as { message: string }).message).toContain('already');
     });
 
     it('fails with ChallengeAlreadyCanceledError if canceled', () => {
       const challenge = makeChallenge({ canceledAtUtc: new Date() });
       const result = challenge.start();
       expect(result.isLeft()).toBe(true);
-      expect(result.value.message).toContain('cancel');
+      expect((result.value as { message: string }).message).toContain('cancel');
     });
   });
 
@@ -49,7 +49,7 @@ describe('Challenge', () => {
       });
       const result = challenge.end();
       expect(result.isRight()).toBe(true);
-      expect(result.value).toHaveProperty('type', 'ended');
+      expect(result.value as { type: string }).toHaveProperty('type', 'ended');
       expect(challenge.endedAtUtc).not.toBeNull();
     });
 
@@ -70,7 +70,7 @@ describe('Challenge', () => {
       const challenge = makeChallenge({ endDateUtc: futureDate, endedAtUtc: null });
       const result = challenge.end();
       expect(result.isLeft()).toBe(true);
-      expect(result.value.message).toContain('ended');
+      expect((result.value as { message: string }).message).toContain('ended');
     });
 
     it('fails with ChallengeAlreadyEndedError when already ended', () => {
@@ -97,8 +97,11 @@ describe('Challenge', () => {
       const challenge = makeChallenge({ canceledAtUtc: null, endedAtUtc: null });
       const result = challenge.cancel('Not enough participants');
       expect(result.isRight()).toBe(true);
-      expect(result.value).toHaveProperty('type', 'canceled');
-      expect(result.value).toHaveProperty('reason', 'Not enough participants');
+      expect(result.value as { type: string; reason: string }).toHaveProperty('type', 'canceled');
+      expect(result.value as { type: string; reason: string }).toHaveProperty(
+        'reason',
+        'Not enough participants',
+      );
       expect(challenge.canceledAtUtc).not.toBeNull();
     });
 

@@ -62,7 +62,7 @@ describe('GetProfessionalReviews', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.total).toBe(2);
-      expect(result.value.reviews[0].clientLabel).toBe('Verified Client');
+      expect(result.value.reviews[0]!.clientLabel).toBe('Verified Client');
     }
   });
 
@@ -91,7 +91,7 @@ describe('GetProfessionalReviews', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.total).toBe(1);
-      expect(result.value.reviews[0].isHidden).toBe(true);
+      expect(result.value.reviews[0]!.isHidden).toBe(true);
     }
   });
 
@@ -110,7 +110,7 @@ describe('GetProfessionalReviews', () => {
     const result = await sut.execute({ professionalProfileId: 'prof-123' });
 
     if (result.isRight()) {
-      const dto = result.value.reviews[0];
+      const dto = result.value.reviews[0]!;
       expect(dto.overallRating).toBe(4.4);
       expect(dto.wouldRecommend).toBe(true);
       expect(dto.comment).toBe('Great professional service!');
@@ -127,7 +127,7 @@ describe('GetProfessionalReviews', () => {
     const result = await sut.execute({ professionalProfileId: 'prof-123' });
 
     if (result.isRight()) {
-      expect(result.value.reviews[0].comment).toBeNull();
+      expect(result.value.reviews[0]!.comment).toBeNull();
     }
   });
 
@@ -141,7 +141,7 @@ describe('GetProfessionalReviews', () => {
     const result = await sut.execute({ professionalProfileId: 'prof-123' });
 
     if (result.isRight()) {
-      const dto = result.value.reviews[0];
+      const dto = result.value.reviews[0]!;
       expect(dto.professionalResponse).toBe('Thank you for the kind review!');
       expect(dto.respondedAtUtc).not.toBeNull();
     }
@@ -193,7 +193,7 @@ describe('GetClientReviews', () => {
     const result = await sut.execute({ clientId: 'client-abc' });
 
     if (result.isRight()) {
-      expect(result.value.reviews[0].comment).toBeNull();
+      expect(result.value.reviews[0]!.comment).toBeNull();
     }
   });
 

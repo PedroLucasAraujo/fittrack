@@ -54,7 +54,7 @@ describe('CancelChallengeUseCase', () => {
     });
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('Not authorized');
+    expect((result.value as { message: string }).message).toContain('Not authorized');
   });
 
   it('returns error when challenge is already canceled', async () => {

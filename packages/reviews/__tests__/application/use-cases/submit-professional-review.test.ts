@@ -52,7 +52,7 @@ describe('SubmitProfessionalReview', () => {
     await sut.execute(validInput);
 
     expect(reviewRepo.items).toHaveLength(1);
-    expect(reviewRepo.items[0].professionalProfileId).toBe('prof-xyz');
+    expect(reviewRepo.items[0]!.professionalProfileId).toBe('prof-xyz');
   });
 
   it('publishes ProfessionalReviewSubmittedEvent', async () => {
@@ -61,9 +61,9 @@ describe('SubmitProfessionalReview', () => {
     await sut.execute(validInput);
 
     expect(eventPublisher.submittedEvents).toHaveLength(1);
-    expect(eventPublisher.submittedEvents[0].payload.wouldRecommend).toBe(true);
-    expect(eventPublisher.submittedEvents[0].payload.sessionCountAtReview).toBe(10);
-    expect(eventPublisher.submittedEvents[0].payload.verifiedInteraction).toBe(true);
+    expect(eventPublisher.submittedEvents[0]!.payload.wouldRecommend).toBe(true);
+    expect(eventPublisher.submittedEvents[0]!.payload.sessionCountAtReview).toBe(10);
+    expect(eventPublisher.submittedEvents[0]!.payload.verifiedInteraction).toBe(true);
   });
 
   it('returns Left<InsufficientSessionsError> when client has <5 sessions', async () => {
@@ -154,10 +154,11 @@ describe('SubmitProfessionalReview', () => {
   it('allows submission without comment', async () => {
     sessionQuery.sessionCount = 10;
 
-    const result = await sut.execute({ ...validInput, comment: undefined });
+    const { comment: _comment, ...inputWithoutComment } = validInput;
+    const result = await sut.execute(inputWithoutComment);
 
     expect(result.isRight()).toBe(true);
-    expect(reviewRepo.items[0].comment).toBeNull();
+    expect(reviewRepo.items[0]!.comment).toBeNull();
   });
 
   it('returns Left<InvalidReviewError> for empty clientId', async () => {

@@ -6,19 +6,19 @@ describe('MaxParticipants', () => {
     it('creates with value 1 (minimum valid)', () => {
       const result = MaxParticipants.create(1);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(1);
+      expect((result.value as MaxParticipants).value).toBe(1);
     });
 
     it('creates with value 2 (HEAD_TO_HEAD)', () => {
       const result = MaxParticipants.create(2);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(2);
+      expect((result.value as MaxParticipants).value).toBe(2);
     });
 
     it('creates with large value', () => {
       const result = MaxParticipants.create(1000);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(1000);
+      expect((result.value as MaxParticipants).value).toBe(1000);
     });
 
     it('rejects 0', () => {

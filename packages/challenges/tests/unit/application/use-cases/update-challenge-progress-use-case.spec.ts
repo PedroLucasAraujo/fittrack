@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { UpdateChallengeProgressUseCase } from '../../../../application/use-cases/update-challenge-progress-use-case.js';
+import type { UpdateChallengeProgressOutputDTO } from '../../../../application/dtos/update-challenge-progress-dto.js';
 import { InMemoryChallengeRepository } from '../../../repositories/in-memory-challenge-repository.js';
 import { InMemoryChallengeParticipationRepository } from '../../../repositories/in-memory-challenge-participation-repository.js';
 import { InMemoryChallengesEventPublisher } from '../../../stubs/in-memory-challenges-event-publisher.js';
@@ -48,9 +49,9 @@ describe('UpdateChallengeProgressUseCase', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.currentProgress).toBe(5);
-    expect(result.value.progressPercentage).toBe(50);
-    expect(result.value.completedGoal).toBe(false);
+    expect((result.value as UpdateChallengeProgressOutputDTO).currentProgress).toBe(5);
+    expect((result.value as UpdateChallengeProgressOutputDTO).progressPercentage).toBe(50);
+    expect((result.value as UpdateChallengeProgressOutputDTO).completedGoal).toBe(false);
     expect(publisher.progressUpdatedEvents).toHaveLength(1);
   });
 
@@ -95,7 +96,7 @@ describe('UpdateChallengeProgressUseCase', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.completedGoal).toBe(true);
+    expect((result.value as UpdateChallengeProgressOutputDTO).completedGoal).toBe(true);
     expect(publisher.participantCompletedEvents).toHaveLength(1);
     const completedEvent = publisher.participantCompletedEvents[0]!;
     expect(completedEvent.payload.challengeId).toBe(challenge.id);
@@ -129,7 +130,7 @@ describe('UpdateChallengeProgressUseCase', () => {
       newProgressValue: 5,
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('found');
+    expect((result.value as { message: string }).message).toContain('found');
   });
 
   it('fails with ChallengeNotActiveError when challenge is not active (draft)', async () => {
@@ -175,7 +176,7 @@ describe('UpdateChallengeProgressUseCase', () => {
       newProgressValue: 5,
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('participant');
+    expect((result.value as { message: string }).message).toContain('participant');
   });
 
   it('returns current values silently when metricType does not match challenge goalMetricType', async () => {
@@ -199,8 +200,8 @@ describe('UpdateChallengeProgressUseCase', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.currentProgress).toBe(3); // unchanged
-    expect(result.value.progressPercentage).toBe(30); // unchanged (stored value)
+    expect((result.value as UpdateChallengeProgressOutputDTO).currentProgress).toBe(3); // unchanged
+    expect((result.value as UpdateChallengeProgressOutputDTO).progressPercentage).toBe(30); // unchanged (stored value)
     expect(publisher.progressUpdatedEvents).toHaveLength(0); // no event
   });
 
@@ -219,7 +220,7 @@ describe('UpdateChallengeProgressUseCase', () => {
       newProgressValue: 3, // decrease!
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('decrease');
+    expect((result.value as { message: string }).message).toContain('decrease');
   });
 
   it('saves updated participation to repository on success', async () => {
@@ -262,7 +263,7 @@ describe('UpdateChallengeProgressUseCase', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.completedGoal).toBe(true);
-    expect(result.value.progressPercentage).toBe(100);
+    expect((result.value as UpdateChallengeProgressOutputDTO).completedGoal).toBe(true);
+    expect((result.value as UpdateChallengeProgressOutputDTO).progressPercentage).toBe(100);
   });
 });

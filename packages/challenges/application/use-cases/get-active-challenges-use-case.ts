@@ -15,10 +15,10 @@ export class GetActiveChallengesUseCase {
   ): Promise<DomainResult<GetActiveChallengesOutputDTO>> {
     // Filters are pushed to the repository to avoid loading all active challenges
     // into memory and filtering there, which does not scale.
-    const challenges = await this.challengeRepo.findActive({
-      visibility: dto.visibility,
-      type: dto.type,
-    });
+    const filters: { visibility?: string; type?: string } = {};
+    if (dto.visibility !== undefined) filters.visibility = dto.visibility;
+    if (dto.type !== undefined) filters.type = dto.type;
+    const challenges = await this.challengeRepo.findActive(filters);
 
     const summaries: ChallengeSummaryDTO[] = challenges.map((c) => ({
       challengeId: c.id,

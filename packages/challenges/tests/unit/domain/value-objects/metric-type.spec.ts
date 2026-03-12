@@ -6,25 +6,25 @@ describe('MetricType', () => {
     it('creates WORKOUT_COUNT metric type', () => {
       const result = MetricType.create('WORKOUT_COUNT');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('WORKOUT_COUNT');
+      expect((result.value as MetricType).value).toBe('WORKOUT_COUNT');
     });
 
     it('creates TOTAL_VOLUME metric type', () => {
       const result = MetricType.create('TOTAL_VOLUME');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('TOTAL_VOLUME');
+      expect((result.value as MetricType).value).toBe('TOTAL_VOLUME');
     });
 
     it('creates STREAK_DAYS metric type', () => {
       const result = MetricType.create('STREAK_DAYS');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('STREAK_DAYS');
+      expect((result.value as MetricType).value).toBe('STREAK_DAYS');
     });
 
     it('creates NUTRITION_LOG_COUNT metric type', () => {
       const result = MetricType.create('NUTRITION_LOG_COUNT');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('NUTRITION_LOG_COUNT');
+      expect((result.value as MetricType).value).toBe('NUTRITION_LOG_COUNT');
     });
 
     it('rejects invalid metric type', () => {

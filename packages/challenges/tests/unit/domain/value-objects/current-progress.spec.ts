@@ -6,13 +6,13 @@ describe('CurrentProgress', () => {
     it('creates a valid progress of 0', () => {
       const result = CurrentProgress.create(0);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(0);
+      expect((result.value as CurrentProgress).value).toBe(0);
     });
 
     it('creates a valid progress of 100', () => {
       const result = CurrentProgress.create(100);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(100);
+      expect((result.value as CurrentProgress).value).toBe(100);
     });
 
     it('creates a valid large progress value', () => {
@@ -53,20 +53,20 @@ describe('CurrentProgress', () => {
       const p = CurrentProgress.create(5).value as CurrentProgress;
       const result = p.increment(3);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(8);
+      expect((result.value as CurrentProgress).value).toBe(8);
     });
 
     it('increments by 0 (noop)', () => {
       const p = CurrentProgress.create(5).value as CurrentProgress;
       const result = p.increment(0);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(5);
+      expect((result.value as CurrentProgress).value).toBe(5);
     });
 
     it('returns a new CurrentProgress instance (immutable)', () => {
       const p = CurrentProgress.create(5).value as CurrentProgress;
       const result = p.increment(3);
-      expect(result.value.value).toBe(8);
+      expect((result.value as CurrentProgress).value).toBe(8);
       expect(p.value).toBe(5); // original unchanged
     });
 

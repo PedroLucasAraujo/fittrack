@@ -6,19 +6,19 @@ describe('ProgressPercentage', () => {
     it('creates a valid percentage of 0', () => {
       const result = ProgressPercentage.create(0);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(0);
+      expect((result.value as ProgressPercentage).value).toBe(0);
     });
 
     it('creates a valid percentage of 50', () => {
       const result = ProgressPercentage.create(50);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(50);
+      expect((result.value as ProgressPercentage).value).toBe(50);
     });
 
     it('creates a valid percentage of 100', () => {
       const result = ProgressPercentage.create(100);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(100);
+      expect((result.value as ProgressPercentage).value).toBe(100);
     });
 
     it('rejects values above 100', () => {
@@ -46,43 +46,43 @@ describe('ProgressPercentage', () => {
     it('returns 50% for 5/10', () => {
       const result = ProgressPercentage.calculate(5, 10);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(50);
+      expect((result.value as ProgressPercentage).value).toBe(50);
     });
 
     it('returns 100% for 10/10', () => {
       const result = ProgressPercentage.calculate(10, 10);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(100);
+      expect((result.value as ProgressPercentage).value).toBe(100);
     });
 
     it('caps at 100% for 15/10 (over-achievement)', () => {
       const result = ProgressPercentage.calculate(15, 10);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(100);
+      expect((result.value as ProgressPercentage).value).toBe(100);
     });
 
     it('returns 0% for 0/10', () => {
       const result = ProgressPercentage.calculate(0, 10);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(0);
+      expect((result.value as ProgressPercentage).value).toBe(0);
     });
 
     it('returns 100% when target is 0 (avoid divide-by-zero)', () => {
       const result = ProgressPercentage.calculate(0, 0);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(100);
+      expect((result.value as ProgressPercentage).value).toBe(100);
     });
 
     it('returns 33% for 1/3 (rounds correctly)', () => {
       const result = ProgressPercentage.calculate(1, 3);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(33);
+      expect((result.value as ProgressPercentage).value).toBe(33);
     });
 
     it('returns 67% for 2/3 (rounds correctly)', () => {
       const result = ProgressPercentage.calculate(2, 3);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(67);
+      expect((result.value as ProgressPercentage).value).toBe(67);
     });
   });
 

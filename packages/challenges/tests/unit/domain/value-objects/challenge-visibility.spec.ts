@@ -6,19 +6,19 @@ describe('ChallengeVisibility', () => {
     it('creates PUBLIC visibility', () => {
       const result = ChallengeVisibility.create('PUBLIC');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('PUBLIC');
+      expect((result.value as ChallengeVisibility).value).toBe('PUBLIC');
     });
 
     it('creates PROFESSIONAL visibility', () => {
       const result = ChallengeVisibility.create('PROFESSIONAL');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('PROFESSIONAL');
+      expect((result.value as ChallengeVisibility).value).toBe('PROFESSIONAL');
     });
 
     it('creates PRIVATE visibility', () => {
       const result = ChallengeVisibility.create('PRIVATE');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('PRIVATE');
+      expect((result.value as ChallengeVisibility).value).toBe('PRIVATE');
     });
 
     it('rejects invalid visibility', () => {

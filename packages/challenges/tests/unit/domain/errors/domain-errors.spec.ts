@@ -57,13 +57,13 @@ describe('GoalTarget', () => {
     it('creates a valid goal target of 1 (minimum)', () => {
       const result = GoalTarget.create(1);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(1);
+      expect((result.value as GoalTarget).value).toBe(1);
     });
 
     it('creates a valid goal target of 10000 (maximum)', () => {
       const result = GoalTarget.create(10000);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe(10000);
+      expect((result.value as GoalTarget).value).toBe(10000);
     });
 
     it('rejects 0 (below minimum)', () => {

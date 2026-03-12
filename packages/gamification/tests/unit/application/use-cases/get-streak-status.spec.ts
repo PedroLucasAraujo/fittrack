@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { GetStreakStatus } from '../../../../application/use-cases/get-streak-status.js';
+import type { GetStreakStatusOutputDTO } from '../../../../application/dtos/get-streak-status-dto.js';
 import { InMemoryStreakTrackerRepository } from '../../../repositories/in-memory-streak-tracker-repository.js';
 import { makeStreakTracker } from '../../../helpers/make-streak-tracker.js';
 
@@ -17,7 +18,7 @@ describe('GetStreakStatus', () => {
     const repo = new InMemoryStreakTrackerRepository();
     const result = await new GetStreakStatus(repo).execute({ userId: generateId() });
     expect(result.isRight()).toBe(true);
-    const dto = result.value as ReturnType<typeof result.value>;
+    const dto = result.value as GetStreakStatusOutputDTO;
     expect(dto).toMatchObject({
       currentStreak: 0,
       longestStreak: 0,

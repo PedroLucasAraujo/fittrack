@@ -6,14 +6,14 @@ describe('ChallengeDescription', () => {
     it('creates a valid description with exactly 10 characters', () => {
       const result = ChallengeDescription.create('1234567890');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('1234567890');
+      expect((result.value as ChallengeDescription).value).toBe('1234567890');
     });
 
     it('creates a valid description with exactly 1000 characters', () => {
       const desc = 'A'.repeat(1000);
       const result = ChallengeDescription.create(desc);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toHaveLength(1000);
+      expect((result.value as ChallengeDescription).value).toHaveLength(1000);
     });
 
     it('creates a normal description successfully', () => {
@@ -24,7 +24,7 @@ describe('ChallengeDescription', () => {
     it('trims leading/trailing whitespace from description', () => {
       const result = ChallengeDescription.create('  A valid description.  ');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('A valid description.');
+      expect((result.value as ChallengeDescription).value).toBe('A valid description.');
     });
 
     it('rejects a description shorter than 10 characters', () => {
@@ -50,7 +50,7 @@ describe('ChallengeDescription', () => {
     it('accepts exactly 10 characters after trimming', () => {
       const result = ChallengeDescription.create('  1234567890  ');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('1234567890');
+      expect((result.value as ChallengeDescription).value).toBe('1234567890');
     });
   });
 });

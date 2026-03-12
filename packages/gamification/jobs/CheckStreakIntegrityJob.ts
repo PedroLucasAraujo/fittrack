@@ -36,10 +36,8 @@ export class CheckStreakIntegrityJob implements IScheduledJob {
     const result = await this.checkIntegrity.execute();
 
     if (result.isLeft()) {
-      /* c8 ignore next 5 — DomainErrors always extend Error; defensive coercion for future types */
-      return JobResult.failure(
-        result.value instanceof Error ? result.value : new Error(result.value.message),
-      );
+      /* c8 ignore next 2 — DomainErrors always extend Error */
+      return JobResult.failure(result.value);
     }
 
     const { processed, clean, violations } = result.value;

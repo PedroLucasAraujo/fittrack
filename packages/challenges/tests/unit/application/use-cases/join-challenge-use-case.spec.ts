@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { JoinChallengeUseCase } from '../../../../application/use-cases/join-challenge-use-case.js';
+import type { JoinChallengeOutputDTO } from '../../../../application/dtos/join-challenge-dto.js';
 import { InMemoryChallengeRepository } from '../../../repositories/in-memory-challenge-repository.js';
 import { InMemoryChallengeParticipationRepository } from '../../../repositories/in-memory-challenge-participation-repository.js';
 import { InMemoryChallengesEventPublisher } from '../../../stubs/in-memory-challenges-event-publisher.js';
@@ -40,7 +41,7 @@ describe('JoinChallengeUseCase', () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.participationId).toBeDefined();
+    expect((result.value as JoinChallengeOutputDTO).participationId).toBeDefined();
     expect(participationRepo.items).toHaveLength(1);
   });
 
@@ -63,7 +64,7 @@ describe('JoinChallengeUseCase', () => {
       userId: generateId(),
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('found');
+    expect((result.value as { message: string }).message).toContain('found');
   });
 
   it('fails with ChallengeNotFoundError for invalid challengeId UUID', async () => {
@@ -90,7 +91,7 @@ describe('JoinChallengeUseCase', () => {
 
     return expect(
       useCase.execute({ challengeId: challenge.id, userId: generateId() }),
-    ).resolves.toSatisfy((r: Awaited<ReturnType<JoinChallengeUseCase['execute']>>) => r.isLeft());
+    ).resolves.toSatisfy((r: unknown): boolean => (r as { isLeft: () => boolean }).isLeft());
   });
 
   it('fails with ChallengeNotJoinableError when challenge is canceled', async () => {
@@ -134,7 +135,7 @@ describe('JoinChallengeUseCase', () => {
     // Second join — fails
     const result = await useCase.execute({ challengeId: challenge.id, userId });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('joined');
+    expect((result.value as { message: string }).message).toContain('joined');
   });
 
   it('fails with ChallengeFullError when challenge is at maxParticipants', async () => {
@@ -151,7 +152,7 @@ describe('JoinChallengeUseCase', () => {
       userId: generateId(), // new user — but challenge is full
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain('maximum');
+    expect((result.value as { message: string }).message).toContain('maximum');
   });
 
   it('allows joining when maxParticipants is null (no limit)', async () => {

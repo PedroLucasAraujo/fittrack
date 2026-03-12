@@ -6,25 +6,25 @@ describe('RewardPolicy', () => {
     it('creates WINNER policy', () => {
       const result = RewardPolicy.create('WINNER');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('WINNER');
+      expect((result.value as RewardPolicy).value).toBe('WINNER');
     });
 
     it('creates TOP_3 policy', () => {
       const result = RewardPolicy.create('TOP_3');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('TOP_3');
+      expect((result.value as RewardPolicy).value).toBe('TOP_3');
     });
 
     it('creates TOP_10 policy', () => {
       const result = RewardPolicy.create('TOP_10');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('TOP_10');
+      expect((result.value as RewardPolicy).value).toBe('TOP_10');
     });
 
     it('creates ALL_COMPLETERS policy', () => {
       const result = RewardPolicy.create('ALL_COMPLETERS');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('ALL_COMPLETERS');
+      expect((result.value as RewardPolicy).value).toBe('ALL_COMPLETERS');
     });
 
     it('rejects invalid policy', () => {

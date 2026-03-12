@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { generateId } from '@fittrack/core';
 import { CreateChallengeUseCase } from '../../../../application/use-cases/create-challenge-use-case.js';
+import type { CreateChallengeOutputDTO } from '../../../../application/dtos/create-challenge-dto.js';
 import { InMemoryChallengeRepository } from '../../../repositories/in-memory-challenge-repository.js';
 import { InMemoryChallengesEventPublisher } from '../../../stubs/in-memory-challenges-event-publisher.js';
 
@@ -36,7 +37,7 @@ describe('CreateChallengeUseCase', () => {
   it('creates a challenge with valid input and saves it', async () => {
     const result = await useCase.execute(makeValidInput());
     expect(result.isRight()).toBe(true);
-    expect(result.value.challengeId).toBeDefined();
+    expect((result.value as CreateChallengeOutputDTO).challengeId).toBeDefined();
     expect(repo.items).toHaveLength(1);
   });
 
@@ -77,7 +78,7 @@ describe('CreateChallengeUseCase', () => {
   it('fails with InvalidCreatorIdError for invalid createdBy UUID', async () => {
     const result = await useCase.execute(makeValidInput({ createdBy: 'not-a-uuid' }));
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toBeDefined();
+    expect((result.value as { message: string }).message).toBeDefined();
   });
 
   it('fails with InvalidChallengeTypeError for invalid type', async () => {
@@ -210,7 +211,7 @@ describe('CreateChallengeUseCase', () => {
   it('returns right with challengeId on success', async () => {
     const result = await useCase.execute(makeValidInput());
     expect(result.isRight()).toBe(true);
-    expect(typeof result.value.challengeId).toBe('string');
-    expect(result.value.challengeId).toHaveLength(36); // UUID length
+    expect(typeof (result.value as CreateChallengeOutputDTO).challengeId).toBe('string');
+    expect((result.value as CreateChallengeOutputDTO).challengeId).toHaveLength(36); // UUID length
   });
 });

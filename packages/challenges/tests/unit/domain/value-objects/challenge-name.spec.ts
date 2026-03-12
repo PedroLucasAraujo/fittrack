@@ -6,20 +6,20 @@ describe('ChallengeName', () => {
     it('creates a valid name with exactly 3 characters', () => {
       const result = ChallengeName.create('ABC');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('ABC');
+      expect((result.value as ChallengeName).value).toBe('ABC');
     });
 
     it('creates a valid name with exactly 100 characters', () => {
       const name = 'A'.repeat(100);
       const result = ChallengeName.create(name);
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toHaveLength(100);
+      expect((result.value as ChallengeName).value).toHaveLength(100);
     });
 
     it('creates a name and trims leading/trailing whitespace', () => {
       const result = ChallengeName.create('  My Challenge  ');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('My Challenge');
+      expect((result.value as ChallengeName).value).toBe('My Challenge');
     });
 
     it('creates a normal name successfully', () => {
@@ -50,7 +50,7 @@ describe('ChallengeName', () => {
     it('accepts exactly 3 characters after trimming', () => {
       const result = ChallengeName.create('  ABC  ');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('ABC');
+      expect((result.value as ChallengeName).value).toBe('ABC');
     });
   });
 });

@@ -1,0 +1,10 @@
+export { CreateGoal } from './create-goal.js';
+export { ApproveGoal } from './approve-goal.js';
+export { UpdateGoalProgress } from './update-goal-progress.js';
+export { CompleteGoal } from './complete-goal.js';
+export { AbandonGoal } from './abandon-goal.js';
+export { AdjustGoalTarget } from './adjust-goal-target.js';
+export { ExtendGoalDeadline } from './extend-goal-deadline.js';
+export { AddMilestone } from './add-milestone.js';
+export { GetClientGoals } from './get-client-goals.js';
+export { GetGoalProgressHistory } from './get-goal-progress-history.js';

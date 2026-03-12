@@ -101,8 +101,8 @@ describe('FlagProfessionalReview', () => {
     });
 
     expect(eventPublisher.flaggedEvents).toHaveLength(1);
-    expect(eventPublisher.flaggedEvents[0].payload.flaggedBy).toBe('prof-123');
-    expect(eventPublisher.flaggedEvents[0].payload.reason).toBe('Contains false information.');
+    expect(eventPublisher.flaggedEvents[0]!.payload.flaggedBy).toBe('prof-123');
+    expect(eventPublisher.flaggedEvents[0]!.payload.reason).toBe('Contains false information.');
   });
 
   it('returns Left<ReviewNotFoundError> for unknown reviewId', async () => {

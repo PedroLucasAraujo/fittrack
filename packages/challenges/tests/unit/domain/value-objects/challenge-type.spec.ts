@@ -6,19 +6,19 @@ describe('ChallengeType', () => {
     it('creates INDIVIDUAL type', () => {
       const result = ChallengeType.create('INDIVIDUAL');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('INDIVIDUAL');
+      expect((result.value as ChallengeType).value).toBe('INDIVIDUAL');
     });
 
     it('creates COMMUNITY type', () => {
       const result = ChallengeType.create('COMMUNITY');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('COMMUNITY');
+      expect((result.value as ChallengeType).value).toBe('COMMUNITY');
     });
 
     it('creates HEAD_TO_HEAD type', () => {
       const result = ChallengeType.create('HEAD_TO_HEAD');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('HEAD_TO_HEAD');
+      expect((result.value as ChallengeType).value).toBe('HEAD_TO_HEAD');
     });
 
     it('rejects invalid type', () => {

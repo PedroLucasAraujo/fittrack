@@ -84,7 +84,7 @@ describe('ChallengeParticipation', () => {
       const participation = makeChallengeParticipation({ currentProgress: 5 });
       const result = participation.updateProgress(3, 10);
       expect(result.isLeft()).toBe(true);
-      expect(result.value.message).toContain('decrease');
+      expect((result.value as { message: string }).message).toContain('decrease');
     });
 
     it('allows same progress value (not a decrease)', () => {

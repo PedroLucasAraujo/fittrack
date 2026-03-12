@@ -6,25 +6,25 @@ describe('ChallengeCategory', () => {
     it('creates WORKOUT category', () => {
       const result = ChallengeCategory.create('WORKOUT');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('WORKOUT');
+      expect((result.value as ChallengeCategory).value).toBe('WORKOUT');
     });
 
     it('creates NUTRITION category', () => {
       const result = ChallengeCategory.create('NUTRITION');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('NUTRITION');
+      expect((result.value as ChallengeCategory).value).toBe('NUTRITION');
     });
 
     it('creates STREAK category', () => {
       const result = ChallengeCategory.create('STREAK');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('STREAK');
+      expect((result.value as ChallengeCategory).value).toBe('STREAK');
     });
 
     it('creates VOLUME category', () => {
       const result = ChallengeCategory.create('VOLUME');
       expect(result.isRight()).toBe(true);
-      expect(result.value.value).toBe('VOLUME');
+      expect((result.value as ChallengeCategory).value).toBe('VOLUME');
     });
 
     it('rejects invalid category', () => {
