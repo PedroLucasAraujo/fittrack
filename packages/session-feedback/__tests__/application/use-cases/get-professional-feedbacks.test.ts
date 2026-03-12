@@ -69,7 +69,7 @@ describe('GetProfessionalFeedbacks', () => {
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
-      const item = result.value.feedbacks[0];
+      const item = result.value.feedbacks[0]!;
       expect(item).not.toHaveProperty('clientId');
       expect(item.feedbackId).toBeTruthy();
       expect(item.bookingId).toBeTruthy();
@@ -135,7 +135,7 @@ describe('GetProfessionalFeedbacks', () => {
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
-      const item = result.value.feedbacks[0];
+      const item = result.value.feedbacks[0]!;
       expect(item.isHidden).toBe(true);
       expect(item.isFlagged).toBe(false);
     }

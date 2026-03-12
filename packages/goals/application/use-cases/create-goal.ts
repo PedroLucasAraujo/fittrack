@@ -95,6 +95,7 @@ export class CreateGoal {
     if (dto.milestones && dto.milestones.length > 0) {
       for (let i = 0; i < dto.milestones.length; i++) {
         const mSpec = dto.milestones[i];
+        /* v8 ignore next */
         if (!mSpec) continue;
         const msResult = Milestone.create({
           name: mSpec.name,

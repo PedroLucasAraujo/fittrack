@@ -66,7 +66,7 @@ describe('DetectProfessionalRisk', () => {
     await useCase.execute({ professionalProfileId: 'prof-001' });
 
     const event = (publisher.publishProfessionalRiskResolved as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
+      .calls[0]![0];
     expect(event.payload.professionalProfileId).toBe('prof-001');
     expect(event.payload.negativeFeedbackCount).toBe(3);
     expect(event.payload.windowDays).toBe(30);
@@ -126,7 +126,7 @@ describe('DetectProfessionalRisk', () => {
     await useCase.execute({ professionalProfileId: 'prof-001' });
 
     const event = (publisher.publishProfessionalRiskDetected as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
+      .calls[0]![0];
     expect(event.payload.professionalProfileId).toBe('prof-001');
     expect(event.payload.riskType).toBe('NEGATIVE_SESSION_FEEDBACK');
     expect(event.payload.negativeFeedbackCount).toBe(5);
@@ -139,7 +139,7 @@ describe('DetectProfessionalRisk', () => {
     await useCase.execute({ professionalProfileId: 'prof-001' });
 
     const event = (publisher.publishProfessionalRiskDetected as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
+      .calls[0]![0];
     expect(event.payload.threshold).toBe(10);
   });
 

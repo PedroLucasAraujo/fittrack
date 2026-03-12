@@ -26,6 +26,7 @@ function makePublisherMock(): ISessionFeedbackEventPublisher {
     publishFeedbackFlagged: vi.fn().mockResolvedValue(undefined),
     publishFeedbackHidden: vi.fn().mockResolvedValue(undefined),
     publishProfessionalRiskDetected: vi.fn().mockResolvedValue(undefined),
+    publishProfessionalRiskResolved: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -78,14 +79,14 @@ describe('SubmitSessionFeedback', () => {
     it('publishes event with isNegative=false for positive rating', async () => {
       await useCase.execute(makeValidDto({ rating: 5 }));
       const call = (publisher.publishFeedbackSubmitted as ReturnType<typeof vi.fn>).mock
-        .calls[0][0];
+        .calls[0]![0];
       expect(call.payload.isNegative).toBe(false);
     });
 
     it('publishes event with isNegative=true for negative rating', async () => {
       await useCase.execute(makeValidDto({ rating: 2 }));
       const call = (publisher.publishFeedbackSubmitted as ReturnType<typeof vi.fn>).mock
-        .calls[0][0];
+        .calls[0]![0];
       expect(call.payload.isNegative).toBe(true);
     });
   });

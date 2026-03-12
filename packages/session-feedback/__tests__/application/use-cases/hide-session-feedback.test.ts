@@ -41,6 +41,7 @@ function makePublisher(): ISessionFeedbackEventPublisher {
     publishFeedbackFlagged: vi.fn(),
     publishFeedbackHidden: vi.fn().mockResolvedValue(undefined),
     publishProfessionalRiskDetected: vi.fn(),
+    publishProfessionalRiskResolved: vi.fn(),
   };
 }
 
@@ -68,7 +69,7 @@ describe('HideSessionFeedback', () => {
 
     await useCase.execute({ feedbackId: feedback.id, hiddenBy: 'admin-999' });
 
-    const event = (publisher.publishFeedbackHidden as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const event = (publisher.publishFeedbackHidden as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(event.payload.wasNegative).toBe(true);
   });
 
@@ -79,7 +80,7 @@ describe('HideSessionFeedback', () => {
 
     await useCase.execute({ feedbackId: feedback.id, hiddenBy: 'admin-999' });
 
-    const event = (publisher.publishFeedbackHidden as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const event = (publisher.publishFeedbackHidden as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(event.payload.wasNegative).toBe(false);
   });
 

@@ -41,6 +41,7 @@ function makePublisher(): ISessionFeedbackEventPublisher {
     publishFeedbackFlagged: vi.fn().mockResolvedValue(undefined),
     publishFeedbackHidden: vi.fn(),
     publishProfessionalRiskDetected: vi.fn(),
+    publishProfessionalRiskResolved: vi.fn(),
   };
 }
 
