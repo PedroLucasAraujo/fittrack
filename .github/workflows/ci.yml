@@ -15,7 +15,7 @@ jobs:
     name: "Lint & Format"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -34,7 +34,7 @@ jobs:
     name: "Test @fittrack/core"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -75,7 +75,7 @@ jobs:
     name: "Typecheck @fittrack/core"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -163,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -232,7 +232,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -255,7 +255,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -278,7 +278,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -301,7 +301,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -324,7 +324,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -347,7 +347,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -370,7 +370,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -393,7 +393,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -416,7 +416,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-core, test-execution]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -443,7 +443,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [typecheck-core, typecheck-execution]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -470,7 +470,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -493,7 +493,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -516,7 +516,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-core, test-identity, test-billing]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -547,7 +547,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [typecheck-core, typecheck-identity, typecheck-billing]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -578,7 +578,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-core, test-execution]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -605,7 +605,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [typecheck-core, typecheck-execution]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -632,7 +632,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -655,7 +655,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -678,7 +678,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -701,7 +701,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -724,7 +724,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -747,7 +747,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -770,7 +770,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -793,7 +793,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -816,7 +816,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -839,7 +839,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -862,7 +862,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -885,7 +885,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -908,7 +908,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
