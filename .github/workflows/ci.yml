@@ -833,3 +833,95 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
         working-directory: packages/reviews
+
+  test-session-feedback:
+    name: "Test @fittrack/session-feedback"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install session-feedback dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/session-feedback
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/session-feedback
+
+  typecheck-session-feedback:
+    name: "Typecheck @fittrack/session-feedback"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install session-feedback dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/session-feedback
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/session-feedback
+
+  test-goals:
+    name: "Test @fittrack/goals"
+    runs-on: ubuntu-latest
+    needs: test-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install goals dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/goals
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        working-directory: packages/goals
+
+  typecheck-goals:
+    name: "Typecheck @fittrack/goals"
+    runs-on: ubuntu-latest
+    needs: typecheck-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install core dependency
+        run: npm install --ignore-scripts
+        working-directory: packages/core
+
+      - name: Install goals dependencies
+        run: npm install --ignore-scripts
+        working-directory: packages/goals
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: packages/goals
