@@ -5,7 +5,7 @@ Items here are **not bugs** — they are valid features excluded from the MVP sc
 
 ---
 
-## 1. Template Sharing / Library
+<!-- ## 1. Template Sharing / Library
 
 **Context**: Templates are currently scoped to a single `professionalProfileId` (ADR-0025).
 **Deferred**: Allow professionals to share templates with their organisation/team, or publish to a public library.
@@ -13,7 +13,7 @@ Items here are **not bugs** — they are valid features excluded from the MVP sc
 - [ ] Introduce a `visibility` field: `PRIVATE | ORGANIZATION | PUBLIC`
 - [ ] `IDeliverableTemplateRepository.findPublicByType()` query
 - [ ] ADR update: cross-tenant read policy for public templates (read-only, copy-on-instantiate)
-- [ ] Import/fork mechanism: copying a public template into one's own library (creates new DRAFT with `previousVersionId = null`)
+- [ ] Import/fork mechanism: copying a public template into one's own library (creates new DRAFT with `previousVersionId = null`) -->
 
 ---
 

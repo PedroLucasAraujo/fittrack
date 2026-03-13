@@ -1,0 +1,29 @@
+import type { CalculateUserEngagementUseCase } from '../use-cases/CalculateUserEngagementUseCase.js';
+
+/**
+ * Handles GoalProgressUpdatedEvent from the Goals module (ADR-0009).
+ *
+ * Triggers an engagement recalculation to refresh the goalProgressScore
+ * (% goals on track) without waiting for the daily batch job.
+ */
+export class OnGoalProgressUpdated {
+  constructor(
+    private readonly calculateEngagement: CalculateUserEngagementUseCase,
+  ) {}
+
+  async handle(payload: {
+    clientId: string;
+    professionalProfileId: string;
+  }): Promise<void> {
+    const result = await this.calculateEngagement.execute({
+      userId: payload.clientId,
+      professionalProfileId: payload.professionalProfileId,
+    });
+
+    if (result.isLeft()) {
+      console.error('[OnGoalProgressUpdated] Engagement recalculation failed', {
+        error: result.value.message,
+      });
+    }
+  }
+}
